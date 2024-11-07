@@ -1324,7 +1324,7 @@ function Cato_GameMessages:drawWidget(player)
          end
          gameMessage = timer.seconds
       elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
-         if gameTime < 2000 then
+         if gameTime < 2500 then
             local overTimeCount = world.overTimeCount
             if overTimeCount <= 0 then
                gameMessage = (gameMode == 'race' or gameMode == 'training') and 'GO' or 'FIGHT'
