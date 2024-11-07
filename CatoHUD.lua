@@ -264,10 +264,32 @@ local defaultSettings = {
          },
       },
    },
-   ['Cato_GameInfo'] = {
+   ['Cato_GameMode'] = {
       visible = true,
       props = {
          offset = '-3 41',
+         anchor = '1 -1',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = true,
+            editor = false,
+         },
+      },
+   },
+   ['Cato_MapName'] = {
+      visible = true,
+      props = {
+         offset = '-3 64',
          anchor = '1 -1',
          zIndex = '0',
          scale = '1',
@@ -517,14 +539,14 @@ local localPov = nil
 local gameState = nil
 local gameMode = nil
 local hasTeams = nil
-local mapName = nil
+local map = nil
 local mapTitle = nil
 local rulesetName = nil
 local gameTimeElapsed = nil
 local gameTimeLimit = nil
 
 local inReplay = nil
-local previousMapName = nil
+local previousMap = nil
 local warmupTimeElapsed = 0
 
 ----------------------------------------------------------------------------------------------------
@@ -959,7 +981,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       local pos = {x = x, y = y}
 
       if widget.canPreview then
-         widget.preview = uiRowCheckbox(pos, 'Preview', widget.preview, opts.medium, opts.checkbox)
+         CatoHUD.preview = uiRowCheckbox(pos, 'Preview', CatoHUD.preview, opts.medium, opts.checkbox)
       end
       uiDelimiter(pos, opts.delimiter)
 
@@ -991,10 +1013,8 @@ function CatoHUD:registerWidget(widgetName, widget)
       if widgetName == 'CatoHUD' then return true end
       if widgetName == 'Cato_Zoom' then return true end -- FIXME: Better solution
 
-      -- FIXME: This is pretty weird. Maybe tie preview check boxes to CatoHUD.preview?
-      --        (And vice versa?)
       -- FIXME: preview should temporarily change zindex to -999?
-      if CatoHUD.preview or widget.preview then
+      if CatoHUD.preview then
          return true
       end
 
@@ -1056,12 +1076,6 @@ function CatoHUD:registerWidget(widgetName, widget)
          return
       end
 
-      if not isInMenu() then
-         widget.preview = false
-      -- elseif CatoHUD.preview then -- FIXME: This almost works
-      --    widget.preview = true
-      end
-
       widget.anchor = getProps(widgetName).anchor
       widget:drawWidget()
    end
@@ -1077,7 +1091,7 @@ function CatoHUD:drawWidget()
    gameState = world.gameState
    gameMode = gamemodes[world.gameModeIndex].shortName
    hasTeams = gamemodes[world.gameModeIndex].hasTeams
-   mapName = world.mapName
+   map = world.mapName
    mapTitle = world.mapTitle
    rulesetName = world.ruleset
    gameTime = world.gameTime
@@ -1102,9 +1116,9 @@ function CatoHUD:drawWidget()
       end
    end
 
-   if mapName ~= previousMapName then
+   if map ~= previousMap then
       warmupTimeElapsed = 0
-      previousMapName = mapName
+      previousMap = map
    elseif gameState == GAME_STATE_WARMUP then
       warmupTimeElapsed = warmupTimeElapsed + deltaTime * 1000
    elseif checkResetConsoleVariable('ui_CatoHUD_warmuptimer_reset', 0) ~= 0 then
@@ -1201,8 +1215,7 @@ function Cato_FollowingPlayer:drawWidget()
    if not povPlayer then return end
 
    -- TODO: option for display on self
-   local preview = CatoHUD.preview or self.preview
-   if not preview and localPov then return end
+   if not CatoHUD.preview and localPov then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1386,9 +1399,9 @@ CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
 
 ----------------------------------------------------------------------------------------------------
 
-Cato_GameInfo = {}
+Cato_GameMode = {}
 
-function Cato_GameInfo:drawWidget()
+function Cato_GameMode:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
    local opts = {
@@ -1397,20 +1410,38 @@ function Cato_GameInfo:drawWidget()
       size = self.userData.fontSize,
    }
 
-   local gameInfo = string.format('%s (%s) @ %s', string.upper(gameMode), rulesetName, mapTitle)
-   gameInfo = createTextElem(self.anchor, gameInfo, opts)
-   gameInfo.draw(0, 0)
+   local gameModeRuleset = string.upper(gameMode) .. ' (' .. rulesetName .. ')'
+   gameModeRuleset = createTextElem(self.anchor, gameModeRuleset, opts)
+   gameModeRuleset.draw(0, 0)
 end
 
-CatoHUD:registerWidget('Cato_GameInfo', Cato_GameInfo)
+CatoHUD:registerWidget('Cato_GameMode', Cato_GameMode)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_MapName = {}
+
+function Cato_MapName:drawWidget()
+   if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
+
+   local opts = {
+      font = self.userData.fontFace,
+      color = Color(255, 255, 255),
+      size = self.userData.fontSize,
+   }
+
+   local mapName = createTextElem(self.anchor, mapTitle, opts)
+   mapName.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_MapName', Cato_MapName)
 
 ----------------------------------------------------------------------------------------------------
 
 Cato_ReadyStatus = {}
 
 function Cato_ReadyStatus:drawWidget()
-   local preview = CatoHUD.preview or self.preview
-   if gameState ~= GAME_STATE_WARMUP and not preview then return end
+   if gameState ~= GAME_STATE_WARMUP and not CatoHUD.preview then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1480,8 +1511,7 @@ function Cato_GameMessages:drawWidget()
       end
    end
 
-   local preview = CatoHUD.preview or self.preview
-   if preview then
+   if CatoHUD.preview then
       if gameMessage == nil then
          gameMessage = '(Game Message)'
       end
