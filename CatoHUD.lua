@@ -264,7 +264,7 @@ local defaultSettings = {
          },
       },
    },
-   ['Cato_GameMode'] = {
+   ['Cato_GameModeName'] = {
       visible = true,
       props = {
          offset = '-3 41',
@@ -286,10 +286,32 @@ local defaultSettings = {
          },
       },
    },
-   ['Cato_MapName'] = {
+   ['Cato_RulesetName'] = {
       visible = true,
       props = {
          offset = '-3 64',
+         anchor = '1 -1',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = true,
+            editor = false,
+         },
+      },
+   },
+   ['Cato_MapName'] = {
+      visible = true,
+      props = {
+         offset = '-3 87',
          anchor = '1 -1',
          zIndex = '0',
          scale = '1',
@@ -541,7 +563,7 @@ local gameMode = nil
 local hasTeams = nil
 local map = nil
 local mapTitle = nil
-local rulesetName = nil
+local ruleset = nil
 local gameTimeElapsed = nil
 local gameTimeLimit = nil
 
@@ -1093,7 +1115,7 @@ function CatoHUD:drawWidget()
    hasTeams = gamemodes[world.gameModeIndex].hasTeams
    map = world.mapName
    mapTitle = world.mapTitle
-   rulesetName = world.ruleset
+   ruleset = world.ruleset
    gameTime = world.gameTime
    gameTimeLimit = world.gameTimeLimit
 
@@ -1399,9 +1421,9 @@ CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
 
 ----------------------------------------------------------------------------------------------------
 
-Cato_GameMode = {}
+Cato_GameModeName = {}
 
-function Cato_GameMode:drawWidget()
+function Cato_GameModeName:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
    local opts = {
@@ -1410,12 +1432,30 @@ function Cato_GameMode:drawWidget()
       size = self.userData.fontSize,
    }
 
-   local gameModeRuleset = string.upper(gameMode) .. ' (' .. rulesetName .. ')'
-   gameModeRuleset = createTextElem(self.anchor, gameModeRuleset, opts)
-   gameModeRuleset.draw(0, 0)
+   local gameModeName = createTextElem(self.anchor, gameMode, opts)
+   gameModeName.draw(0, 0)
 end
 
-CatoHUD:registerWidget('Cato_GameMode', Cato_GameMode)
+CatoHUD:registerWidget('Cato_GameModeName', Cato_GameModeName)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_RulesetName = {}
+
+function Cato_RulesetName:drawWidget()
+   if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
+
+   local opts = {
+      font = self.userData.fontFace,
+      color = Color(255, 255, 255),
+      size = self.userData.fontSize,
+   }
+
+   local rulesetName = createTextElem(self.anchor, ruleset, opts)
+   rulesetName.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_RulesetName', Cato_RulesetName)
 
 ----------------------------------------------------------------------------------------------------
 
