@@ -165,7 +165,15 @@ local defaultSettings = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeHuge,
          textAnchor = {x = 1},
-         show = {dead = true, race = false, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = false,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
       },
    },
    ['Cato_ArmorNumber'] = {
@@ -180,7 +188,15 @@ local defaultSettings = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeHuge,
          textAnchor = {x = -1},
-         show = {dead = true, race = false, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = false,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
       },
    },
    ['Cato_ArmorIcon'] = {
@@ -193,7 +209,15 @@ local defaultSettings = {
       },
       userData = {
          iconSize = 24,
-         show = {dead = true, race = false, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = false,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
       },
    },
    ['Cato_FPS'] = {
@@ -207,7 +231,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = true, race = true, menu = true, hudOff = false, gameOver = true},
+         show = {
+            dead = true,
+            race = true,
+            menu = true,
+            hudOff = false,
+            gameOver = true,
+            freecam = true,
+            editor = true,
+         },
       },
    },
    ['Cato_Scores'] = {
@@ -221,7 +253,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = true},
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = true,
+            freecam = true,
+            editor = false,
+         },
       },
    },
    ['Cato_GameInfo'] = {
@@ -235,7 +275,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = true,
+            editor = false,
+         },
       },
    },
    ['Cato_ReadyStatus'] = {
@@ -249,7 +297,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = true,
+            editor = false,
+         },
       },
    },
    ['Cato_GameMessages'] = {
@@ -263,7 +319,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeMedium,
-         show = {dead = true, race = true, menu = true, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = true,
+            menu = true,
+            hudOff = false,
+            gameOver = false,
+            freecam = true,
+            editor = false,
+         },
       },
    },
    ['Cato_Speed'] = {
@@ -277,7 +341,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = false, race = true, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = false,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
       },
    },
    ['Cato_LowAmmo'] = {
@@ -291,7 +363,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = false, race = true, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = false,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
          preventEmptyAttack = true,
       },
    },
@@ -306,7 +386,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = true},
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = true,
+            freecam = true,
+            editor = false,
+         },
       },
    },
    ['Cato_PacketLoss'] = {
@@ -320,7 +408,15 @@ local defaultSettings = {
       userData = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
-         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = true},
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = true,
+            freecam = true,
+            editor = false,
+         },
       },
    },
    ['Cato_Timer'] = {
@@ -336,7 +432,15 @@ local defaultSettings = {
          hideSeconds = false,
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeTimer,
-         show = {dead = true, race = false, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = false,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
       },
    },
    ['Cato_FollowingPlayer'] = {
@@ -351,7 +455,15 @@ local defaultSettings = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeBig,
          textAnchor = {x = 0},
-         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = false},
+         show = {
+            dead = true,
+            race = true,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
       },
    },
 }
@@ -399,6 +511,8 @@ TEAM_ZETA = 2
 
 local povPlayer = nil
 local localPlayer = nil
+
+local localPov = nil
 
 local gameState = nil
 local gameMode = nil
@@ -557,13 +671,6 @@ local function formatTimer(elapsed, limit, countDown)
       seconds = floor((elapsed / 1000) % 60),
    }
 end
-
-----------------------------------------------------------------------------------------------------
-
-CatoHUD = {
-   canHide = false,
-   canPosition = false,
-}
 
 ----------------------------------------------------------------------------------------------------
 
@@ -738,6 +845,8 @@ end
 
 ----------------------------------------------------------------------------------------------------
 
+CatoHUD = {canHide = false, canPosition = false}
+
 function CatoHUD:registerWidget(widgetName, widget)
    registerWidget(widgetName)
 
@@ -878,7 +987,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       saveUserData(widget.userData)
    end
 
-   function widget:shouldShow(player)
+   function widget:shouldShow()
       if widgetName == 'CatoHUD' then return true end
       if widgetName == 'Cato_Zoom' then return true end -- FIXME: Better solution
 
@@ -904,7 +1013,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       end
 
       if not widgetShow.dead then
-         if not player or player.health <= 0 then
+         if not povPlayer or povPlayer.health <= 0 then
             return false
          end
       end
@@ -927,6 +1036,18 @@ function CatoHUD:registerWidget(widgetName, widget)
          end
       end
 
+      if not widgetShow.freecam then
+         if localPov and povPlayer.state ~= PLAYER_STATE_INGAME then
+            return false
+         end
+      end
+
+      if not widgetShow.editor then
+         if povPlayer.state == PLAYER_STATE_EDITOR then
+            return false
+         end
+      end
+
       return true
    end
 
@@ -942,7 +1063,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       end
 
       widget.anchor = getProps(widgetName).anchor
-      widget:drawWidget(povPlayer, localPlayer)
+      widget:drawWidget()
    end
 end
 
@@ -951,6 +1072,7 @@ end
 function CatoHUD:drawWidget()
    povPlayer = players[playerIndexCameraAttachedTo]
    localPlayer = players[playerIndexLocalPlayer]
+   localPov = playerIndexCameraAttachedTo == playerIndexLocalPlayer
 
    gameState = world.gameState
    gameMode = gamemodes[world.gameModeIndex].shortName
@@ -980,17 +1102,33 @@ function CatoHUD:drawWidget()
       end
    end
 
-   if checkResetConsoleVariable('ui_CatoHUD_warmuptimer_reset', 0) ~= 0 then
+   if mapName ~= previousMapName then
       warmupTimeElapsed = 0
+      previousMapName = mapName
    elseif gameState == GAME_STATE_WARMUP then
       warmupTimeElapsed = warmupTimeElapsed + deltaTime * 1000
+   elseif checkResetConsoleVariable('ui_CatoHUD_warmuptimer_reset', 0) ~= 0 then
+      warmupTimeElapsed = 0
    else
       warmupTimeElapsed = 0
    end
 
-   if mapName ~= previousMapName then
-      warmupTimeElapsed = 0
-      previousMapName = mapName
+   -- Parse events for:
+   --    Cato_Chat
+   --    Cato_GameEvents
+   --    Cato_GameMessages
+   --    Cato_FragMessage
+   --    Cato_Toasty
+   for _, event in ipairs(log) do
+      -- consoleTablePrint(event)
+   end
+
+   -- Parse players for:
+   --    Cato_BurstAccuracy
+   --    Cato_Chat
+   --    Cato_FakeBeam
+   for _, p in ipairs(players) do
+      -- consoleTablePrint(p)
    end
 end
 
@@ -1000,9 +1138,7 @@ CatoHUD:registerWidget('CatoHUD', CatoHUD)
 
 Cato_Timer = {}
 
-function Cato_Timer:drawWidget(player)
-   if not player or player.state == PLAYER_STATE_SPECTATOR then return end
-
+function Cato_Timer:drawWidget()
    local hideSeconds = self.userData.hideSeconds
 
    local timeElapsed = 0
@@ -1061,12 +1197,12 @@ CatoHUD:registerWidget('Cato_Timer', Cato_Timer)
 
 Cato_FollowingPlayer = {}
 
-function Cato_FollowingPlayer:drawWidget(player)
-   if not player then return end
+function Cato_FollowingPlayer:drawWidget()
+   if not povPlayer then return end
 
    -- TODO: option for display on self
    local preview = CatoHUD.preview or self.preview
-   if not preview and player == localPlayer then return end
+   if not preview and localPov then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1076,7 +1212,7 @@ function Cato_FollowingPlayer:drawWidget(player)
    }
 
    local label = createTextElem(self.anchor, 'FOLLOWING', opts)
-   local name = createTextElem(self.anchor, player.name, opts)
+   local name = createTextElem(self.anchor, povPlayer.name, opts)
 
    local x = 0
    if self.anchor.x == -1 then
@@ -1126,7 +1262,7 @@ CatoHUD:registerWidget('Cato_FPS', Cato_FPS)
 
 Cato_Scores = {}
 
-function Cato_Scores:drawWidget(player)
+function Cato_Scores:drawWidget()
    local opts = {
       team = {
          font = self.userData.fontFace,
@@ -1154,8 +1290,8 @@ function Cato_Scores:drawWidget(player)
    local indexEnemy = nil
    local relativeColors = consoleGetVariable('cl_colors_relative') == 1
    if hasTeams then
-      if player and player.state == PLAYER_STATE_INGAME then
-         indexTeam = player.team
+      if povPlayer and povPlayer.state == PLAYER_STATE_INGAME then
+         indexTeam = povPlayer.team
          indexEnemy = indexTeam % 2 + 1
          if not relativeColors then
             opts.team.color = teamColors[indexTeam]
@@ -1190,27 +1326,27 @@ function Cato_Scores:drawWidget(player)
       indexTeam = indexWinner
       scoreEnemy = scoreRunnerUp
       indexEnemy = indexRunnerUp
-      if player and player.state == PLAYER_STATE_INGAME and player.connected then
-         if indexWinner == player.index then
+      if povPlayer and povPlayer.state == PLAYER_STATE_INGAME and povPlayer.connected then
+         if indexWinner == povPlayer.index then
             scoreTeam = scoreWinner
             indexTeam = indexWinner
             scoreEnemy = scoreRunnerUp
             indexEnemy = indexRunnerUp
-         elseif indexRunnerUp == player.index then
+         elseif indexRunnerUp == povPlayer.index then
             scoreTeam = scoreRunnerUp
             indexTeam = indexRunnerUp
             scoreEnemy = scoreWinner
             indexEnemy = indexWinner
          else
-            scoreTeam = player.score
-            indexTeam = player.index
+            scoreTeam = povPlayer.score
+            indexTeam = povPlayer.index
             scoreEnemy = scoreWinner
             indexEnemy = indexWinner
          end
       end
 
       -- Use player colors in FFA/1v1
-      if not relativeColors or not player or player.state ~= PLAYER_STATE_INGAME then
+      if not relativeColors or not povPlayer or povPlayer.state ~= PLAYER_STATE_INGAME then
          if indexTeam ~= nil then
             opts.team.color = extendedColors[players[indexTeam].colorIndices[1] + 1]
          end
@@ -1252,7 +1388,7 @@ CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
 
 Cato_GameInfo = {}
 
-function Cato_GameInfo:drawWidget(player)
+function Cato_GameInfo:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
    local opts = {
@@ -1272,7 +1408,7 @@ CatoHUD:registerWidget('Cato_GameInfo', Cato_GameInfo)
 
 Cato_ReadyStatus = {}
 
-function Cato_ReadyStatus:drawWidget(player)
+function Cato_ReadyStatus:drawWidget()
    local preview = CatoHUD.preview or self.preview
    if gameState ~= GAME_STATE_WARMUP and not preview then return end
 
@@ -1307,7 +1443,7 @@ function Cato_GameMessages:init()
    self.lastTickSeconds = -1
 end
 
-function Cato_GameMessages:drawWidget(player)
+function Cato_GameMessages:drawWidget()
    local opts = {
       font = self.userData.fontFace,
       color = Color(255, 255, 255),
@@ -1333,8 +1469,8 @@ function Cato_GameMessages:drawWidget(player)
             end
          end
       elseif gameState == GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON then
-         if player ~= nil then
-            local name = hasTeams and world.teams[player.team].name or player.name
+         if povPlayer ~= nil then
+            local name = hasTeams and world.teams[povPlayer.team].name or povPlayer.name
             gameMessage = name .. ' WINS'
          else
             gameMessage = 'Round Over'
@@ -1363,8 +1499,8 @@ CatoHUD:registerWidget('Cato_GameMessages', Cato_GameMessages)
 
 Cato_Speed = {}
 
-function Cato_Speed:drawWidget(player)
-   if not player then return end
+function Cato_Speed:drawWidget()
+   if not povPlayer then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1372,7 +1508,7 @@ function Cato_Speed:drawWidget(player)
       size = self.userData.fontSize,
    }
 
-   local ups = createTextElem(self.anchor, ceil(player.speed) .. 'ups', opts)
+   local ups = createTextElem(self.anchor, ceil(povPlayer.speed) .. 'ups', opts)
    ups.draw(0, 0)
 end
 
@@ -1386,14 +1522,14 @@ Cato_LowAmmo = {}
 -- local attackUnbound = false
 -- local attackCommand = '+attack; cl_camera_next_player; ui_RocketLagNullifier_attack 1'
 
-function Cato_LowAmmo:drawWidget(player, localPlayer)
-   if not player or player.infoHidden then return end
+function Cato_LowAmmo:drawWidget()
+   if not povPlayer or povPlayer.infoHidden then return end
 
-   local weaponIndexSelected = player.weaponIndexSelected
+   local weaponIndexSelected = povPlayer.weaponIndexSelected
    if weaponDefinitions[weaponIndexSelected] == nil then return end
 
    local ammoLow = weaponDefinitions[weaponIndexSelected].lowAmmoWarning
-   local ammo = player.weapons[weaponIndexSelected].ammo
+   local ammo = povPlayer.weapons[weaponIndexSelected].ammo
    if ammo > ammoLow then return end
 
    local opts = {
@@ -1414,16 +1550,16 @@ function Cato_LowAmmo:drawWidget(player, localPlayer)
    --        (1) Temporarily unbind +attack until more ammo or weapon is switched
    --        (2) Use a custom command for +attack (requires "holding detection"?)
    --        (3) Just unbind +attack if no ammo for current weapon
-   -- if self.userData.preventEmptyAttack and player == localPlayer and player.buttons.attack then
+   -- if self.userData.preventEmptyAttack and localPov and povPlayer.buttons.attack then
    --    consolePerformCommand('-attack')
    --    consolePrint('No ammo. Prevent shooting')
    -- end
    -- attackButton = bindReverseLookup('+attack', 'game')
-   -- if player == localPlayer and self.userData.preventEmptyAttack then
+   -- if localPov and self.userData.preventEmptyAttack then
    --    if ammo > 0 then
    --       consolePerformCommand('bind game ' .. attackButton .. ' ' .. attackCommand)
    --    elseif ammo == 1 then
-   --       if player.buttons.attack then
+   --       if povPlayer.buttons.attack then
    --          consolePerformCommand('-attack')
    --       end
    --    else
@@ -1444,8 +1580,8 @@ CatoHUD:registerWidget('Cato_LowAmmo', Cato_LowAmmo)
 
 Cato_PacketLoss = {}
 
-function Cato_PacketLoss:drawWidget(player)
-   if not player or player.state == PLAYER_STATE_SPECTATOR then return end
+function Cato_PacketLoss:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1453,17 +1589,17 @@ function Cato_PacketLoss:drawWidget(player)
       size = self.userData.fontSize,
    }
 
-   if player.packetLoss == 0 then
+   if povPlayer.packetLoss == 0 then
       return
-   elseif player.packetLoss <= 5 then
+   elseif povPlayer.packetLoss <= 5 then
       opts.color = Color(255, 255, 255)
-   elseif player.packetLoss < 10 then
+   elseif povPlayer.packetLoss < 10 then
       opts.color = Color(255, 255, 0)
    else
       opts.color = Color(255, 0, 0)
    end
 
-   local packetloss = createTextElem(self.anchor, player.packetLoss .. ' PL', opts)
+   local packetloss = createTextElem(self.anchor, povPlayer.packetLoss .. ' PL', opts)
    packetloss.draw(0, 0)
 end
 
@@ -1473,8 +1609,8 @@ CatoHUD:registerWidget('Cato_PacketLoss', Cato_PacketLoss)
 
 Cato_Ping = {}
 
-function Cato_Ping:drawWidget(player)
-   if not player or player.state == PLAYER_STATE_SPECTATOR then return end
+function Cato_Ping:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1482,17 +1618,17 @@ function Cato_Ping:drawWidget(player)
       size = self.userData.fontSize,
    }
 
-   if player.latency == 0 then
+   if povPlayer.latency == 0 then
       return
-   elseif player.latency <= 50 then
+   elseif povPlayer.latency <= 50 then
       opts.color = Color(0, 255, 0)
-   elseif player.latency < 100 then
+   elseif povPlayer.latency < 100 then
       opts.color = Color(255, 255, 0)
    else
       opts.color = Color(255, 0, 0)
    end
 
-   local ping = createTextElem(self.anchor, player.latency .. 'ms', opts)
+   local ping = createTextElem(self.anchor, povPlayer.latency .. 'ms', opts)
    ping.draw(0, 0)
 end
 
@@ -1502,8 +1638,8 @@ CatoHUD:registerWidget('Cato_Ping', Cato_Ping)
 
 Cato_HealthNumber = {}
 
-function Cato_HealthNumber:drawWidget(player)
-   if not player or player.state == PLAYER_STATE_SPECTATOR then return end
+function Cato_HealthNumber:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1513,10 +1649,10 @@ function Cato_HealthNumber:drawWidget(player)
    }
 
    local playerHealth = 'N/A'
-   if not player.infoHidden then
-      playerHealth = player.health
+   if not povPlayer.infoHidden then
+      playerHealth = povPlayer.health
 
-      local damage = damageToKill(player.health, player.armor, player.armorProtection)
+      local damage = damageToKill(povPlayer.health, povPlayer.armor, povPlayer.armorProtection)
       if damage <= 80 then
          opts.color = Color(255, 0, 0)
       elseif damage <= 100 then
@@ -1537,8 +1673,8 @@ CatoHUD:registerWidget('Cato_HealthNumber', Cato_HealthNumber)
 
 Cato_ArmorNumber = {}
 
-function Cato_ArmorNumber:drawWidget(player)
-   if not player or player.state == PLAYER_STATE_SPECTATOR then return end
+function Cato_ArmorNumber:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1548,17 +1684,17 @@ function Cato_ArmorNumber:drawWidget(player)
    }
 
    local playerArmor = 'N/A'
-   if not player.infoHidden then
-      playerArmor = player.armor
+   if not povPlayer.infoHidden then
+      playerArmor = povPlayer.armor
 
-      opts.color = CatoHUD.userData['armorColor' .. player.armorProtection]
-      opts.color = armorColorLerp(playerArmor, player.armorProtection, opts.color)
+      opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
+      opts.color = armorColorLerp(playerArmor, povPlayer.armorProtection, opts.color)
 
-      -- local lerpSteps = floor(playerArmor / armorLimit[player.armorProtection + 1][0])
+      -- local lerpSteps = floor(playerArmor / armorLimit[povPlayer.armorProtection + 1][0])
 
       -- local lerpSteps = -1
       -- for itemArmorProtection = 0, 2 do
-      --    if playerArmor < armorLimit[player.armorProtection + 1][itemArmorProtection + 1] then
+      --    if playerArmor < armorLimit[povPlayer.armorProtection + 1][itemArmorProtection + 1] then
       --       lerpSteps = lerpSteps + 1
       --    end
       -- end
@@ -1570,9 +1706,9 @@ function Cato_ArmorNumber:drawWidget(player)
       -- consoleColorPrint(colorToLerp)
 
       -- debug
-      -- playerArmor = player.armor .. ' ' .. armorQuality(player) * player.armor
+      -- playerArmor = povPlayer.armor .. ' ' .. armorQuality(povPlayer) * povPlayer.armor
 
-      -- local playerArmorLimit = playerArmor * armorQuality[player.armorProtection]
+      -- local playerArmorLimit = playerArmor * armorQuality[povPlayer.armorProtection]
       -- playerArmorLimit = ceil(playerArmorLimit)
       -- if playerArmorLimit < armorQuality[0] * armorMax[0] then
       --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 2 / 3)
@@ -1583,8 +1719,8 @@ function Cato_ArmorNumber:drawWidget(player)
       -- end
 
       -- FIXME: Better way?
-      -- opts.color = CatoHUD.userData['armorColor' .. player.armorProtection]
-      -- if player.armorProtection == 2 then
+      -- opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
+      -- if povPlayer.armorProtection == 2 then
       --     -- RA <  66 -> can pickup GA
       --    if playerArmor < 66 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
@@ -1595,7 +1731,7 @@ function Cato_ArmorNumber:drawWidget(player)
       --    elseif playerArmor < 200 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0)
       --    end
-      -- elseif player.armorProtection == 1 then
+      -- elseif povPlayer.armorProtection == 1 then
       --     -- YA <  75 -> can pickup GA
       --    if playerArmor < 75 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
@@ -1603,7 +1739,7 @@ function Cato_ArmorNumber:drawWidget(player)
       --    elseif playerArmor < 150 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.33)
       --    end
-      -- elseif player.armorProtection == 0 then
+      -- elseif povPlayer.armorProtection == 0 then
       --     -- GA < 100 -> can pickup GA
       --    if playerArmor < 100 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
@@ -1622,16 +1758,16 @@ CatoHUD:registerWidget('Cato_ArmorNumber', Cato_ArmorNumber)
 
 Cato_ArmorIcon = {}
 
-function Cato_ArmorIcon:drawWidget(player)
-   if not player or player.state == PLAYER_STATE_SPECTATOR then return end
+function Cato_ArmorIcon:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
 
    local opts = {
       color = CatoHUD.userData.noArmorColor,
       size = self.userData.iconSize,
    }
 
-   if not player.infoHidden then
-      opts.color = CatoHUD.userData['armorColor' .. player.armorProtection]
+   if not povPlayer.infoHidden then
+      opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
    end
 
    local armor = createSvgElem(self.anchor, 'internal/ui/icons/armor', opts)
