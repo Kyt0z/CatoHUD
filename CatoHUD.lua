@@ -266,6 +266,20 @@ local defaultSettings = {
          show = {dead = true, race = true, menu = true, hudOff = false, gameOver = false},
       },
    },
+   ['Cato_Speed'] = {
+      visible = false,
+      props = {
+         offset = '0 60',
+         anchor = '0 0',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {dead = false, race = true, menu = false, hudOff = false, gameOver = false},
+      },
+   },
    ['Cato_LowAmmo'] = {
       visible = true,
       props = {
@@ -970,6 +984,8 @@ function CatoHUD:drawWidget()
       warmupTimeElapsed = 0
    elseif gameState == GAME_STATE_WARMUP then
       warmupTimeElapsed = warmupTimeElapsed + deltaTime * 1000
+   else
+      warmupTimeElapsed = 0
    end
 
    if mapName ~= previousMapName then
@@ -1342,6 +1358,25 @@ function Cato_GameMessages:drawWidget(player)
 end
 
 CatoHUD:registerWidget('Cato_GameMessages', Cato_GameMessages)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_Speed = {}
+
+function Cato_Speed:drawWidget(player)
+   if not player then return end
+
+   local opts = {
+      font = self.userData.fontFace,
+      color = Color(255, 255, 255),
+      size = self.userData.fontSize,
+   }
+
+   local ups = createTextElem(self.anchor, ceil(player.speed) .. 'ups', opts)
+   ups.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
 
 ----------------------------------------------------------------------------------------------------
 
