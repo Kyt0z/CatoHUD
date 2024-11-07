@@ -34,6 +34,15 @@ local function Color(r, g, b, a, intensity)
    return {r = r, g = g, b = b, a = (a or 255) * (intensity or 1)}
 end
 
+local function ColorHEX(hex, intensity)
+   return {
+      r = tonumber('0x' .. string.sub(hex, 1, 2)),
+      g = tonumber('0x' .. string.sub(hex, 3, 4)),
+      b = tonumber('0x' .. string.sub(hex, 5, 6)),
+      a = (tonumber('0x' .. string.sub(hex, 7, 8)) or 255) * (intensity or 1)
+   }
+end
+
 local function copyColor(color, intensity)
    return Color(color.r, color.g, color.b, color.a, intensity)
 end
@@ -95,8 +104,10 @@ end
 
 local defaultFontFace = 'TitilliumWeb-Bold'
 local defaultFontSizeSmall = 32
-local defaultFontSizeMedium = 64
-local defaultFontSizeBig = 160
+local defaultFontSizeMedium = 40
+local defaultFontSizeBig = 64
+local defaultFontSizeTimer = 120
+local defaultFontSizeHuge = 160
 local sens = consoleGetVariable('m_speed')
 local fov = consoleGetVariable('r_fov')
 local defaultZoomFov = 40
@@ -152,7 +163,7 @@ local defaultSettings = {
       },
       userData = {
          fontFace = defaultFontFace,
-         fontSize = defaultFontSizeBig,
+         fontSize = defaultFontSizeHuge,
          textAnchor = {x = 1},
          show = {dead = true, race = false, menu = false, hudOff = false, gameOver = false},
       },
@@ -167,7 +178,7 @@ local defaultSettings = {
       },
       userData = {
          fontFace = defaultFontFace,
-         fontSize = defaultFontSizeBig,
+         fontSize = defaultFontSizeHuge,
          textAnchor = {x = -1},
          show = {dead = true, race = false, menu = false, hudOff = false, gameOver = false},
       },
@@ -197,6 +208,62 @@ local defaultSettings = {
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {dead = true, race = true, menu = true, hudOff = false, gameOver = true},
+      },
+   },
+   ['Cato_Scores'] = {
+      visible = true,
+      props = {
+         offset = '-3 18',
+         anchor = '1 -1',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = true},
+      },
+   },
+   ['Cato_GameInfo'] = {
+      visible = true,
+      props = {
+         offset = '-3 41',
+         anchor = '1 -1',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = false},
+      },
+   },
+   ['Cato_ReadyStatus'] = {
+      visible = true,
+      props = {
+         offset = '0 145',
+         anchor = '0 -1',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {dead = true, race = true, menu = false, hudOff = false, gameOver = false},
+      },
+   },
+   ['Cato_GameMessages'] = {
+      visible = true,
+      props = {
+         offset = '0 -80',
+         anchor = '0 0',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeMedium,
+         show = {dead = true, race = true, menu = true, hudOff = false, gameOver = false},
       },
    },
    ['Cato_LowAmmo'] = {
@@ -254,7 +321,7 @@ local defaultSettings = {
          countDown = false,
          hideSeconds = false,
          fontFace = defaultFontFace,
-         fontSize = 120,
+         fontSize = defaultFontSizeTimer,
          show = {dead = true, race = false, menu = false, hudOff = false, gameOver = false},
       },
    },
@@ -268,7 +335,7 @@ local defaultSettings = {
       },
       userData = {
          fontFace = defaultFontFace,
-         fontSize = defaultFontSizeMedium,
+         fontSize = defaultFontSizeBig,
          textAnchor = {x = 0},
          show = {dead = true, race = true, menu = false, hudOff = false, gameOver = false},
       },
@@ -294,6 +361,9 @@ PLAYER_STATE_SPECTATOR = 2
 PLAYER_STATE_EDITOR = 3
 PLAYER_STATE_QUEUED = 4
 
+TEAM_ALPHA = 1
+TEAM_ZETA = 2
+
 -- TODO: Various relative offsets (such as between lines in 'FOLLOWING\nplayer') depend on the
 --       font, so maybe a function that calculates the proper offset for all the default fonts?
 -- fonts = {
@@ -318,10 +388,14 @@ local localPlayer = nil
 
 local gameState = nil
 local gameMode = nil
+local hasTeams = nil
 local mapName = nil
+local mapTitle = nil
+local rulesetName = nil
 local gameTimeElapsed = nil
 local gameTimeLimit = nil
 
+local inReplay = nil
 local previousMapName = nil
 local warmupTimeElapsed = 0
 
@@ -414,7 +488,7 @@ local armorLimit = {
    {armorLimit(2, 0), armorLimit(2, 1), armorLimit(2, 2)}, --  66, 132, 200
 }
 
--- 
+--
 
 local function armorColorLerp(armor, armorProtection, colorArmor)
    -- pretty good
@@ -796,6 +870,7 @@ function CatoHUD:registerWidget(widgetName, widget)
 
       -- FIXME: This is pretty weird. Maybe tie preview check boxes to CatoHUD.preview?
       --        (And vice versa?)
+      -- FIXME: preview should temporarily change zindex to -999?
       if CatoHUD.preview or widget.preview then
          return true
       end
@@ -848,10 +923,12 @@ function CatoHUD:registerWidget(widgetName, widget)
 
       if not isInMenu() then
          widget.preview = false
+      -- elseif CatoHUD.preview then -- FIXME: This almost works
+      --    widget.preview = true
       end
 
       widget.anchor = getProps(widgetName).anchor
-      widget:drawWidget(povPlayer)
+      widget:drawWidget(povPlayer, localPlayer)
    end
 end
 
@@ -863,9 +940,14 @@ function CatoHUD:drawWidget()
 
    gameState = world.gameState
    gameMode = gamemodes[world.gameModeIndex].shortName
+   hasTeams = gamemodes[world.gameModeIndex].hasTeams
    mapName = world.mapName
+   mapTitle = world.mapTitle
+   rulesetName = world.ruleset
    gameTime = world.gameTime
    gameTimeLimit = world.gameTimeLimit
+
+   inReplay = replayActive and replayName ~= 'menu'
 
    if checkResetConsoleVariable('ui_CatoHUD_reset_widgets', 0) ~= 0 then
       for widgetName, _ in pairs(defaultSettings) do
@@ -938,22 +1020,23 @@ function Cato_Timer:drawWidget(player)
       },
    }
 
-   local minutes = createTextElem(self.anchor, string.format('%d', timer.minutes), opts.minutes)
+   local minutes = createTextElem(self.anchor, timer.minutes, opts.minutes)
    local delimiter = createTextElem(self.anchor, ':', opts.delimiter)
    local seconds = createTextElem(self.anchor, string.format('%02d', timer.seconds), opts.seconds)
 
    local x = 0
+   local spacing = delimiter.width / 2
    if self.anchor.x == -1 then
-      x = minutes.width + delimiter.width / 2
+      x = minutes.width + spacing
    elseif self.anchor.x == 0 then
       x = 0
    elseif self.anchor.x == 1 then
-      x = -(seconds.width + delimiter.width / 2)
+      x = -(seconds.width + spacing)
    end
 
-   minutes.draw(x - delimiter.width / 2, 0)
+   minutes.draw(x - spacing, 0)
    delimiter.draw(x, 0)
-   seconds.draw(x + delimiter.width / 2, 0)
+   seconds.draw(x + spacing, 0)
 end
 
 CatoHUD:registerWidget('Cato_Timer', Cato_Timer)
@@ -963,10 +1046,11 @@ CatoHUD:registerWidget('Cato_Timer', Cato_Timer)
 Cato_FollowingPlayer = {}
 
 function Cato_FollowingPlayer:drawWidget(player)
-   if not player or player.state == PLAYER_STATE_SPECTATOR then return end
+   if not player then return end
 
    -- TODO: option for display on self
-   if player == localPlayer and not self.preview then return end
+   local preview = CatoHUD.preview or self.preview
+   if not preview and player == localPlayer then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1024,9 +1108,250 @@ CatoHUD:registerWidget('Cato_FPS', Cato_FPS)
 
 ----------------------------------------------------------------------------------------------------
 
+Cato_Scores = {}
+
+function Cato_Scores:drawWidget(player)
+   local opts = {
+      team = {
+         font = self.userData.fontFace,
+         color = ColorHEX(consoleGetVariable('cl_color_friend')),
+         size = self.userData.fontSize,
+         anchor = {x = 1},
+      },
+      delimiter = {
+         font = self.userData.fontFace,
+         color = Color(127, 127, 127),
+         size = self.userData.fontSize,
+         anchor = {x = 0},
+      },
+      enemy = {
+         font = self.userData.fontFace,
+         color = ColorHEX(consoleGetVariable('cl_color_enemy')),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+   }
+
+   local scoreTeam = nil
+   local indexTeam = nil
+   local scoreEnemy = nil
+   local indexEnemy = nil
+   local relativeColors = consoleGetVariable('cl_colors_relative') == 1
+   if hasTeams then
+      if player and player.state == PLAYER_STATE_INGAME then
+         indexTeam = player.team
+         indexEnemy = indexTeam % 2 + 1
+         if not relativeColors then
+            opts.team.color = teamColors[indexTeam]
+            opts.enemy.color = teamColors[indexEnemy]
+         end
+      else
+         indexTeam = TEAM_ALPHA
+         indexEnemy = TEAM_ZETA
+         opts.team.color = teamColors[indexTeam]
+         opts.enemy.color = teamColors[indexEnemy]
+      end
+      scoreTeam = world.teams[indexTeam].score
+      scoreEnemy = world.teams[indexEnemy].score
+   elseif gameMode == '1v1' or gameMode == 'ffa' then
+      local scoreWinner = nil
+      local scoreRunnerUp = nil
+      local indexWinner = nil
+      local indexRunnerUp = nil
+      for _, p in ipairs(players) do
+         if p.state == PLAYER_STATE_INGAME and p.connected then
+            if scoreWinner == nil or p.score > scoreWinner then
+               scoreWinner = p.score
+               indexWinner = p.index
+            elseif scoreRunnerUp == nil or p.score > scoreRunnerUp then
+               scoreRunnerUp = p.score
+               indexRunnerUp = p.index
+            end
+         end
+      end
+
+      scoreTeam = scoreWinner
+      indexTeam = indexWinner
+      scoreEnemy = scoreRunnerUp
+      indexEnemy = indexRunnerUp
+      if player and player.state == PLAYER_STATE_INGAME and player.connected then
+         if indexWinner == player.index then
+            scoreTeam = scoreWinner
+            indexTeam = indexWinner
+            scoreEnemy = scoreRunnerUp
+            indexEnemy = indexRunnerUp
+         elseif indexRunnerUp == player.index then
+            scoreTeam = scoreRunnerUp
+            indexTeam = indexRunnerUp
+            scoreEnemy = scoreWinner
+            indexEnemy = indexWinner
+         else
+            scoreTeam = player.score
+            indexTeam = player.index
+            scoreEnemy = scoreWinner
+            indexEnemy = indexWinner
+         end
+      end
+
+      -- Use player colors in FFA/1v1
+      if not relativeColors or not player or player.state ~= PLAYER_STATE_INGAME then
+         if indexTeam ~= nil then
+            opts.team.color = extendedColors[players[indexTeam].colorIndices[1] + 1]
+         end
+         if indexEnemy ~= nil then
+            opts.enemy.color = extendedColors[players[indexEnemy].colorIndices[1] + 1]
+         end
+      end
+   elseif gameMode == 'race' then
+      return -- TODO
+   elseif gameMode == 'training' then
+      return -- TODO
+   else
+      return
+   end
+
+   scoreTeam = createTextElem(self.anchor, scoreTeam or 'N/A', opts.team)
+   local delimiter = createTextElem(self.anchor, '    ', opts.delimiter)
+   scoreEnemy = createTextElem(self.anchor, scoreEnemy or 'N/A', opts.enemy)
+
+   -- TODO: This alignment bs has to be figured out
+   local x = 0
+   local spacing = delimiter.width / 2
+   if self.anchor.x == -1 then
+      x = scoreTeam.width + spacing
+   elseif self.anchor.x == 0 then
+      x = 0
+   elseif self.anchor.x == 1 then
+      x = -(scoreEnemy.width + spacing)
+   end
+
+   scoreTeam.draw(x - spacing, 0)
+   delimiter.draw(x, 0)
+   scoreEnemy.draw(x + spacing, 0)
+end
+
+CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_GameInfo = {}
+
+function Cato_GameInfo:drawWidget(player)
+   if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
+
+   local opts = {
+      font = self.userData.fontFace,
+      color = Color(255, 255, 255),
+      size = self.userData.fontSize,
+   }
+
+   local gameInfo = string.format('%s (%s) @ %s', string.upper(gameMode), rulesetName, mapTitle)
+   gameInfo = createTextElem(self.anchor, gameInfo, opts)
+   gameInfo.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_GameInfo', Cato_GameInfo)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_ReadyStatus = {}
+
+function Cato_ReadyStatus:drawWidget(player)
+   local preview = CatoHUD.preview or self.preview
+   if gameState ~= GAME_STATE_WARMUP and not preview then return end
+
+   local opts = {
+      font = self.userData.fontFace,
+      color = Color(255, 255, 255),
+      size = self.userData.fontSize,
+   }
+
+   local playersReady = 0
+   local playersGame = 0
+   for _, p in ipairs(players) do
+      if p.state == PLAYER_STATE_INGAME and p.connected then
+         playersGame = playersGame + 1
+         if p.ready then
+            playersReady = playersReady + 1
+         end
+      end
+   end
+
+   local ready = createTextElem(self.anchor, playersReady .. '/' .. playersGame .. ' ready', opts)
+   ready.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_ReadyStatus', Cato_ReadyStatus)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_GameMessages = {}
+
+function Cato_GameMessages:init()
+   self.lastTickSeconds = -1
+end
+
+function Cato_GameMessages:drawWidget(player)
+   local opts = {
+      font = self.userData.fontFace,
+      color = Color(255, 255, 255),
+      size = self.userData.fontSize,
+   }
+
+   local gameMessage = nil
+   if world.timerActive then
+      if gameState == GAME_STATE_WARMUP or gameState == GAME_STATE_ROUNDPREPARE then
+         local timer = formatTimer(gameTime, gameTimeLimit, true)
+         if self.lastTickSeconds ~= timer.seconds then
+            self.lastTickSeconds = timer.seconds
+            playSound('internal/ui/match/match_countdown_tick')
+         end
+         gameMessage = timer.seconds
+      elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
+         if gameTime < 2000 then
+            local overTimeCount = world.overTimeCount
+            if overTimeCount <= 0 then
+               gameMessage = (gameMode == 'race' or gameMode == 'training') and 'GO' or 'FIGHT'
+            else
+               gameMessage = 'OVERTIME #' .. overTimeCount
+            end
+         end
+      elseif gameState == GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON then
+         if player ~= nil then
+            local name = hasTeams and world.teams[player.team].name or player.name
+            gameMessage = name .. ' WINS'
+         else
+            gameMessage = 'Round Over'
+         end
+      elseif gameState == GAME_STATE_ROUNDCOOLDOWN_DRAW then
+         gameMessage = 'DRAW'
+      end
+   end
+
+   local preview = CatoHUD.preview or self.preview
+   if preview then
+      if gameMessage == nil then
+         gameMessage = '(Game Message)'
+      end
+   elseif gameMessage == nil or isInMenu() then
+      return
+   end
+
+   gameMessage = createTextElem(self.anchor, gameMessage, opts)
+   gameMessage.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_GameMessages', Cato_GameMessages)
+
+----------------------------------------------------------------------------------------------------
+
 Cato_LowAmmo = {}
 
-function Cato_LowAmmo:drawWidget(player)
+-- local attackButton = 'mouse1'
+-- local attackUnbound = false
+-- local attackCommand = '+attack; cl_camera_next_player; ui_RocketLagNullifier_attack 1'
+
+function Cato_LowAmmo:drawWidget(player, localPlayer)
    if not player or player.infoHidden then return end
 
    local weaponIndexSelected = player.weaponIndexSelected
@@ -1041,15 +1366,40 @@ function Cato_LowAmmo:drawWidget(player)
    -- TODO: lerp color from white to yellow to red?
    --       visual indicator of halfway point is useful!
    -- TODO: optimize by precalculating midpoints between low ammo to no ammo
-   -- just lerp from white to red for now
-      color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), ammo / ammoLow),
+   -- just lerp from yellow to red for now
+      color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow),
       size = self.userData.fontSize,
    }
 
-   -- local lowAmmoText = ammo <= and 'LOW AMMO: ' .. ammo or 'NO AMMO: ' .. ammo
-   local lowAmmoText = ammo
+   if ammo <= 0 then
+      opts.color = Color(95, 95, 95)
+   end
 
-   local ammoWarning = createTextElem(self.anchor, lowAmmoText, opts)
+   -- FIXME: Doesn't work. Possible fixes:
+   --        (1) Temporarily unbind +attack until more ammo or weapon is switched
+   --        (2) Use a custom command for +attack (requires "holding detection"?)
+   --        (3) Just unbind +attack if no ammo for current weapon
+   -- if self.userData.preventEmptyAttack and player == localPlayer and player.buttons.attack then
+   --    consolePerformCommand('-attack')
+   --    consolePrint('No ammo. Prevent shooting')
+   -- end
+   -- attackButton = bindReverseLookup('+attack', 'game')
+   -- if player == localPlayer and self.userData.preventEmptyAttack then
+   --    if ammo > 0 then
+   --       consolePerformCommand('bind game ' .. attackButton .. ' ' .. attackCommand)
+   --    elseif ammo == 1 then
+   --       if player.buttons.attack then
+   --          consolePerformCommand('-attack')
+   --       end
+   --    else
+   --       consolePerformCommand('unbind game ' .. attackButton)
+   --    end
+   -- end
+
+   -- local lowAmmoText = ammo <= 0 and 'LOW AMMO: ' .. ammo or 'NO AMMO: ' .. ammo
+   -- local ammoWarning = createTextElem(self.anchor, lowAmmoText, opts)
+
+   local ammoWarning = createTextElem(self.anchor, ammo, opts)
    ammoWarning.draw(0, 0)
 end
 
