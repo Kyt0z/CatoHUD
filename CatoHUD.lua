@@ -906,201 +906,208 @@ local function uiRowCheckbox(pos, text, value, textOpts, checkboxOpts)
 end
 
 -- FIXME: Copied from reflexcore, DIY
-__editBox_flash = 0; -- hmm hidden globals
-__editBox_offetX = 0;
-__editBox_offetX_id = 0;
-function ui2EditBox(text, x, y, w, optargs, pos)
-   local x = pos.x
-   local y = pos.y
-   local optargs = optargs or {};
-   local optionalId = optargs.optionalId or 0;
-   local enabled = optargs.enabled == nil and true or optargs.enabled;
-   local intensity = optargs.intensity or 1;
-   local giveFocus = (optargs.giveFocus ~= nil) and optargs.giveFocus or false;
-   local bgcoltype = optargs.bgcoltype and optargs.bgcoltype or UI2_COLTYPE_BACKGROUND;
+__editBox_flash = 0 -- hmm hidden globals
+__editBox_offetX = 0
+__editBox_offetX_id = 0
+function uiEditBox(pos, text, width, opts)
+   -- WIDGET_PROPERTIES_COL_INDENT = 250
+   local enabled = opts.enabled == nil and true or opts.enabled
+   local intensity = opts.intensity or 1
+   local giveFocus = (opts.giveFocus ~= nil) and opts.giveFocus or false
+   local pressed = false
 
-   local h = 35;
-   local padx = h*0.3;
+   local height = 35
+   local padding = height * 0.3
 
-   local t = nil;
-   if enabled == false then
-      t = {};
-      t.text = text;
-      t.focus = false;
-      t.apply = false;
-      t.hoverAmount = 0;
+   local t = nil
+   if enabled then
+      t = {
+         text = value,
+         focus = false,
+         apply = false,
+         hoverAmount = 0,
+      }
    else
-      t = textRegion(x, y, w, h, text, optionalId, giveFocus);
+      t = textRegion(pos.x, pos.y, width, height, value, opts.id or 0, giveFocus)
    end
 
-   local textMaybeHidden = t.text;
-   if optargs.hideAsPassword then
-      local l = string.len(textMaybeHidden);
-      textMaybeHidden = "";
-      for i = 1, l do
-         textMaybeHidden = textMaybeHidden .. "*";
-      end
+   local bgColor = lerpColor(opts.bg.base, opts.bg.hover, hoverAmount or 0, opts.intensity)
+   local fgColor = lerpColor(opts.fg.base, opts.fg.hover, hoverAmount or 0, opts.intensity)
+   if pressed then
+      fgColor = copyColor(opts.fg.disabled, intensity)
+   elseif enabled then
+      fgColor = copyColor(opts.fg.pressed, intensity)
    end
 
-   nvgSave();
+   nvgSave()
 
    -- bg
-   local bgc = ui2FormatColor(bgcoltype, intensity, t.hoverAmount, enabled);
-   nvgBeginPath();
-   nvgRect(x, y, w, h);
-   nvgFillColor(bgc);
-   nvgFill();
+   nvgBeginPath()
+   nvgRect(pos.x, pos.y, width, height)
+   nvgFillColor(bgColor)
+   nvgFill()
 
    -- apply font & calculate cursor pos
-   if optargs.nofont ~= true then
-      ui2FontNormal();
-   end
-   local textUntilCursor = string.sub(textMaybeHidden, 0, t.cursor);
-   local textWidthAtCursor = nvgTextWidth(textUntilCursor);
+   nvgFontSize(32)
+   nvgFontFace('titilliumWeb-regular')
+   local textUntilCursor = string.sub(t.text, 0, t.cursor)
+   local textWidthAtCursor = nvgTextWidth(textUntilCursor)
 
    -- text positioning (this may be a frame behind at this point, but it used for input, one what is on the screen, so that's fine)
-   local offsetx = 0;
+   local offsetx = 0
    if t.focus then -- only use __editBox_offetX if we have focus
       if __editBox_offetX_id == t.id then
-         offsetx = __editBox_offetX;
+         offsetx = __editBox_offetX
       else
-         __editBox_offetX_id = t.id;
-         offsetx = 0;
+         __editBox_offetX_id = t.id
+         offsetx = 0
       end
    end
-   local textx = x+padx + offsetx;
-   local texty = y+h*0.5;
+   local textx = pos.x + padding + offsetx
+   local texty = pos.y + height * 0.5
 
    -- handle clicking inside region to change cursor location / drag select multiple characters
    -- (note: this can update the cursor inside t)
    if (t.leftDown or t.leftHeld) and t.mouseInside then
-      local mousex = t.mousex;
-      local lentext = string.len(textMaybeHidden);
-      local prevDistanceFromCursor;
-      local newCusror = lentext;
+      local mousex = t.mousex
+      local lentext = string.len(t.text)
+      local prevDistanceFromCursor
+      local newCusror = lentext
       for l = 0, lentext do
-         local s = string.sub(textMaybeHidden, 0, l);
-         local tw = nvgTextWidth(s);
-         local endtext = textx + tw;
+         local s = string.sub(t.text, 0, l)
+         local tw = nvgTextWidth(s)
+         local endtext = textx + tw
 
-         local distanceFromCursor = math.abs(endtext - t.mousex);
+         local distanceFromCursor = math.abs(endtext - t.mousex)
 
          -- was prev distance closer?
          if l > 0 then
             if distanceFromCursor > prevDistanceFromCursor then
-               newCusror = l-1;
-               break;
+               newCusror = l - 1
+               break
             end
          end
 
-         prevDistanceFromCursor = distanceFromCursor;
+         prevDistanceFromCursor = distanceFromCursor
       end
 
-      -- drag selection only if we were holding the mouse (and didn't just push it now), 
+      -- drag selection only if we were holding the mouse (and didn't just push it now),
       -- otherwise it's a click and we just want to go to that cursor
-      local dragSelection = t.leftHeld and not t.leftDown;
+      local dragSelection = t.leftHeld and not t.leftDown
 
       -- set cursor, and read updated cursors for rendering below
-      t.cursorStart, t.cursor = textRegionSetCursor(t.id, newCusror, dragSelection);
+      t.cursorStart, t.cursor = textRegionSetCursor(t.id, newCusror, dragSelection)
    end
 
    -- update these, cursor may have changed!
-   textUntilCursor = string.sub(textMaybeHidden, 0, t.cursor);
-   textWidthAtCursor = nvgTextWidth(textUntilCursor);
+   textUntilCursor = string.sub(t.text, 0, t.cursor)
+   textWidthAtCursor = nvgTextWidth(textUntilCursor)
 
    -- keep the cursor inside the bounds of the text entry
    if t.focus then
-      -- the string buffer can be wider than this edit box, when that happens, we need to 
+      -- the string buffer can be wider than this edit box, when that happens, we need to
       -- clip the texture, but also ensure that the cursor remains visible
-      local cursorx = (x+padx+offsetx) + textWidthAtCursor;
-      local endx = (x+w-padx);
-      local cursorpast = cursorx - endx;
+      local cursorx = (pos.x + padding + offsetx) + textWidthAtCursor
+      local endx = (pos.x + width - padding)
+      local cursorpast = cursorx - endx
       if cursorpast > 0 then
-         offsetx = offsetx - cursorpast;
+         offsetx = offsetx - cursorpast
       end
 
-      local startx = x+padx;
-      local cursorearly = startx - cursorx;
+      local startx = pos.x + padding
+      local cursorearly = startx - cursorx
       if cursorearly > 0 then
-         offsetx = offsetx + cursorearly;
+         offsetx = offsetx + cursorearly
       end
 
       -- store into common global var, we're the entry with focus
-      __editBox_offetX = offsetx;
-      __editBox_offetX_id = t.id;
+      __editBox_offetX = offsetx
+      __editBox_offetX_id = t.id
    else
       -- no-longer holding it, reset
       if __editBox_offetX_id == t.id then
-         __editBox_offetX_id = 0;
+         __editBox_offetX_id = 0
       end
    end
 
    -- update these, offsset may have changed!
-   textx = x+padx + offsetx;
+   textx = pos.x + padding + offsetx
 
    -- scissor text & cursor etc
-   local halfpadx = padx*.5;
-   nvgIntersectScissor(x+halfpadx, y, w-halfpadx*2, h);
-
-   -- colText
-   local colText = ui2FormatColor(UI2_COLTYPE_TEXT, intensity, t.hoverAmount, enabled);
+   local halfpadding = padding * 0.5
+   nvgIntersectScissor(pos.x + halfpadding, y, width - halfpadding * 2, height)
 
    -- cursor
    if t.focus then
-      local cursorFlashPeriod = 0.25;
+      local cursorFlashPeriod = 0.25
 
-      __editBox_flash = __editBox_flash + deltaTime;
+      __editBox_flash = __editBox_flash + deltaTime
 
       -- if cursor moves, restart flash
       if t.cursorChanged then
-         __editBox_flash = 0;
+         __editBox_flash = 0
       end
 
       -- multiple selection, draw selection field
       if t.cursor ~= t.cursorStart then
-         local textUntilCursorStart = string.sub(textMaybeHidden, 0, t.cursorStart);
-         local textWidthAtCursorStart = nvgTextWidth(textUntilCursorStart);
+         local textUntilCursorStart = string.sub(t.text, 0, t.cursorStart)
+         local textWidthAtCursorStart = nvgTextWidth(textUntilCursorStart)
 
-         local selx = math.min(textWidthAtCursor, textWidthAtCursorStart);
-         local selw = math.abs(textWidthAtCursor - textWidthAtCursorStart);
-         nvgBeginPath();
-         nvgRect(textx + selx, texty - h * .35, selw, h * .7);
-         nvgFillColor(Color(204, 204, 160, 128));
-         nvgFill();
+         local selx = math.min(textWidthAtCursor, textWidthAtCursorStart)
+         local selw = math.abs(textWidthAtCursor - textWidthAtCursorStart)
+         nvgBeginPath()
+         nvgRect(textx + selx, texty - height * 0.35, selw, height * 0.7)
+         nvgFillColor(Color(204, 204, 160, 128))
+         nvgFill()
       end
 
       -- flashing cursor
       if __editBox_flash < cursorFlashPeriod then
-         nvgBeginPath();
-         nvgMoveTo(textx + textWidthAtCursor, texty - h*.35);
-         nvgLineTo(textx + textWidthAtCursor, texty + h*.35);
-         nvgStrokeColor(colText);
-         nvgStroke();
+         nvgBeginPath()
+         nvgMoveTo(textx + textWidthAtCursor, texty - height * 0.35)
+         nvgLineTo(textx + textWidthAtCursor, texty + height * 0.35)
+         nvgStrokeColor(fgColor)
+         nvgStroke()
       else
-         if __editBox_flash > cursorFlashPeriod*2 then
-            __editBox_flash = 0;
+         if __editBox_flash > cursorFlashPeriod * 2 then
+            __editBox_flash = 0
          end
       end
    end
 
    -- draw text
-   nvgFillColor(colText);
-   nvgTextAlign(NVG_ALIGN_LEFT, NVG_ALIGN_MIDDLE);
-   nvgText(textx, texty, textMaybeHidden);
+   nvgFillColor(fgColor)
+   nvgTextAlign(0, 2)
+   nvgText(textx, texty, t.text)
 
-   nvgRestore();
+   nvgRestore()
 
    if t.apply then
       -- apply, return new value
-      playSound("internal/ui/sounds/buttonClick");
-      return t.text;
+      playSound("internal/ui/sounds/buttonClick")
+      return t.text
    elseif t.focus then
       -- return value at time of focus started
-      return t.textInitial;
+      return t.textInitial
    else
       -- return value client passed in
-      return text;
+      return text
    end
+end
+
+local function uiRowEditBox(pos, text, width, value, textOpts, editBoxOpts)
+   -- WIDGET_PROPERTIES_COL_INDENT = 250
+   local diff = editBoxOpts.size - textOpts.size
+   pos.y = pos.y + max(0, diff / 2)
+   local label = nvgTextUI(pos, text, textOpts)
+
+   local padding = label.width + 8
+   pos.x = pos.x + padding
+   pos.y = pos.y - label.height - diff / 2
+   value = uiEditBox(pos, value, width, editBoxOpts)
+   pos.y = pos.y + max(label.height, editBoxOpts.size) -- padding
+   pos.x = pos.x - padding
+   return value
 end
 
 -- (:.*?:)|\^[0-9a-zA-Z]
@@ -1226,6 +1233,19 @@ function CatoHUD:registerWidget(widgetName, widget)
                disabled = Color(100, 100, 100, 255 * intensity),
             },
          },
+         editbox = {
+            bg = {
+               base = Color(26, 26, 26, 255),
+               hover = Color(39, 39, 39, 255),
+            },
+            fg = {
+                  base = Color(222, 222, 222, 255),
+                  hover = Color(255, 255, 255, 255),
+                  pressed = Color(200, 200, 200, 255),
+                  disabled = Color(100, 100, 100, 255),
+               },
+            },
+         },
       }
 
       local pos = {x = x, y = y}
@@ -1235,10 +1255,10 @@ function CatoHUD:registerWidget(widgetName, widget)
       end
       uiDelimiter(pos, opts.delimiter)
 
-      -- if widget.canAnchorWidget and widget.userData and widget.userData.anchorWidget then
-      --    widget.userData.anchorWidget = ui2EditBox(widget.userData.anchorWidget, pos.x, pos.y, 400, {}, pos)
-      --    uiDelimiter(pos, opts.delimiter)
-      -- end
+      if widget.canAnchorWidget and widget.userData and widget.userData.anchorWidget then
+         widget.userData.anchorWidget = uiRowEditBox(pos, widget.userData.anchorWidget, 400, opts.medium, opts.editbox)
+         uiDelimiter(pos, opts.delimiter)
+      end
 
       if widget.drawOpts then
          nvgTextUI(pos, widgetName .. ' Options', opts.medium)
@@ -1346,6 +1366,8 @@ function CatoHUD:registerWidget(widgetName, widget)
          widget.x = 0
          widget.y = 0
       end
+      widget.width = 0
+      widget.height = 0
 
       widget:drawWidget()
    end
@@ -1473,6 +1495,9 @@ function Cato_Timer:drawWidget()
    minutes.draw(x - spacing, self.y)
    delimiter.draw(x, self.y)
    seconds.draw(x + spacing, self.y)
+
+   self.width = minutes.width + delimiter.width + seconds.width
+   self.height = max(max(minutes.height, seconds.height), delimiter.height)
 end
 
 CatoHUD:registerWidget('Cato_Timer', Cato_Timer)
@@ -1518,6 +1543,9 @@ function Cato_FollowingPlayer:drawWidget()
 
    label.draw(x, y)
    name.draw(x, y + label.height - offset)
+
+   self.width = max(label.width, name.width)
+   self.height = label.height + name.height
 end
 
 CatoHUD:registerWidget('Cato_FollowingPlayer', Cato_FollowingPlayer)
@@ -1537,6 +1565,9 @@ function Cato_FPS:drawWidget()
 
    fps = createTextElem(self.anchor, fps .. 'fps', opts)
    fps.draw(self.x, self.y)
+
+   self.width = fps.width
+   self.height = fps.height
 end
 
 CatoHUD:registerWidget('Cato_FPS', Cato_FPS)
@@ -1663,6 +1694,9 @@ function Cato_Scores:drawWidget()
    scoreTeam.draw(x - spacing, self.y)
    delimiter.draw(x, self.y)
    scoreEnemy.draw(x + spacing, self.y)
+
+   self.width = scoreTeam.width + delimiter.width + scoreEnemy.width
+   self.height = max(max(scoreTeam.height, delimiter.height), scoreEnemy.height)
 end
 
 CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
@@ -1682,6 +1716,9 @@ function Cato_GameModeName:drawWidget()
 
    local gameModeName = createTextElem(self.anchor, gameMode, opts)
    gameModeName.draw(self.x, self.y)
+
+   self.width = gameModeName.width
+   self.height = gameModeName.height
 end
 
 CatoHUD:registerWidget('Cato_GameModeName', Cato_GameModeName)
@@ -1701,6 +1738,9 @@ function Cato_RulesetName:drawWidget()
 
    local rulesetName = createTextElem(self.anchor, ruleset, opts)
    rulesetName.draw(self.x, self.y)
+
+   self.width = rulesetName.width
+   self.height = rulesetName.height
 end
 
 CatoHUD:registerWidget('Cato_RulesetName', Cato_RulesetName)
@@ -1720,6 +1760,9 @@ function Cato_MapName:drawWidget()
 
    local mapName = createTextElem(self.anchor, mapTitle, opts)
    mapName.draw(self.x, self.y)
+
+   self.width = mapName.width
+   self.height = mapName.height
 end
 
 CatoHUD:registerWidget('Cato_MapName', Cato_MapName)
@@ -1750,6 +1793,9 @@ function Cato_ReadyStatus:drawWidget()
 
    local ready = createTextElem(self.anchor, playersReady .. '/' .. playersGame .. ' ready', opts)
    ready.draw(self.x, self.y)
+
+   self.width = ready.width
+   self.height = ready.height
 end
 
 CatoHUD:registerWidget('Cato_ReadyStatus', Cato_ReadyStatus)
@@ -1809,6 +1855,9 @@ function Cato_GameMessages:drawWidget()
 
    gameMessage = createTextElem(self.anchor, gameMessage, opts)
    gameMessage.draw(self.x, self.y)
+
+   self.width = gameMessage.width
+   self.height = gameMessage.height
 end
 
 CatoHUD:registerWidget('Cato_GameMessages', Cato_GameMessages)
@@ -1828,6 +1877,9 @@ function Cato_Speed:drawWidget()
 
    local ups = createTextElem(self.anchor, ceil(povPlayer.speed) .. 'ups', opts)
    ups.draw(self.x, self.y)
+
+   self.width = ups.width
+   self.height = ups.height
 end
 
 CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
@@ -1890,6 +1942,9 @@ function Cato_LowAmmo:drawWidget()
 
    local ammoWarning = createTextElem(self.anchor, ammo, opts)
    ammoWarning.draw(self.x, self.y)
+
+   self.width = ammoWarning.width
+   self.height = ammoWarning.height
 end
 
 CatoHUD:registerWidget('Cato_LowAmmo', Cato_LowAmmo)
@@ -1919,6 +1974,9 @@ function Cato_PacketLoss:drawWidget()
 
    local packetloss = createTextElem(self.anchor, povPlayer.packetLoss .. ' PL', opts)
    packetloss.draw(self.x, self.y)
+
+   self.width = packetloss.width
+   self.height = packetloss.height
 end
 
 CatoHUD:registerWidget('Cato_PacketLoss', Cato_PacketLoss)
@@ -1948,6 +2006,9 @@ function Cato_Ping:drawWidget()
 
    local ping = createTextElem(self.anchor, povPlayer.latency .. 'ms', opts)
    ping.draw(self.x, self.y)
+
+   self.width = ping.width
+   self.height = ping.height
 end
 
 CatoHUD:registerWidget('Cato_Ping', Cato_Ping)
@@ -1982,6 +2043,9 @@ function Cato_HealthNumber:drawWidget()
 
    local health = createTextElem(self.anchor, playerHealth, opts)
    health.draw(self.x, self.y)
+
+   self.width = health.width
+   self.height = health.height
 end
 
 CatoHUD:registerWidget('Cato_HealthNumber', Cato_HealthNumber)
@@ -2067,6 +2131,9 @@ function Cato_ArmorNumber:drawWidget()
 
    local armor = createTextElem(self.anchor, playerArmor, opts)
    armor.draw(self.x, self.y)
+
+   self.width = armor.width
+   self.height = armor.height
 end
 
 CatoHUD:registerWidget('Cato_ArmorNumber', Cato_ArmorNumber)
@@ -2089,6 +2156,9 @@ function Cato_ArmorIcon:drawWidget()
 
    local armor = createSvgElem(self.anchor, 'internal/ui/icons/armor', opts)
    armor.draw(self.x, self.y)
+
+   self.width = armor.width
+   self.height = armor.height
 end
 
 CatoHUD:registerWidget('Cato_ArmorIcon', Cato_ArmorIcon)
