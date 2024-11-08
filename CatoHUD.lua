@@ -162,6 +162,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeHuge,
          textAnchor = {x = 1},
@@ -185,6 +186,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeHuge,
          textAnchor = {x = -1},
@@ -208,6 +210,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          iconSize = 24,
          show = {
             dead = true,
@@ -229,6 +232,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -251,6 +255,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -273,6 +278,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -295,6 +301,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -317,6 +324,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -339,6 +347,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -361,6 +370,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeMedium,
          show = {
@@ -383,6 +393,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -405,6 +416,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -428,6 +440,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -450,6 +463,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -472,6 +486,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          countDown = false,
          hideSeconds = false,
          fontFace = defaultFontFace,
@@ -496,6 +511,7 @@ local defaultSettings = {
          scale = '1',
       },
       userData = {
+         anchorWidget = '',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeBig,
          textAnchor = {x = 0},
@@ -754,6 +770,10 @@ local function uiDelimiter(pos, opts)
 end
 
 local function createTextElem(anchor, text, opts)
+   -- FIXME: Is this a good idea?
+   -- opts.size = opts.size * viewport.height / 1080
+   -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
+
    nvgFontBlur(0)
    nvgFontFace(opts.font)
    nvgFontSize(opts.size)
@@ -795,6 +815,10 @@ local function createTextElem(anchor, text, opts)
 end
 
 local function createSvgElem(anchor, image, opts)
+   -- FIXME: Is this a good idea?
+   -- opts.size = opts.size * viewport.height / 1080
+   -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
+
    local draw = function(x, y)
       x = x - anchor.x * opts.size
       y = y - anchor.y * opts.size
@@ -1079,13 +1103,13 @@ function CatoHUD:registerWidget(widgetName, widget)
       end
 
       if not widgetShow.freecam then
-         if localPov and povPlayer.state ~= PLAYER_STATE_INGAME then
+         if localPov and povPlayer and povPlayer.state ~= PLAYER_STATE_INGAME then
             return false
          end
       end
 
       if not widgetShow.editor then
-         if povPlayer.state == PLAYER_STATE_EDITOR then
+         if povPlayer and povPlayer.state == PLAYER_STATE_EDITOR then
             return false
          end
       end
@@ -1094,7 +1118,7 @@ function CatoHUD:registerWidget(widgetName, widget)
    end
 
    function widget:draw()
-      if not widget:shouldShow(povPlayer) then
+      if not widget:shouldShow() then
          return
       end
 
