@@ -246,16 +246,40 @@ local defaultSettings = {
          },
       },
    },
+   ['Cato_Time'] = {
+      visible = true,
+      props = {
+         offset = '0 18',
+         anchor = '1 -1',
+         zIndex = '-999',
+         scale = '1',
+      },
+      userData = {
+         anchorWidget = '',
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         offsetUTC = 2,
+         show = {
+            dead = true,
+            race = true,
+            menu = true,
+            hudOff = false,
+            gameOver = true,
+            freecam = true,
+            editor = true,
+         },
+      },
+   },
    ['Cato_Scores'] = {
       visible = true,
       props = {
-         offset = '-3 18',
+         offset = '0 23',
          anchor = '1 -1',
          zIndex = '0',
          scale = '1',
       },
       userData = {
-         anchorWidget = '',
+         anchorWidget = 'Cato_Time',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -272,13 +296,13 @@ local defaultSettings = {
    ['Cato_GameModeName'] = {
       visible = true,
       props = {
-         offset = '-3 41',
+         offset = '0 23',
          anchor = '1 -1',
          zIndex = '0',
          scale = '1',
       },
       userData = {
-         anchorWidget = '',
+         anchorWidget = 'Cato_Scores',
          fontFace = defaultFontFace,
          fontSize = defaultFontSizeSmall,
          show = {
@@ -477,7 +501,7 @@ local defaultSettings = {
          },
       },
    },
-   ['Cato_Timer'] = {
+   ['Cato_GameTime'] = {
       visible = true,
       props = {
          offset = '0 -135',
@@ -718,17 +742,106 @@ local function damageToKill(health, armor, armorProtection)
    return min(armor, health * (armorProtection + 1)) + health
 end
 
-local function formatTimer(elapsed, limit, countDown)
+----------------------------------------------------------------------------------------------------
+
+local MS_IN_S = 1000
+local S_IN_M = 60
+local M_IN_H = 60
+local H_IN_D = 24
+local D_IN_Y = 365
+local D_IN_LY = 366
+
+local S_IN_H = M_IN_H * S_IN_M
+local S_IN_D = H_IN_D * S_IN_H
+local S_IN_Y = D_IN_Y * S_IN_D
+local S_IN_LY = D_IN_LY * S_IN_D
+
+local MS_IN_M = MS_IN_S * S_IN_M
+local MS_IN_H = MS_IN_S * S_IN_H
+local MS_IN_D = MS_IN_S * S_IN_D
+local MS_IN_Y = MS_IN_S * S_IN_Y
+local MS_IN_LY = MS_IN_S * S_IN_LY
+
+local function formatTimeMs(elapsed, limit, countDown)
    if countDown then
-      local remaining = 1000 + limit - elapsed
+      local remaining = MS_IN_S + limit - elapsed
       return {
-         minutes = max(floor(remaining / 60000), 0),
-         seconds = (floor(remaining / 1000) % 60 + 60) % 60,
+         hours = max(floor(remaining / MS_IN_H), 0) % 24,
+         minutes = max(floor(remaining / MS_IN_M), 0) % 60,
+         seconds = (floor(remaining / MS_IN_S) % 60 + 60) % 60,
       }
    end
    return {
-      minutes = floor(elapsed / 60000),
-      seconds = floor((elapsed / 1000) % 60),
+      hours = floor((elapsed / MS_IN_H) % 24),
+      minutes = floor((elapsed / MS_IN_M) % 60),
+      seconds = floor((elapsed / MS_IN_S) % 60),
+   }
+end
+
+local function formatDay(day)
+   local ext = {'th', 'st', 'nd', 'rd'}
+   local lastDigit = day % 10
+   return day .. ext[(lastDigit >= 4 or (day >= 11 and day <= 13)) and 1 or lastDigit + 1]
+end
+
+local MONTHS = {
+   'January', 'February', 'March', 'April', 'May', 'June',
+   'July', 'August', 'September', 'October', 'November', 'December'
+}
+local function formatMonth(month)
+   return MONTHS[month]
+end
+
+local function isLeapYear(year)
+   return (year % 4 == 0 and year % 100 ~= 0) or (year % 400 == 0)
+end
+
+local function secondsInYear(year)
+   return isLeapYear(year) and S_IN_LY or S_IN_Y
+end
+
+local function secondsInMonth(month, year)
+   if month == 2 then
+      return S_IN_D * (isLeapYear(year) and 29 or 28)
+   end
+   return S_IN_D * (30 + month % 2)
+end
+
+function formatEpochTime(epochTimestamp, offsetUTC)
+   local epochSeconds = epochTimestamp + offsetUTC * S_IN_H
+
+   local year = 1970
+   local secondsInYearCurrent = secondsInYear(year)
+   while epochSeconds >= secondsInYearCurrent do
+      epochSeconds = epochSeconds - secondsInYearCurrent
+      year = year + 1
+      secondsInYearCurrent = secondsInYear(year)
+   end
+
+   local month = 1
+   local secondsInMonthCurrent = secondsInMonth(month, year)
+   while epochSeconds >= secondsInMonthCurrent do
+      epochSeconds = epochSeconds - secondsInMonthCurrent
+      month = month + 1
+      secondsInMonthCurrent = secondsInMonth(month, year)
+   end
+
+   local day = floor(epochSeconds / S_IN_D)
+   epochSeconds = epochSeconds - day * S_IN_D
+
+   local hour = floor(epochSeconds / S_IN_H)
+   epochSeconds = epochSeconds - hour * S_IN_H
+
+   local minute = floor(epochSeconds / S_IN_M)
+   epochSeconds = epochSeconds - minute * S_IN_M
+
+   return {
+      year = year,
+      month = month,
+      day = day,
+      hour = hour,
+      minute = minute,
+      second = epochSeconds,
    }
 end
 
@@ -1400,7 +1513,7 @@ function CatoHUD:drawWidget()
       warmupTimeElapsed = 0
       previousMap = map
    elseif gameState == GAME_STATE_WARMUP then
-      warmupTimeElapsed = warmupTimeElapsed + deltaTime * 1000
+      warmupTimeElapsed = warmupTimeElapsed + deltaTime * MS_IN_S
    elseif checkResetConsoleVariable('ui_CatoHUD_warmuptimer_reset', 0) ~= 0 then
       warmupTimeElapsed = 0
    else
@@ -1430,9 +1543,30 @@ CatoHUD:registerWidget('CatoHUD', CatoHUD)
 
 ----------------------------------------------------------------------------------------------------
 
-Cato_Timer = {}
+Cato_GameTime = {}
 
-function Cato_Timer:drawWidget()
+function Cato_GameTime:drawWidget()
+   local opts = {
+      minutes = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = 1},
+      },
+      seconds = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+      delimiter = {
+         font = self.userData.fontFace,
+         color = Color(127, 127, 127),
+         size = self.userData.fontSize,
+         anchor = {x = 0},
+      },
+   }
+
    local hideSeconds = self.userData.hideSeconds
 
    local timeElapsed = 0
@@ -1443,32 +1577,12 @@ function Cato_Timer:drawWidget()
       hideSeconds = (hideSeconds and gameTimeLimit - gameTime > 30000)
    end
 
-   local timer = formatTimer(timeElapsed, gameTimeLimit, self.userData.countDown)
-
-   local opts = {
-      minutes = {
-         font = self.userData.fontFace,
-         color = Color(255, 255, 255),
-         size = self.userData.fontSize,
-         anchor = {x = 1},
-      },
-      delimiter = {
-         font = self.userData.fontFace,
-         color = Color(127, 127, 127),
-         size = self.userData.fontSize,
-         anchor = {x = 0},
-      },
-      seconds = {
-         font = self.userData.fontFace,
-         color = Color(255, 255, 255),
-         size = self.userData.fontSize,
-         anchor = {x = -1},
-      },
-   }
+   local timer = formatTimeMs(timeElapsed, gameTimeLimit, self.userData.countDown)
 
    local minutes = createTextElem(self.anchor, timer.minutes, opts.minutes)
    local delimiter = createTextElem(self.anchor, ':', opts.delimiter)
-   local seconds = createTextElem(self.anchor, string.format('%02d', timer.seconds), opts.seconds)
+   local seconds = hideSeconds and 'xx' or string.format('%02d', timer.seconds)
+   seconds = createTextElem(self.anchor, seconds, opts.seconds)
 
    local x = self.x
    local spacing = delimiter.width / 2
@@ -1485,10 +1599,10 @@ function Cato_Timer:drawWidget()
    seconds.draw(x + spacing, self.y)
 
    self.width = minutes.width + delimiter.width + seconds.width
-   self.height = max(max(minutes.height, seconds.height), delimiter.height)
+   self.height = max(minutes.height, seconds.height, delimiter.height)
 end
 
-CatoHUD:registerWidget('Cato_Timer', Cato_Timer)
+CatoHUD:registerWidget('Cato_GameTime', Cato_GameTime)
 
 ----------------------------------------------------------------------------------------------------
 
@@ -1562,6 +1676,134 @@ CatoHUD:registerWidget('Cato_FPS', Cato_FPS)
 
 ----------------------------------------------------------------------------------------------------
 
+Cato_Time = {}
+
+function Cato_Time:drawWidget()
+   local opts = {
+      delimiter = {
+         font = self.userData.fontFace,
+         color = Color(127, 127, 127),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+      year = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+      month = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+      day = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+      hour = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+      minute = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+      second = {
+         font = self.userData.fontFace,
+         color = Color(255, 255, 255),
+         size = self.userData.fontSize,
+         anchor = {x = -1},
+      },
+   }
+
+   -- epochTime only
+   -- if true then
+   --    local time = formatEpochTime(epochTime, self.userData.offsetUTC)
+   --    local epochSeconds = epochTime + self.userData.offsetUTC * S_IN_H
+   --    opts.second.anchor = self.anchor
+   --    epochSeconds = createTextElem(self.anchor, epochSeconds, opts.second)
+   --    epochSeconds.draw(self.x, self.y)
+   --    self.width = epochSeconds.width
+   --    self.height = epochSeconds.height
+   --    return
+   -- end
+
+   local time = formatEpochTime(epochTime, self.userData.offsetUTC)
+
+   -- local day = createTextElem(self.anchor, formatDay(time.day), opts.day)
+   -- local delimiterDate1 = createTextElem(self.anchor, ' ', opts.delimiter)
+   -- local month = createTextElem(self.anchor, formatMonth(time.month), opts.month)
+   -- self.width = self.width + day.width + delimiterDate1.width + month.width
+   -- self.height = max(self.height, day.height, delimiterDate1.height, month.height)
+
+   -- local delimiterDate2 = createTextElem(self.anchor, ' ', opts.delimiter)
+   -- local year = createTextElem(self.anchor, time.year, opts.year)
+   -- self.width = self.width + delimiterDate2.width + year.width
+   -- self.height = max(self.height, delimiterDate2.height, year.height)
+
+   -- local delimiter = createTextElem(self.anchor, ' ', opts.delimiter)
+   -- self.width = self.width + delimiter.width
+   -- self.height = max(self.height, delimiter.height)
+
+   local hour = createTextElem(self.anchor, string.format('%02d', time.hour), opts.hour)
+   local delimiterTime1 = createTextElem(self.anchor, ':', opts.delimiter)
+   local minute = createTextElem(self.anchor, string.format('%02d', time.minute), opts.minute)
+   self.width = self.width + hour.width + delimiterTime1.width + minute.width
+   self.height = max(self.height, hour.height, delimiterTime1.height, minute.height)
+
+   -- local delimiterTime2 = createTextElem(self.anchor, ':', opts.delimiter)
+   -- local second = createTextElem(self.anchor, string.format('%02d', time.second), opts.second)
+   -- self.width = self.width + delimiterTime2.width + second.width
+   -- self.height = max(self.height, delimiterTime2.height, second.height)
+
+   local x = self.x
+   if self.anchor.x == -1 then
+      x = x + 0
+   elseif self.anchor.x == 0 then
+      x = x - self.width / 2
+   elseif self.anchor.x == 1 then
+      x = x - self.width
+   end
+
+   -- day.draw(x, self.y)
+   -- x = x + day.width
+   -- delimiterDate1.draw(x, self.y)
+   -- x = x + delimiterDate1.width
+   -- month.draw(x, self.y)
+   -- x = x + month.width
+
+   -- delimiterDate2.draw(x, self.y)
+   -- x = x + delimiterDate2.width
+   -- year.draw(x, self.y)
+   -- x = x + year.width
+
+   -- delimiter.draw(x, self.y)
+   -- x = x + delimiter.width
+
+   hour.draw(x, self.y)
+   x = x + hour.width
+   delimiterTime1.draw(x, self.y)
+   x = x + delimiterTime1.width
+   minute.draw(x, self.y)
+   x = x + minute.width
+
+   -- delimiterTime2.draw(x, self.y)
+   -- x = x + delimiterTime2.width
+   -- second.draw(x, self.y)
+end
+
+CatoHUD:registerWidget('Cato_Time', Cato_Time)
+
+----------------------------------------------------------------------------------------------------
+
 Cato_Scores = {}
 
 function Cato_Scores:drawWidget()
@@ -1572,17 +1814,17 @@ function Cato_Scores:drawWidget()
          size = self.userData.fontSize,
          anchor = {x = 1},
       },
-      delimiter = {
-         font = self.userData.fontFace,
-         color = Color(127, 127, 127),
-         size = self.userData.fontSize,
-         anchor = {x = 0},
-      },
       enemy = {
          font = self.userData.fontFace,
          color = ColorHEX(consoleGetVariable('cl_color_enemy')),
          size = self.userData.fontSize,
          anchor = {x = -1},
+      },
+      delimiter = {
+         font = self.userData.fontFace,
+         color = Color(127, 127, 127),
+         size = self.userData.fontSize,
+         anchor = {x = 0},
       },
    }
 
@@ -1684,7 +1926,7 @@ function Cato_Scores:drawWidget()
    scoreEnemy.draw(x + spacing, self.y)
 
    self.width = scoreTeam.width + delimiter.width + scoreEnemy.width
-   self.height = max(max(scoreTeam.height, delimiter.height), scoreEnemy.height)
+   self.height = max(scoreTeam.height, delimiter.height, scoreEnemy.height)
 end
 
 CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
@@ -1806,7 +2048,7 @@ function Cato_GameMessages:drawWidget()
    local gameMessage = nil
    if world.timerActive then
       if gameState == GAME_STATE_WARMUP or gameState == GAME_STATE_ROUNDPREPARE then
-         local timer = formatTimer(gameTime, gameTimeLimit, true)
+         local timer = formatTimeMs(gameTime, gameTimeLimit, true)
          if self.lastTickSeconds ~= timer.seconds then
             self.lastTickSeconds = timer.seconds
             playSound('internal/ui/match/match_countdown_tick')
