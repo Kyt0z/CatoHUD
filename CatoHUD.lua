@@ -753,22 +753,6 @@ local function nvgVerticalAlign(y)
    return y + 2
 end
 
-local function uiDelimiter(pos, opts)
-   pos.y = pos.y + 8 -- padding
-   nvgFillColor(opts.color)
-   nvgBeginPath()
-   nvgRect(pos.x, pos.y, 580, 2) -- WIDGET_PROPERTIES_COL_WIDTH = 560
-   nvgFill()
-   pos.y = pos.y + 10 -- padding
-
-   if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
-      nvgFillColor(Color(0, 255, 0, 63))
-      nvgBeginPath()
-      nvgRect(pos.x, pos.y - 18, 580, 18)
-      nvgFill()
-   end
-end
-
 local function createTextElem(anchor, text, opts)
    -- FIXME: Is this a good idea?
    -- opts.size = opts.size * viewport.height / 1080
@@ -852,260 +836,254 @@ local function nvgTextUI(pos, text, opts)
    return {width = elem.width, height = elem.height}
 end
 
-local function uiCheckBox(pos, value, opts)
-   local enabled = opts.enabled == nil and true or opts.enabled
+-- WIDGET_PROPERTIES_COL_INDENT = 250
+-- WIDGET_PROPERTIES_COL_WIDTH = 560
 
-   local mouse = {hoverAmount = 0, leftUp = false}
-   if enabled then
-      mouse = mouseRegion(pos.x, pos.y, opts.size, opts.size, opts.id or 0)
+local function optFormatColor(color, hoverAmount, enabled, pressed)
+   -- pressed is nil defaults to false
+   -- enabled is nil defaults to true
+   if pressed == true and color.pressed ~= nil then
+      return copyColor(color.pressed)
+   elseif enabled == false and color.disabled ~= nil then
+      return copyColor(color.disabled)
    end
-
-   local bgColor = lerpColor(opts.bg.base, opts.bg.hover, mouse.hoverAmount or 0, opts.intensity)
-   local fgColor = lerpColor(opts.fg.base, opts.fg.hover, mouse.hoverAmount or 0, opts.intensity)
-   if pressed then
-      fgColor = copyColor(opts.fg.disabled, intensity)
-   elseif enabled then
-      fgColor = copyColor(opts.fg.pressed, intensity)
-   end
-
-   -- bg
-   nvgBeginPath()
-   nvgRect(pos.x, pos.y, opts.size, opts.size)
-   nvgFillColor(bgColor)
-   nvgFill()
-
-   -- svg
-   if value then
-      local checkOffset = round(opts.size / 2)
-      local checkSize = round(opts.size / 3.5)
-      nvgFillColor(fgColor)
-      nvgSvg('internal/ui/icons/checkBoxTick', pos.x + checkOffset, pos.y + checkOffset, checkSize)
-   end
-
-   if mouse.leftUp then
-      playSound('internal/ui/sounds/buttonClick')
-      value = not value
-   end
-
-   return value
+   return lerpColor(color.base, color.hover, hoverAmount or 0)
 end
 
-local function uiRowCheckbox(pos, text, value, textOpts, checkboxOpts)
-   -- WIDGET_PROPERTIES_COL_INDENT = 250
-   local diff = checkboxOpts.size - textOpts.size
-   pos.y = pos.y + max(0, diff / 2)
-   local label = nvgTextUI(pos, text, textOpts)
+local function optDelimiter(pos, opts)
+   pos.y = pos.y + 8 -- padding
+   nvgFillColor(opts.color)
+   nvgBeginPath()
+   nvgRect(pos.x, pos.y, 580, 2) -- WIDGET_PROPERTIES_COL_WIDTH = 560
+   nvgFill()
+   pos.y = pos.y + 10 -- padding
 
-   local padding = label.width + 8
-   pos.x = pos.x + padding
-   pos.y = pos.y - label.height - diff / 2
-   value = uiCheckBox(pos, value, checkboxOpts)
-   pos.y = pos.y + max(label.height, checkboxOpts.size) -- padding
-   pos.x = pos.x - padding
-   return value
+   if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
+      nvgFillColor(Color(0, 255, 0, 63))
+      nvgBeginPath()
+      nvgRect(pos.x, pos.y - 18, 580, 18)
+      nvgFill()
+   end
 end
 
--- FIXME: Copied from reflexcore, DIY
-__editBox_flash = 0 -- hmm hidden globals
-__editBox_offetX = 0
-__editBox_offetX_id = 0
-function uiEditBox(pos, text, width, opts)
-   -- WIDGET_PROPERTIES_COL_INDENT = 250
-   local enabled = opts.enabled == nil and true or opts.enabled
-   local intensity = opts.intensity or 1
-   local giveFocus = (opts.giveFocus ~= nil) and opts.giveFocus or false
-   local pressed = false
+local optInput = {
+   checkBox = function(pos, value, opts)
+      local enabled = opts.enabled == nil and true or opts.enabled
 
-   local height = 35
-   local padding = height * 0.3
-
-   local t = nil
-   if enabled then
-      t = {
-         text = value,
-         focus = false,
-         apply = false,
-         hoverAmount = 0,
-      }
-   else
-      t = textRegion(pos.x, pos.y, width, height, value, opts.id or 0, giveFocus)
-   end
-
-   local bgColor = lerpColor(opts.bg.base, opts.bg.hover, hoverAmount or 0, opts.intensity)
-   local fgColor = lerpColor(opts.fg.base, opts.fg.hover, hoverAmount or 0, opts.intensity)
-   if pressed then
-      fgColor = copyColor(opts.fg.disabled, intensity)
-   elseif enabled then
-      fgColor = copyColor(opts.fg.pressed, intensity)
-   end
-
-   nvgSave()
-
-   -- bg
-   nvgBeginPath()
-   nvgRect(pos.x, pos.y, width, height)
-   nvgFillColor(bgColor)
-   nvgFill()
-
-   -- apply font & calculate cursor pos
-   nvgFontSize(32)
-   nvgFontFace('titilliumWeb-regular')
-   local textUntilCursor = string.sub(t.text, 0, t.cursor)
-   local textWidthAtCursor = nvgTextWidth(textUntilCursor)
-
-   -- text positioning (this may be a frame behind at this point, but it used for input, one what is on the screen, so that's fine)
-   local offsetx = 0
-   if t.focus then -- only use __editBox_offetX if we have focus
-      if __editBox_offetX_id == t.id then
-         offsetx = __editBox_offetX
-      else
-         __editBox_offetX_id = t.id
-         offsetx = 0
+      local m = {hoverAmount = 0, leftUp = false}
+      if enabled then
+         m = mouseRegion(pos.x, pos.y, opts.width, opts.height, opts.id or 0)
       end
-   end
-   local textx = pos.x + padding + offsetx
-   local texty = pos.y + height * 0.5
 
-   -- handle clicking inside region to change cursor location / drag select multiple characters
-   -- (note: this can update the cursor inside t)
-   if (t.leftDown or t.leftHeld) and t.mouseInside then
-      local mousex = t.mousex
-      local lentext = string.len(t.text)
-      local prevDistanceFromCursor
-      local newCusror = lentext
-      for l = 0, lentext do
-         local s = string.sub(t.text, 0, l)
-         local tw = nvgTextWidth(s)
-         local endtext = textx + tw
+      local backgroundColor = optFormatColor(opts.bg, m.hoverAmount, enabled)
+      local checkmarkColor = optFormatColor(opts.fg, m.hoverAmount, enabled)
 
-         local distanceFromCursor = math.abs(endtext - t.mousex)
+      -- bg
+      nvgBeginPath()
+      nvgRect(pos.x, pos.y, opts.width, opts.height)
+      nvgFillColor(backgroundColor)
+      nvgFill()
 
-         -- was prev distance closer?
-         if l > 0 then
-            if distanceFromCursor > prevDistanceFromCursor then
-               newCusror = l - 1
-               break
+      -- svg
+      if value then
+         local checkOffset = round(opts.width / 2)
+         local checkSize = round(opts.height / 3.5)
+         nvgFillColor(checkmarkColor)
+         nvgSvg('internal/ui/icons/checkBoxTick', pos.x + checkOffset, pos.y + checkOffset, checkSize)
+      end
+
+      if m.leftUp then
+         playSound('internal/ui/sounds/buttonClick')
+         value = not value
+      end
+
+      return value
+   end,
+
+   -- FIXME: Copied from reflexcore and modified. DIY..
+   __editBox_flash = 0, -- hmm hidden globals
+   __editBox_offsetX = 0,
+   __editBox_offsetX_id = 0,
+   editBox = function(pos, value, opts)
+      local enabled = opts.enabled == nil and true or opts.enabled
+      local giveFocus = (opts.giveFocus ~= nil) and opts.giveFocus or false
+
+      local t = nil
+      if enabled then
+         t = textRegion(pos.x, pos.y, opts.width, opts.height, value, opts.id or 0, giveFocus)
+      else
+         t = {
+            text = value,
+            focus = false,
+            apply = false,
+            hoverAmount = 0,
+         }
+      end
+
+      local backgroundColor = optFormatColor(opts.bg, t.hoverAmount, enabled)
+      local textColor = optFormatColor(opts.fg, t.hoverAmount, enabled)
+
+      nvgSave()
+
+      -- bg
+      nvgBeginPath()
+      nvgRect(pos.x, pos.y, opts.width, opts.height)
+      nvgFillColor(backgroundColor)
+      nvgFill()
+
+      -- apply font & calculate cursor pos
+      nvgFontSize(32)
+      nvgFontFace('titilliumWeb-regular')
+      local textUntilCursor = string.sub(t.text, 0, t.cursor)
+      local textWidthAtCursor = nvgTextWidth(textUntilCursor)
+
+      -- text positioning (this may be a frame behind at this point, but it used for input, one what is on the screen, so that's fine)
+      local offsetX = 0
+      if t.focus then -- only use __editBox_offsetX if we have focus
+         if __editBox_offsetX_id == t.id then
+            offsetX = __editBox_offsetX
+         else
+            __editBox_offsetX_id = t.id
+            offsetX = 0
+         end
+      end
+      local padX = opts.height * 0.3
+      local textX = pos.x + padX + offsetX
+      local textY = pos.y + opts.height * 0.5
+
+      -- handle clicking inside region to change cursor location / drag select multiple characters
+      -- (note: this can update the cursor inside t)
+      if (t.leftDown or t.leftHeld) and t.mouseInside then
+         local textLength = string.len(t.text)
+         local prevDistance = nil
+         local newCursor = textLength
+         for l = 0, textLength do
+            local distance = abs(textX + nvgTextWidth(string.sub(t.text, 0, l)) - t.mousex)
+
+            -- was prev distance closer?
+            if l > 0 then
+               if distance > prevDistance then
+                  newCursor = l - 1
+                  break
+               end
             end
+
+            prevDistance = distance
          end
 
-         prevDistanceFromCursor = distanceFromCursor
+         -- drag selection only if we were holding the mouse (and didn't just push it now),
+         -- otherwise it's a click and we just want to go to that cursor
+         local dragSelection = t.leftHeld and not t.leftDown
+
+         -- set cursor, and read updated cursors for rendering below
+         t.cursorStart, t.cursor = textRegionSetCursor(t.id, newCursor, dragSelection)
       end
 
-      -- drag selection only if we were holding the mouse (and didn't just push it now),
-      -- otherwise it's a click and we just want to go to that cursor
-      local dragSelection = t.leftHeld and not t.leftDown
+      -- update these, cursor may have changed!
+      textUntilCursor = string.sub(t.text, 0, t.cursor)
+      textWidthAtCursor = nvgTextWidth(textUntilCursor)
 
-      -- set cursor, and read updated cursors for rendering below
-      t.cursorStart, t.cursor = textRegionSetCursor(t.id, newCusror, dragSelection)
-   end
+      -- keep the cursor inside the bounds of the text entry
+      if t.focus then
+         -- the string buffer can be wider than this edit box, when that happens, we need to
+         -- clip the texture, but also ensure that the cursor remains visible
+         local cursorX = (pos.x + padX + offsetX) + textWidthAtCursor
+         local endX = (pos.x + opts.width - padX)
+         local cursorPast = cursorX - endX
+         if cursorPast > 0 then
+            offsetX = offsetX - cursorPast
+         end
 
-   -- update these, cursor may have changed!
-   textUntilCursor = string.sub(t.text, 0, t.cursor)
-   textWidthAtCursor = nvgTextWidth(textUntilCursor)
+         local startX = pos.x + padX
+         local cursorEarly = startX - cursorX
+         if cursorEarly > 0 then
+            offsetX = offsetX + cursorEarly
+         end
 
-   -- keep the cursor inside the bounds of the text entry
-   if t.focus then
-      -- the string buffer can be wider than this edit box, when that happens, we need to
-      -- clip the texture, but also ensure that the cursor remains visible
-      local cursorx = (pos.x + padding + offsetx) + textWidthAtCursor
-      local endx = (pos.x + width - padding)
-      local cursorpast = cursorx - endx
-      if cursorpast > 0 then
-         offsetx = offsetx - cursorpast
-      end
-
-      local startx = pos.x + padding
-      local cursorearly = startx - cursorx
-      if cursorearly > 0 then
-         offsetx = offsetx + cursorearly
-      end
-
-      -- store into common global var, we're the entry with focus
-      __editBox_offetX = offsetx
-      __editBox_offetX_id = t.id
-   else
-      -- no-longer holding it, reset
-      if __editBox_offetX_id == t.id then
-         __editBox_offetX_id = 0
-      end
-   end
-
-   -- update these, offsset may have changed!
-   textx = pos.x + padding + offsetx
-
-   -- scissor text & cursor etc
-   local halfpadding = padding * 0.5
-   nvgIntersectScissor(pos.x + halfpadding, y, width - halfpadding * 2, height)
-
-   -- cursor
-   if t.focus then
-      local cursorFlashPeriod = 0.25
-
-      __editBox_flash = __editBox_flash + deltaTime
-
-      -- if cursor moves, restart flash
-      if t.cursorChanged then
-         __editBox_flash = 0
-      end
-
-      -- multiple selection, draw selection field
-      if t.cursor ~= t.cursorStart then
-         local textUntilCursorStart = string.sub(t.text, 0, t.cursorStart)
-         local textWidthAtCursorStart = nvgTextWidth(textUntilCursorStart)
-
-         local selx = math.min(textWidthAtCursor, textWidthAtCursorStart)
-         local selw = math.abs(textWidthAtCursor - textWidthAtCursorStart)
-         nvgBeginPath()
-         nvgRect(textx + selx, texty - height * 0.35, selw, height * 0.7)
-         nvgFillColor(Color(204, 204, 160, 128))
-         nvgFill()
-      end
-
-      -- flashing cursor
-      if __editBox_flash < cursorFlashPeriod then
-         nvgBeginPath()
-         nvgMoveTo(textx + textWidthAtCursor, texty - height * 0.35)
-         nvgLineTo(textx + textWidthAtCursor, texty + height * 0.35)
-         nvgStrokeColor(fgColor)
-         nvgStroke()
+         -- store into common global var, we're the entry with focus
+         __editBox_offsetX = offsetX
+         __editBox_offsetX_id = t.id
       else
-         if __editBox_flash > cursorFlashPeriod * 2 then
+         -- no-longer holding it, reset
+         if __editBox_offsetX_id == t.id then
+            __editBox_offsetX_id = 0
+         end
+      end
+
+      -- update these, offset may have changed!
+      textX = pos.x + padX + offsetX
+
+      -- scissor text & cursor etc
+      nvgIntersectScissor(pos.x + padX / 2, pos.y, opts.width - padX, opts.height)
+
+      -- cursor
+      if t.focus then
+         local cursorFlashPeriod = 0.25
+
+         __editBox_flash = __editBox_flash + deltaTime
+
+         -- if cursor moves, restart flash
+         if t.cursorChanged then
             __editBox_flash = 0
          end
+
+         -- multiple selection, draw selection field
+         if t.cursor ~= t.cursorStart then
+            local textUntilCursorStart = string.sub(t.text, 0, t.cursorStart)
+            local textWidthAtCursorStart = nvgTextWidth(textUntilCursorStart)
+
+            local selectionX = min(textWidthAtCursor, textWidthAtCursorStart)
+            local selectionWidth = abs(textWidthAtCursor - textWidthAtCursorStart)
+            nvgBeginPath()
+            nvgRect(textX + selectionX, textY - opts.height * 0.35, selectionWidth, opts.height * 0.7)
+            nvgFillColor(Color(204, 204, 160, 128))
+            nvgFill()
+         end
+
+         -- flashing cursor
+         if __editBox_flash < cursorFlashPeriod then
+            nvgBeginPath()
+            nvgMoveTo(textX + textWidthAtCursor, textY - opts.height * 0.35)
+            nvgLineTo(textX + textWidthAtCursor, textY + opts.height * 0.35)
+            nvgStrokeColor(textColor)
+            nvgStroke()
+         else
+            if __editBox_flash > cursorFlashPeriod * 2 then
+               __editBox_flash = 0
+            end
+         end
       end
-   end
 
-   -- draw text
-   nvgFillColor(fgColor)
-   nvgTextAlign(0, 2)
-   nvgText(textx, texty, t.text)
+      -- draw text
+      nvgFillColor(textColor)
+      nvgTextAlign(0, 2)
+      nvgText(textX, textY, t.text)
 
-   nvgRestore()
+      nvgRestore()
 
-   if t.apply then
-      -- apply, return new value
-      playSound("internal/ui/sounds/buttonClick")
-      return t.text
-   elseif t.focus then
-      -- return value at time of focus started
-      return t.textInitial
-   else
+      if t.apply then
+         -- apply, return new value
+         playSound("internal/ui/sounds/buttonClick")
+         return t.text
+      elseif t.focus then
+         -- return value at time of focus started
+         return t.textInitial
+      end
       -- return value client passed in
-      return text
+      return value
    end
-end
+}
 
-local function uiRowEditBox(pos, text, width, value, textOpts, editBoxOpts)
-   -- WIDGET_PROPERTIES_COL_INDENT = 250
-   local diff = editBoxOpts.size - textOpts.size
-   pos.y = pos.y + max(0, diff / 2)
+local function optRowInput(inputFunc, pos, text, value, textOpts, inputOpts)
+   local diffHalf = (inputOpts.height - textOpts.size) / 2
+   pos.y = pos.y + max(0, diffHalf)
    local label = nvgTextUI(pos, text, textOpts)
 
    local padding = label.width + 8
    pos.x = pos.x + padding
-   pos.y = pos.y - label.height - diff / 2
-   value = uiEditBox(pos, value, width, editBoxOpts)
-   pos.y = pos.y + max(label.height, editBoxOpts.size) -- padding
+   pos.y = pos.y - label.height - diffHalf
+   value = inputFunc(pos, value, inputOpts)
+   pos.y = pos.y + max(label.height, inputOpts.height) -- padding
    pos.x = pos.x - padding
    return value
 end
@@ -1122,16 +1100,6 @@ CatoHUD = {canHide = false, canPosition = false}
 
 function CatoHUD:registerWidget(widgetName, widget)
    registerWidget(widgetName)
-
-   -- FIXME: Just set these and no check will be required
-   if widget.canPreview == nil then
-      widget.canPreview = true
-   end
-
-   -- FIXME: Just set these and no check will be required
-   if widget.canAnchorWidget == nil then
-      widget.canAnchorWidget = true
-   end
 
    function widget:resetProperties()
       local settings = defaultSettings[widgetName] or {}
@@ -1220,8 +1188,9 @@ function CatoHUD:registerWidget(widgetName, widget)
             -- preview = debugMode,
             color = Color(0, 0, 0, 63 * intensity),
          },
-         checkbox = {
-            size = 35,
+         checkBox = {
+            width = 35,
+            height = 35,
             bg = {
                base = Color(26, 26, 26, 255 * intensity),
                hover = Color(39, 39, 39, 255 * intensity),
@@ -1233,38 +1202,57 @@ function CatoHUD:registerWidget(widgetName, widget)
                disabled = Color(100, 100, 100, 255 * intensity),
             },
          },
-         editbox = {
+         editBox = {
+            width = 300,
+            height = 35,
             bg = {
-               base = Color(26, 26, 26, 255),
-               hover = Color(39, 39, 39, 255),
+               base = Color(26, 26, 26, 255 * intensity),
+               hover = Color(39, 39, 39, 255 * intensity),
             },
             fg = {
-                  base = Color(222, 222, 222, 255),
-                  hover = Color(255, 255, 255, 255),
-                  pressed = Color(200, 200, 200, 255),
-                  disabled = Color(100, 100, 100, 255),
-               },
+               base = Color(222, 222, 222, 255 * intensity),
+               hover = Color(255, 255, 255, 255 * intensity),
+               pressed = Color(200, 200, 200, 255 * intensity),
+               disabled = Color(100, 100, 100, 255 * intensity),
             },
          },
       }
-
       local pos = {x = x, y = y}
 
-      if widget.canPreview then
-         CatoHUD.preview = uiRowCheckbox(pos, 'Preview', CatoHUD.preview, opts.medium, opts.checkbox)
+      -- widget.canAttach is nil defaults to true
+      if widget.canAttach ~= false and widget.userData and widget.userData.anchorWidget then
+         -- consolePrint(widgetName)
+         -- consolePrint(widget.userData.anchorWidget)
+         widget.userData.anchorWidget = optRowInput(
+            optInput.editBox,
+            pos,
+            'Attach to',
+            widget.userData.anchorWidget,
+            opts.medium,
+            opts.editBox
+         )
+         -- consolePrint(widget.userData.anchorWidget)
       end
-      uiDelimiter(pos, opts.delimiter)
 
-      if widget.canAnchorWidget and widget.userData and widget.userData.anchorWidget then
-         widget.userData.anchorWidget = uiRowEditBox(pos, widget.userData.anchorWidget, 400, opts.medium, opts.editbox)
-         uiDelimiter(pos, opts.delimiter)
+      -- widget.canPreview is nil defaults to true
+      if widget.canPreview ~= false then
+         CatoHUD.preview = optRowInput(
+            optInput.checkBox,
+            pos,
+            'Preview',
+            CatoHUD.preview,
+            opts.medium,
+            opts.checkBox
+         )
       end
+
+      optDelimiter(pos, opts.delimiter)
 
       if widget.drawOpts then
          nvgTextUI(pos, widgetName .. ' Options', opts.medium)
          widget:drawOpts(pos)
          if debugMode then
-            uiDelimiter(pos, opts.delimiter)
+            optDelimiter(pos, opts.delimiter)
          end
       end
 
