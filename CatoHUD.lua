@@ -800,11 +800,15 @@ local function secondsInYear(year)
    return isLeapYear(year) and S_IN_LY or S_IN_Y
 end
 
-local function secondsInMonth(month, year)
+local function daysInMonth(month, year)
    if month == 2 then
-      return S_IN_D * (isLeapYear(year) and 29 or 28)
+      return isLeapYear(year) and 29 or 28
    end
-   return S_IN_D * (30 + month % 2)
+   return 30 + month % 2
+end
+
+local function secondsInMonth(month, year)
+   return S_IN_D * daysInMonth(month, year)
 end
 
 function formatEpochTime(epochTimestamp, offsetUTC)
@@ -835,13 +839,26 @@ function formatEpochTime(epochTimestamp, offsetUTC)
    local minute = floor(epochSeconds / S_IN_M)
    epochSeconds = epochSeconds - minute * S_IN_M
 
+   local second = epochSeconds
+   -- epochSeconds = epochSeconds - second
+
+   -- epochSeconds = epochTimestamp + offsetUTC * S_IN_H
+   -- local dateTime = '%s-%02d-%02d %02d:%02d:%02d'
+   -- dateTime = string.format(dateTime, year, month, day, hour, minute, second)
+   -- consolePrint(string.format('%s (%s)', dateTime, epochTimestamp + offsetUTC * S_IN_H))
+
+   -- local day = floor(epochSeconds / S_IN_D) % daysInMonth(month, year)
+   -- local hour = floor(epochSeconds / S_IN_H) % H_IN_D
+   -- local minute = floor(epochSeconds / S_IN_M) % M_IN_H
+   -- local second = epochSeconds % S_IN_M
+
    return {
       year = year,
       month = month,
       day = day,
       hour = hour,
       minute = minute,
-      second = epochSeconds,
+      second = second,
    }
 end
 
@@ -1736,68 +1753,100 @@ function Cato_Time:drawWidget()
    --    return
    -- end
 
-   local time = formatEpochTime(epochTime, self.userData.offsetUTC)
+   -- full datetime
+   -- if true then
+   --    local time = formatEpochTime(epochTime, self.userData.offsetUTC)
 
-   -- local day = createTextElem(self.anchor, formatDay(time.day), opts.day)
-   -- local delimiterDate1 = createTextElem(self.anchor, ' ', opts.delimiter)
-   -- local month = createTextElem(self.anchor, formatMonth(time.month), opts.month)
-   -- self.width = self.width + day.width + delimiterDate1.width + month.width
-   -- self.height = max(self.height, day.height, delimiterDate1.height, month.height)
+   --    local day = createTextElem(self.anchor, formatDay(time.day), opts.day)
+   --    local delimiterDate1 = createTextElem(self.anchor, ' ', opts.delimiter)
+   --    local month = createTextElem(self.anchor, formatMonth(time.month), opts.month)
+   --    self.width = self.width + day.width + delimiterDate1.width + month.width
+   --    self.height = max(self.height, day.height, delimiterDate1.height, month.height)
 
-   -- local delimiterDate2 = createTextElem(self.anchor, ' ', opts.delimiter)
-   -- local year = createTextElem(self.anchor, time.year, opts.year)
-   -- self.width = self.width + delimiterDate2.width + year.width
-   -- self.height = max(self.height, delimiterDate2.height, year.height)
+   --    local delimiterDate2 = createTextElem(self.anchor, ' ', opts.delimiter)
+   --    local year = createTextElem(self.anchor, time.year, opts.year)
+   --    self.width = self.width + delimiterDate2.width + year.width
+   --    self.height = max(self.height, delimiterDate2.height, year.height)
 
-   -- local delimiter = createTextElem(self.anchor, ' ', opts.delimiter)
-   -- self.width = self.width + delimiter.width
-   -- self.height = max(self.height, delimiter.height)
+   --    local delimiter = createTextElem(self.anchor, ' ', opts.delimiter)
+   --    self.width = self.width + delimiter.width
+   --    self.height = max(self.height, delimiter.height)
 
-   local hour = createTextElem(self.anchor, string.format('%02d', time.hour), opts.hour)
-   local delimiterTime1 = createTextElem(self.anchor, ':', opts.delimiter)
-   local minute = createTextElem(self.anchor, string.format('%02d', time.minute), opts.minute)
-   self.width = self.width + hour.width + delimiterTime1.width + minute.width
-   self.height = max(self.height, hour.height, delimiterTime1.height, minute.height)
+   --    local hour = createTextElem(self.anchor, string.format('%02d', time.hour), opts.hour)
+   --    local delimiterTime1 = createTextElem(self.anchor, ':', opts.delimiter)
+   --    local minute = createTextElem(self.anchor, string.format('%02d', time.minute), opts.minute)
+   --    self.width = self.width + hour.width + delimiterTime1.width + minute.width
+   --    self.height = max(self.height, hour.height, delimiterTime1.height, minute.height)
 
-   -- local delimiterTime2 = createTextElem(self.anchor, ':', opts.delimiter)
-   -- local second = createTextElem(self.anchor, string.format('%02d', time.second), opts.second)
-   -- self.width = self.width + delimiterTime2.width + second.width
-   -- self.height = max(self.height, delimiterTime2.height, second.height)
+   --    local delimiterTime2 = createTextElem(self.anchor, ':', opts.delimiter)
+   --    local second = createTextElem(self.anchor, string.format('%02d', time.second), opts.second)
+   --    self.width = self.width + delimiterTime2.width + second.width
+   --    self.height = max(self.height, delimiterTime2.height, second.height)
+
+   --    local x = self.x
+   --    if self.anchor.x == -1 then
+   --       x = x + 0
+   --    elseif self.anchor.x == 0 then
+   --       x = x - self.width / 2
+   --    elseif self.anchor.x == 1 then
+   --       x = x - self.width
+   --    end
+
+   --    day.draw(x, self.y)
+   --    x = x + day.width
+   --    delimiterDate1.draw(x, self.y)
+   --    x = x + delimiterDate1.width
+   --    month.draw(x, self.y)
+   --    x = x + month.width
+
+   --    delimiterDate2.draw(x, self.y)
+   --    x = x + delimiterDate2.width
+   --    year.draw(x, self.y)
+   --    x = x + year.width
+
+   --    delimiter.draw(x, self.y)
+   --    x = x + delimiter.width
+
+   --    hour.draw(x, self.y)
+   --    x = x + hour.width
+   --    delimiterTime1.draw(x, self.y)
+   --    x = x + delimiterTime1.width
+   --    minute.draw(x, self.y)
+   --    x = x + minute.width
+
+   --    delimiterTime2.draw(x, self.y)
+   --    x = x + delimiterTime2.width
+   --    second.draw(x, self.y)
+   -- end
+
+   local epochSeconds = epochTime + self.userData.offsetUTC * S_IN_H
+   local hour = floor(epochSeconds / S_IN_H) % H_IN_D
+   local delimiter = ':'
+   local minute = floor(epochSeconds / S_IN_M) % M_IN_H
+
+   opts.hour.anchor = {x = 1}
+   opts.delimiter.anchor = {x = 0}
+   opts.minute.anchor = {x = -1}
+
+   hour = createTextElem(self.anchor, string.format('%02d', hour), opts.hour)
+   delimiter = createTextElem(self.anchor, delimiter, opts.delimiter)
+   minute = createTextElem(self.anchor, string.format('%02d', minute), opts.minute)
+   self.width = self.width + hour.width + delimiter.width + minute.width
+   self.height = max(self.height, hour.height, delimiter.height, minute.height)
 
    local x = self.x
+   local spacing = delimiter.width / 2
    if self.anchor.x == -1 then
-      x = x + 0
+      x = x + hour.width + spacing
    elseif self.anchor.x == 0 then
-      x = x - self.width / 2
+      x = x + 0
    elseif self.anchor.x == 1 then
-      x = x - self.width
+      x = x - (minute.width + spacing)
    end
 
-   -- day.draw(x, self.y)
-   -- x = x + day.width
-   -- delimiterDate1.draw(x, self.y)
-   -- x = x + delimiterDate1.width
-   -- month.draw(x, self.y)
-   -- x = x + month.width
-
-   -- delimiterDate2.draw(x, self.y)
-   -- x = x + delimiterDate2.width
-   -- year.draw(x, self.y)
-   -- x = x + year.width
-
-   -- delimiter.draw(x, self.y)
-   -- x = x + delimiter.width
-
-   hour.draw(x, self.y)
-   x = x + hour.width
-   delimiterTime1.draw(x, self.y)
-   x = x + delimiterTime1.width
-   minute.draw(x, self.y)
-   x = x + minute.width
-
-   -- delimiterTime2.draw(x, self.y)
-   -- x = x + delimiterTime2.width
-   -- second.draw(x, self.y)
+   hour.draw(x - spacing, self.y)
+   delimiter.draw(x, self.y)
+   minute.draw(x + spacing, self.y)
 end
 
 CatoHUD:registerWidget('Cato_Time', Cato_Time)
