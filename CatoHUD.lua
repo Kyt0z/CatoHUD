@@ -49,42 +49,6 @@ local defaultZoomSensMult = 1.0915740009242504
 -- end
 
 ----------------------------------------------------------------------------------------------------
--- Lua
-----------------------------------------------------------------------------------------------------
-
-local function consoleTablePrint(key, val, depth)
-   if not depth then depth = 0 end
-
-   if type(key) == 'table' then
-      for k, v in pairs(key) do
-         consoleTablePrint(k, v, depth + 1)
-      end
-      return
-   end
-
-   local typeval = type(val)
-   local indent = rep(' ', depth)
-   if typeval == 'table' then
-      consolePrint(indent .. key .. ':')
-      consoleTablePrint(val, nil, depth + 1)
-   elseif typeval == 'boolean' then
-      consolePrint(indent .. key .. ' = ' .. (val and 'true' or 'false') .. ' (' .. typeval .. ')')
-   elseif typeval == 'number' or typeval == 'string' then
-      consolePrint(indent .. key .. ' = ' .. val .. ' (' .. typeval .. ')')
-   else
-      consolePrint(indent .. key .. ' =  (' .. typeval .. ')')
-   end
-end
-
-local function checkResetConsoleVariable(cvar, resetValue)
-   local oldValue = consoleGetVariable(cvar)
-   if oldValue ~= resetValue then
-      consolePerformCommand(cvar .. ' ' .. resetValue)
-   end
-   return oldValue
-end
-
-----------------------------------------------------------------------------------------------------
 -- Math
 ----------------------------------------------------------------------------------------------------
 
@@ -155,6 +119,42 @@ local armorLimit = {
 
 local function damageToKill(health, armor, armorProtection)
    return min(armor, health * (armorProtection + 1)) + health
+end
+
+----------------------------------------------------------------------------------------------------
+-- Lua
+----------------------------------------------------------------------------------------------------
+
+local function consoleTablePrint(key, val, depth)
+   if not depth then depth = 0 end
+
+   if type(key) == 'table' then
+      for k, v in pairs(key) do
+         consoleTablePrint(k, v, depth + 1)
+      end
+      return
+   end
+
+   local typeval = type(val)
+   local indent = rep(' ', depth)
+   if typeval == 'table' then
+      consolePrint(indent .. key .. ':')
+      consoleTablePrint(val, nil, depth + 1)
+   elseif typeval == 'boolean' then
+      consolePrint(indent .. key .. ' = ' .. (val and 'true' or 'false') .. ' (' .. typeval .. ')')
+   elseif typeval == 'number' or typeval == 'string' then
+      consolePrint(indent .. key .. ' = ' .. val .. ' (' .. typeval .. ')')
+   else
+      consolePrint(indent .. key .. ' =  (' .. typeval .. ')')
+   end
+end
+
+local function checkResetConsoleVariable(cvar, resetValue)
+   local oldValue = consoleGetVariable(cvar)
+   if oldValue ~= resetValue then
+      consolePerformCommand(cvar .. ' ' .. resetValue)
+   end
+   return oldValue
 end
 
 ----------------------------------------------------------------------------------------------------
@@ -490,7 +490,7 @@ local defaultSettings = {
    ['Cato_Time'] = {
       visible = true,
       props = {
-         offset = '0 18',
+         offset = '-3 18',
          anchor = '1 -1',
          zIndex = '-999',
          scale = '1',
@@ -553,7 +553,7 @@ local defaultSettings = {
             mainMenu = false,
             menu = false,
             hudOff = false,
-            gameOver = false,
+            gameOver = true,
             freecam = true,
             editor = false,
          },
@@ -577,7 +577,7 @@ local defaultSettings = {
             mainMenu = false,
             menu = false,
             hudOff = false,
-            gameOver = false,
+            gameOver = true,
             freecam = true,
             editor = false,
          },
@@ -601,7 +601,32 @@ local defaultSettings = {
             mainMenu = false,
             menu = false,
             hudOff = false,
-            gameOver = false,
+            gameOver = true,
+            freecam = true,
+            editor = false,
+         },
+      },
+   },
+   ['Cato_Mutators'] = {
+      visible = true,
+      props = {
+         offset = '0 33',
+         anchor = '1 -1',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         anchorWidget = 'Cato_MapName',
+         -- fontFace = defaultFontFace,
+         -- fontSize = defaultFontSizeSmall,
+         iconSize = 8,
+         show = {
+            dead = true,
+            race = true,
+            mainMenu = false,
+            menu = false,
+            hudOff = false,
+            gameOver = true,
             freecam = true,
             editor = false,
          },
@@ -964,7 +989,7 @@ local function createSvgElem(anchor, image, opts)
       end
    end
 
-   return {width = opts.size, height = opts.size, draw = draw}
+   return {width = 2 * opts.size, height = 2 * opts.size, draw = draw}
 end
 
 local function nvgTextUI(pos, text, opts)
@@ -1978,7 +2003,8 @@ function Cato_Scores:drawWidget()
             if scoreWinner == nil or p.score > scoreWinner then
                scoreWinner = p.score
                indexWinner = p.index
-            elseif scoreRunnerUp == nil or p.score > scoreRunnerUp then
+            end
+            if p.index ~= indexWinner and (scoreRunnerUp == nil or p.score > scoreRunnerUp) then
                scoreRunnerUp = p.score
                indexRunnerUp = p.index
             end
@@ -2115,6 +2141,69 @@ function Cato_MapName:drawWidget()
 end
 
 CatoHUD:registerWidget('Cato_MapName', Cato_MapName)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_Mutators = {}
+
+function Cato_Mutators:drawWidget()
+   if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
+
+   local spacing = self.userData.iconSize / 2
+
+   local gameMutators = {}
+   for mutator in world.mutators:gmatch('%w+') do
+      mutator = mutatorDefinitions[string.upper(mutator)]
+      -- consolePrint(string.upper(mutator))
+      -- if mutator == nil then
+      --    consolePrint('nil mutator :<')
+      -- else
+      --    consolePrint('non-nil mutator :>')
+      --    consolePrint(mutator.icon)
+      --    consoleTablePrint(mutator.col)
+      -- end
+
+      local opts = {
+         color = mutator.col,
+         size = self.userData.iconSize,
+      }
+
+      mutator = createSvgElem(self.anchor, mutator.icon, opts)
+      table.insert(gameMutators, mutator)
+
+      self.width = self.width + mutator.width + spacing
+      self.height = max(self.height, mutator.height)
+   end
+   self.width = max(0, self.width - spacing) -- remove extra spacing
+
+   local x = self.x
+   if self.anchor.x == -1 then
+      x = x + self.width - 2 * self.userData.iconSize -- FIXME: Figure it out
+   elseif self.anchor.x == 0 then
+      x = x + self.width / 2 - self.userData.iconSize -- FIXME: Figure it out
+   elseif self.anchor.x == 1 then
+      x = x + 0
+   end
+
+   for _, mutator in ipairs(gameMutators) do
+      mutator.draw(x, self.y)
+      x = x - mutator.width - spacing
+   end
+
+   -- local opts = {
+   --    font = self.userData.fontFace,
+   --    color = Color(255, 255, 255),
+   --    size = self.userData.fontSize,
+   -- }
+
+   -- local gameMutators = createTextElem(self.anchor, world.mutators, opts)
+   -- gameMutators.draw(self.x, self.y)
+
+   -- self.width = gameMutators.width
+   -- self.height = gameMutators.height
+end
+
+CatoHUD:registerWidget('Cato_Mutators', Cato_Mutators)
 
 ----------------------------------------------------------------------------------------------------
 
