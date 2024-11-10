@@ -27,7 +27,7 @@ local defaultFontSizeHuge = 160
 local sens = consoleGetVariable('m_speed')
 local fov = consoleGetVariable('r_fov')
 local defaultZoomFov = 40
-local defaultZoomSensMult = 1.0915740009242504
+local defaultZoomSensMult = 1.0915740009242504 -- FIXME: 1 for release
 
 -- TODO: Various relative offsets (such as between lines in 'FOLLOWING\nplayer') depend on the
 --       font, so maybe a function that calculates the proper offset for all the default fonts?
@@ -228,23 +228,54 @@ local function secondsInMonth(month, year)
    return S_IN_D * daysInMonth(month, year)
 end
 
+local function yearsModSince(yearFrom, yearTo, modulo)
+   -- FIXME: Changing yearTo - 1 to yearTo is more optimal?
+   return floor((yearTo - 1) / modulo) - floor((yearFrom - 1) / modulo)
+end
+
 function formatEpochTime(epochTimestamp, offsetUTC)
    local epochSeconds = epochTimestamp + offsetUTC
+   if true then
+      -- TODO: Optimization (even further)
+      -- Overshoot yearTo such that epochSeconds < 0, and then add the year's seconds back to it?
+      -- Test case: year is k*365 or k*366 >= yearFrom, k >= 1
+      local yearFrom = 1970
+      local year = yearFrom
+      while epochSeconds >= secondsInYear(year) do
+         year = year + floor(epochSeconds / S_IN_Y)
+         local yearsMod4Since = yearsModSince(yearFrom, year, 4)
+         local yearsMod100Since = yearsModSince(yearFrom, year, 100)
+         local yearsMod400Since = yearsModSince(yearFrom, year, 400)
+         local leapYears = yearsMod4Since - yearsMod100Since + yearsMod400Since
+         local nonLeapYears = year - leapYears
+         epochSeconds = epochSeconds - (leapYears * S_IN_LY + nonLeapYears * S_IN_Y)
+         yearFrom = year
+      end
 
-   local year = 1970
-   local secondsInYearCurrent = secondsInYear(year)
-   while epochSeconds >= secondsInYearCurrent do
-      epochSeconds = epochSeconds - secondsInYearCurrent
-      year = year + 1
-      secondsInYearCurrent = secondsInYear(year)
-   end
+      local month = 1
+      local monthSeconds = secondsInMonth(month)
+      while epochSeconds >= monthSeconds do
+         epochSeconds = epochSeconds - monthSeconds
+         month = month + 1
+         monthSeconds = secondsInMonth(month)
+      end
+   else
+      -- Working
+      local year = 1970
+      local secondsInYearCurrent = secondsInYear(year)
+      while epochSeconds >= secondsInYearCurrent do
+         epochSeconds = epochSeconds - secondsInYearCurrent
+         year = year + 1
+         secondsInYearCurrent = secondsInYear(year)
+      end
 
-   local month = 1
-   local secondsInMonthCurrent = secondsInMonth(month, year)
-   while epochSeconds >= secondsInMonthCurrent do
-      epochSeconds = epochSeconds - secondsInMonthCurrent
-      month = month + 1
-      secondsInMonthCurrent = secondsInMonth(month, year)
+      local month = 1
+      local secondsInMonthCurrent = secondsInMonth(month, year)
+      while epochSeconds >= secondsInMonthCurrent do
+         epochSeconds = epochSeconds - secondsInMonthCurrent
+         month = month + 1
+         secondsInMonthCurrent = secondsInMonth(month, year)
+      end
    end
 
    local day = floor(epochSeconds / S_IN_D)
@@ -1380,6 +1411,22 @@ function CatoHUD:registerWidget(widgetName, widget)
 
       nvgTextUI(pos, widgetName, opts.widgetName)
 
+      -- Default options
+      -- NOTE: Replacing these requires canHide, canPosition to be false
+      --       Must use custom variables: canVisible, canAnchor, canOffset, canScale, canZIndex?
+
+      -- Visible
+
+      -- Anchor/Anchor Widget/Anchor Widget Alignment
+      -- NOTE: If attached, disabled widget's own anchor and copy it from parent
+
+      -- Offset
+
+      -- Scale
+
+      -- Z-Index
+      -- NOTE: If CatoHUD.preview, disable Z-Index (show previous value?)
+
       -- widget.canPreview is nil defaults to true
       if widget.canPreview ~= false then
          optDelimiter(pos, opts.delimiter)
@@ -1436,8 +1483,8 @@ function CatoHUD:registerWidget(widgetName, widget)
       if widgetName == 'CatoHUD' then return true end
       if widgetName == 'Cato_Zoom' then return true end -- FIXME: Better solution
 
-      -- FIXME: preview should temporarily change zindex to -999?
       if CatoHUD.preview then
+         -- FIXME: preview should temporarily change zindex to -999?
          return true
       end
 
