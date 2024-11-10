@@ -253,11 +253,11 @@ function formatEpochTime(epochTimestamp, offsetUTC)
       end
 
       local month = 1
-      local monthSeconds = secondsInMonth(month)
+      local monthSeconds = secondsInMonth(month, year)
       while epochSeconds >= monthSeconds do
          epochSeconds = epochSeconds - monthSeconds
          month = month + 1
-         monthSeconds = secondsInMonth(month)
+         monthSeconds = secondsInMonth(month, year)
       end
    else
       -- Working
