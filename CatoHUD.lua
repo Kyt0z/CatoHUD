@@ -235,12 +235,14 @@ end
 
 function formatEpochTime(epochTimestamp, offsetUTC)
    local epochSeconds = epochTimestamp + offsetUTC
-   if true then
+   local year = nil
+   local month = nil
+   if false then
       -- TODO: Optimization (even further)
       -- Overshoot yearTo such that epochSeconds < 0, and then add the year's seconds back to it?
       -- Test case: year is k*365 or k*366 >= yearFrom, k >= 1
       local yearFrom = 1970
-      local year = yearFrom
+      year = yearFrom
       while epochSeconds >= secondsInYear(year) do
          year = year + floor(epochSeconds / S_IN_Y)
          local yearsMod4Since = yearsModSince(yearFrom, year, 4)
@@ -252,7 +254,7 @@ function formatEpochTime(epochTimestamp, offsetUTC)
          yearFrom = year
       end
 
-      local month = 1
+      month = 1
       local monthSeconds = secondsInMonth(month, year)
       while epochSeconds >= monthSeconds do
          epochSeconds = epochSeconds - monthSeconds
@@ -261,7 +263,7 @@ function formatEpochTime(epochTimestamp, offsetUTC)
       end
    else
       -- Working
-      local year = 1970
+      year = 1970
       local secondsInYearCurrent = secondsInYear(year)
       while epochSeconds >= secondsInYearCurrent do
          epochSeconds = epochSeconds - secondsInYearCurrent
@@ -269,7 +271,7 @@ function formatEpochTime(epochTimestamp, offsetUTC)
          secondsInYearCurrent = secondsInYear(year)
       end
 
-      local month = 1
+      month = 1
       local secondsInMonthCurrent = secondsInMonth(month, year)
       while epochSeconds >= secondsInMonthCurrent do
          epochSeconds = epochSeconds - secondsInMonthCurrent
@@ -280,6 +282,7 @@ function formatEpochTime(epochTimestamp, offsetUTC)
 
    local day = floor(epochSeconds / S_IN_D)
    epochSeconds = epochSeconds - day * S_IN_D
+   day = max(1, day)
 
    local hour = floor(epochSeconds / S_IN_H)
    epochSeconds = epochSeconds - hour * S_IN_H
