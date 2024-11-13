@@ -1732,8 +1732,9 @@ function CatoHUD:drawWidget()
          else
             -- Cato_FragMessage
             if event.age * 1000 < 2500 then
-               local killerPlayer = getPlayerByName(event.deathKiller, event.deathTeamIndexKiller)
-               Cato_FragMessage.fragEvents[killerPlayer.index] = event
+               -- FIXME: Again. getPlayerByName is not a sufficient condition.
+               local killer = getPlayerByName(event.deathKiller, event.deathTeamIndexKiller)
+               Cato_FragMessage.fragEvents[killer.index] = event
             end
          end
       end
@@ -2143,19 +2144,19 @@ function Cato_Scores:drawWidget()
       scoreEnemy = scoreRunnerUp
       indexEnemy = indexRunnerUp
       if povPlayer and povPlayer.state == PLAYER_STATE_INGAME and povPlayer.connected then
-         if indexWinner == povPlayer.index then
+         if indexWinner == playerIndexCameraAttachedTo then
             scoreTeam = scoreWinner
             indexTeam = indexWinner
             scoreEnemy = scoreRunnerUp
             indexEnemy = indexRunnerUp
-         elseif indexRunnerUp == povPlayer.index then
+         elseif indexRunnerUp == playerIndexCameraAttachedTo then
             scoreTeam = scoreRunnerUp
             indexTeam = indexRunnerUp
             scoreEnemy = scoreWinner
             indexEnemy = indexWinner
          else
             scoreTeam = povPlayer.score
-            indexTeam = povPlayer.index
+            indexTeam = playerIndexCameraAttachedTo
             scoreEnemy = scoreWinner
             indexEnemy = indexWinner
          end
@@ -2375,8 +2376,8 @@ Cato_FragMessage = {fragEvents = {}}
 --        (2) Figure out whether it's possible to decisively conclude who actually (was) fragged
 function Cato_FragMessage:drawWidget()
    local fragMessage = nil
-   if self.fragEvents[povPlayer.index] then
-      fragMessage = 'You fragged ' .. self.fragEvents[povPlayer.index].deathKilled
+   if self.fragEvents[playerIndexCameraAttachedTo] then
+      fragMessage = 'You fragged ' .. self.fragEvents[playerIndexCameraAttachedTo].deathKilled
    elseif previewMode then
       fragMessage = '(Frag Message)'
    else
