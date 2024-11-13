@@ -815,7 +815,31 @@ local defaultSettings = {
          },
       },
    },
-   ['Cato_GameMessages'] = {
+   ['Cato_FragMessage'] = {
+      visible = false,
+      props = {
+         offset = '0 -250',
+         anchor = '0 0',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         anchorWidget = '',
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeMedium,
+         show = {
+            dead = true,
+            race = true,
+            mainMenu = false,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
+      },
+   },
+   ['Cato_GameMessage'] = {
       visible = true,
       props = {
          offset = '0 -80',
@@ -1291,6 +1315,29 @@ end
 -- end
 
 ----------------------------------------------------------------------------------------------------
+-- Game
+----------------------------------------------------------------------------------------------------
+
+-- FIXME: The condition is not sufficient for determining the player's index.
+--        Example: Two players with same name and same team will see each other frag messages
+local function getPlayerByName(name, team)
+   local fallbackPlayer
+   for _, p in ipairs(players) do
+      if p.name == name then
+         if team == nil or p.team == team then
+            return p
+         end
+
+         if fallbackPlayer == nil then
+            fallbackPlayer = p
+         end
+      end
+   end
+
+   return fallbackPlayer
+end
+
+----------------------------------------------------------------------------------------------------
 -- CatoHUD
 ----------------------------------------------------------------------------------------------------
 
@@ -1672,11 +1719,24 @@ function CatoHUD:drawWidget()
    -- Parse events for:
    --    Cato_Chat
    --    Cato_GameEvents
-   --    Cato_GameMessages
+   --    Cato_GameMessage
    --    Cato_FragMessage
    --    Cato_Toasty
+   -- FIXME: Is there a better way? Cato_FragMessage.fragEvents needs to be cleared after 2.5s
+   Cato_FragMessage.fragEvents = {}
    for _, event in ipairs(log) do
       -- consoleTablePrint(event)
+      if event.type == LOG_TYPE_DEATHMESSAGE then
+         if event.deathSuicide then
+
+         else
+            -- Cato_FragMessage
+            if event.age * 1000 < 2500 then
+               local killerPlayer = getPlayerByName(event.deathKiller, event.deathTeamIndexKiller)
+               Cato_FragMessage.fragEvents[killerPlayer.index] = event
+            end
+         end
+      end
    end
 
    -- Parse players for:
@@ -2307,13 +2367,47 @@ CatoHUD:registerWidget('Cato_ReadyStatus', Cato_ReadyStatus)
 
 ----------------------------------------------------------------------------------------------------
 
-Cato_GameMessages = {}
+Cato_FragMessage = {fragEvents = {}}
 
-function Cato_GameMessages:init()
+-- FIXME: Implement properly:
+--        (1) log should only be used to get the event and duration calculation should be handled by
+--            the widget code
+--        (2) Figure out whether it's possible to decisively conclude who actually (was) fragged
+function Cato_FragMessage:drawWidget()
+   local fragMessage = nil
+   if self.fragEvents[povPlayer.index] then
+      fragMessage = 'You fragged ' .. self.fragEvents[povPlayer.index].deathKilled
+   elseif previewMode then
+      fragMessage = '(Frag Message)'
+   else
+      return
+   end
+
+   local opts = {
+      font = self.userData.fontFace,
+      color = Color(255, 255, 255),
+      size = self.userData.fontSize,
+   }
+
+   -- TODO: Country flag
+   fragMessage = createTextElem(self.anchor, fragMessage, opts)
+   fragMessage.draw(self.x, self.y)
+
+   self.width = fragMessage.width
+   self.height = fragMessage.height
+end
+
+CatoHUD:registerWidget('Cato_FragMessage', Cato_FragMessage)
+
+----------------------------------------------------------------------------------------------------
+
+Cato_GameMessage = {}
+
+function Cato_GameMessage:init()
    self.lastTickSeconds = -1
 end
 
-function Cato_GameMessages:drawWidget()
+function Cato_GameMessage:drawWidget()
    local opts = {
       font = self.userData.fontFace,
       color = Color(255, 255, 255),
@@ -2365,7 +2459,7 @@ function Cato_GameMessages:drawWidget()
    self.height = gameMessage.height
 end
 
-CatoHUD:registerWidget('Cato_GameMessages', Cato_GameMessages)
+CatoHUD:registerWidget('Cato_GameMessage', Cato_GameMessage)
 
 ----------------------------------------------------------------------------------------------------
 
@@ -2398,6 +2492,19 @@ Cato_LowAmmo = {}
 -- local attackCommand = '+attack; cl_camera_next_player; ui_RocketLagNullifier_attack 1'
 
 function Cato_LowAmmo:drawWidget()
+   if previewMode then
+      local opts = {
+            font = self.userData.fontFace,
+            color = Color(255, 255, 255),
+            size = self.userData.fontSize,
+      }
+      local ammoWarning = createTextElem(self.anchor, '(Low Ammo)', opts)
+      ammoWarning.draw(self.x, self.y)
+      self.width = ammoWarning.width
+      self.height = ammoWarning.height
+      return
+   end
+
    if not povPlayer or povPlayer.infoHidden then return end
 
    local weaponIndexSelected = povPlayer.weaponIndexSelected
