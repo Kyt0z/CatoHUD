@@ -2051,10 +2051,13 @@ function Cato_Scores:drawWidget()
       for _, p in ipairs(players) do
          if p.state == PLAYER_STATE_INGAME and p.connected then
             if scoreWinner == nil or p.score > scoreWinner then
+               -- this fixes edge case where runner-up score appears first in the players table
+               scoreRunnerUp = scoreWinner
+               indexRunnerUp = indexWinner
+               --
                scoreWinner = p.score
                indexWinner = p.index
-            end
-            if p.index ~= indexWinner and (scoreRunnerUp == nil or p.score > scoreRunnerUp) then
+            elseif scoreRunnerUp == nil or p.score > scoreRunnerUp then
                scoreRunnerUp = p.score
                indexRunnerUp = p.index
             end
