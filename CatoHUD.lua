@@ -411,6 +411,7 @@ local defaultSettings = {
       cvars = {
          {'box_debug', 'int', 0},
          {'debug', 'int', 1},
+         {'preview', 'int', 0},
          {'reset_widgets', 'int', 0, 0},
          {'warmuptimer_reset', 'int', 0, 0},
          {'widget_cache', 'int', 0, 0},
@@ -666,78 +667,6 @@ local defaultSettings = {
          },
       },
    },
-   ['Cato_ReadyStatus'] = {
-      visible = true,
-      props = {
-         offset = '0 145',
-         anchor = '0 -1',
-         zIndex = '0',
-         scale = '1',
-      },
-      userData = {
-         anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = true,
-            editor = false,
-         },
-      },
-   },
-   ['Cato_GameMessages'] = {
-      visible = true,
-      props = {
-         offset = '0 -80',
-         anchor = '0 0',
-         zIndex = '0',
-         scale = '1',
-      },
-      userData = {
-         anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeMedium,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = true,
-            hudOff = false,
-            gameOver = false,
-            freecam = true,
-            editor = false,
-         },
-      },
-   },
-   ['Cato_Speed'] = {
-      visible = false,
-      props = {
-         offset = '0 60',
-         anchor = '0 0',
-         zIndex = '0',
-         scale = '1',
-      },
-      userData = {
-         anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = false,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
-      },
-   },
    ['Cato_LowAmmo'] = {
       visible = true,
       props = {
@@ -852,6 +781,78 @@ local defaultSettings = {
          textAnchor = {x = 0},
          show = {
             dead = true,
+            race = true,
+            mainMenu = false,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = false,
+            editor = false,
+         },
+      },
+   },
+   ['Cato_ReadyStatus'] = {
+      visible = true,
+      props = {
+         offset = '0 145',
+         anchor = '0 -1',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         anchorWidget = '',
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {
+            dead = true,
+            race = true,
+            mainMenu = false,
+            menu = false,
+            hudOff = false,
+            gameOver = false,
+            freecam = true,
+            editor = false,
+         },
+      },
+   },
+   ['Cato_GameMessages'] = {
+      visible = true,
+      props = {
+         offset = '0 -80',
+         anchor = '0 0',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         anchorWidget = '',
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeMedium,
+         show = {
+            dead = true,
+            race = true,
+            mainMenu = false,
+            menu = true,
+            hudOff = false,
+            gameOver = false,
+            freecam = true,
+            editor = false,
+         },
+      },
+   },
+   ['Cato_Speed'] = {
+      visible = false,
+      props = {
+         offset = '0 60',
+         anchor = '0 0',
+         zIndex = '0',
+         scale = '1',
+      },
+      userData = {
+         anchorWidget = '',
+         fontFace = defaultFontFace,
+         fontSize = defaultFontSizeSmall,
+         show = {
+            dead = false,
             race = true,
             mainMenu = false,
             menu = false,
@@ -1294,6 +1295,7 @@ end
 ----------------------------------------------------------------------------------------------------
 
 local debugMode = nil
+local previewMode = nil
 
 local povPlayer = nil
 local localPlayer = nil
@@ -1453,19 +1455,20 @@ function CatoHUD:registerWidget(widgetName, widget)
       -- Scale
 
       -- Z-Index
-      -- NOTE: If CatoHUD.preview, disable Z-Index (show previous value?)
+      -- NOTE: If previewMode, disable Z-Index (show previous value?)
 
       -- widget.canPreview is nil defaults to true
       if widget.canPreview ~= false then
          optDelimiter(pos, opts.delimiter)
-         CatoHUD.preview = optRowInput(
+         previewMode = optRowInput(
             optInput.checkBox,
             pos,
             'Preview',
-            CatoHUD.preview,
+            previewMode,
             opts.medium,
             opts.checkBox
          )
+         consolePerformCommand('ui_CatoHUD_preview ' .. (previewMode and 1 or 0))
       end
 
       -- widget.canAttach is nil defaults to true
@@ -1511,7 +1514,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       if widgetName == 'CatoHUD' then return true end
       if widgetName == 'Cato_Zoom' then return true end -- FIXME: Better solution
 
-      if CatoHUD.preview then
+      if previewMode then
          -- FIXME: preview should temporarily change zindex to -999?
          return true
       end
@@ -1581,7 +1584,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       end
 
       -- if not isInMenu() then
-      --    CatoHUD.preview = false
+      --    previewMode = false
       -- end
 
       widget.anchor = getProps(widgetName).anchor
@@ -1621,6 +1624,7 @@ end
 
 function CatoHUD:drawWidget()
    debugMode = consoleGetVariable('ui_CatoHUD_debug') ~= 0
+   previewMode = consoleGetVariable('ui_CatoHUD_preview') ~= 0
 
    povPlayer = players[playerIndexCameraAttachedTo]
    localPlayer = players[playerIndexLocalPlayer]
@@ -1757,7 +1761,7 @@ function Cato_FollowingPlayer:drawWidget()
    if not povPlayer then return end
 
    -- TODO: option for display on self
-   if not CatoHUD.preview and localPov then return end
+   if not previewMode and localPov then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -1972,6 +1976,16 @@ function Cato_Time:drawWidget()
    local hour = floor(epochSeconds / S_IN_H) % H_IN_D
    local delimiter = ':'
    local minute = floor(epochSeconds / S_IN_M) % M_IN_H
+
+   -- TODO: Figure out if time should be displayed during replay playback.
+   --       It's a bit misleading since it displays current local time, and replays don't seem to
+   --       contain information regarding the actual IRL time they were played during.
+   -- if inReplay then
+   --    consolePrint('---')
+   --    consoleTablePrint(replay)
+   --    consolePrint(epochSeconds)
+   --    consolePrint(replay.timecodeCurrent)
+   -- end
 
    hour = createTextElem(self.anchor, format('%02d', hour), opts.hour)
    delimiter = createTextElem(self.anchor, delimiter, opts.delimiter)
@@ -2263,7 +2277,7 @@ CatoHUD:registerWidget('Cato_Mutators', Cato_Mutators)
 Cato_ReadyStatus = {}
 
 function Cato_ReadyStatus:drawWidget()
-   if gameState ~= GAME_STATE_WARMUP and not CatoHUD.preview then return end
+   if gameState ~= GAME_STATE_WARMUP and not previewMode then return end
 
    local opts = {
       font = self.userData.fontFace,
@@ -2336,7 +2350,7 @@ function Cato_GameMessages:drawWidget()
       end
    end
 
-   if CatoHUD.preview then
+   if previewMode then
       if gameMessage == nil then
          gameMessage = '(Game Message)'
       end
