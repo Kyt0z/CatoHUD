@@ -1,56 +1,42 @@
-local TEAM_ALPHA = 1
-local TEAM_ZETA = 2
+------------------------------------------------------------------------------------------------------------------------
+-- luacheck
+------------------------------------------------------------------------------------------------------------------------
 
--- local STATE_DISCONNECTED = 0
--- local STATE_CONNECTING = 1
--- local STATE_CONNECTED = 2
+-- FIXME: Can I not get these warnings suppressed easier?
 
--- local GAME_STATE_WARMUP = 0
--- local GAME_STATE_ACTIVE = 1
--- local GAME_STATE_ROUNDPREPARE = 2
--- local GAME_STATE_ROUNDACTIVE = 3
--- local GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON = 4
--- local GAME_STATE_ROUNDCOOLDOWN_DRAW = 5
--- local GAME_STATE_GAMEOVER = 6
+-- reflexcore.lua
+-- luacheck: globals GAME_STATE_ACTIVE GAME_STATE_GAMEOVER GAME_STATE_ROUNDACTIVE GAME_STATE_ROUNDCOOLDOWN_DRAW
+-- luacheck: globals GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON GAME_STATE_ROUNDPREPARE GAME_STATE_WARMUP LOG_TYPE_DEATHMESSAGE
+-- luacheck: globals PLAYER_STATE_EDITOR PLAYER_STATE_INGAME PLAYER_STATE_SPECTATOR STATE_CONNECTED STATE_CONNECTING
+-- luacheck: globals STATE_DISCONNECTED WIDGET_PROPERTIES_COL_WIDTH
 
--- local PLAYER_STATE_INGAME = 1
--- local PLAYER_STATE_SPECTATOR = 2
--- local PLAYER_STATE_EDITOR = 3
--- local PLAYER_STATE_QUEUED = 4
+-- gamestrings.lua
+-- luacheck: globals mutatorDefinitions
 
-local defaultFontFace = 'TitilliumWeb-Bold'
-local defaultFontSizeSmall = 32
-local defaultFontSizeMedium = 40
-local defaultFontSizeBig = 64
-local defaultFontSizeTimer = 120
-local defaultFontSizeHuge = 160
-local sens = consoleGetVariable('m_speed')
-local fov = consoleGetVariable('r_fov')
-local defaultZoomFov = 40
-local defaultZoomSensMult = 1.0915740009242504 -- FIXME: 1 for release
+-- LuaVariables.txt
+-- luacheck: globals deltaTime epochTime extendedColors gamemodes loading log playerIndexCameraAttachedTo
+-- luacheck: globals playerIndexLocalPlayer players replayActive replayName showScores teamColors weaponDefinitions
+-- luacheck: globals widgets world
 
--- TODO: Various relative offsets (such as between lines in 'FOLLOWING\nplayer') depend on the
---       font, so maybe a function that calculates the proper offset for all the default fonts?
--- local fonts = {
---    'oswald-regular',
---    'oswald-bold',
---    'roboto-regular',
---    'roboto-bold',
---    'titilliumWeb-regular',
---    'TitilliumWeb-Bold',
--- }
--- nvgFontSize(120)
--- for _, font in ipairs(fonts) do
---    nvgFontFace(font)
---    consolePrint(font)
---    for i = 0, 9 do
---       consolePrint(i .. ': ' .. nvgTextWidth(i))
---    end
--- end
+-- LuaFunctions.txt
+-- luacheck: globals consoleGetVariable consolePerformCommand consolePrint isInMenu mouseRegion nvgBeginPath nvgFill
+-- luacheck: globals nvgFillColor nvgFontBlur nvgFontFace nvgFontSize nvgIntersectScissor nvgLineTo nvgMoveTo nvgRect
+-- luacheck: globals nvgRestore nvgSave nvgStroke nvgStrokeColor nvgSvg nvgText nvgTextAlign nvgTextWidth playSound
+-- luacheck: globals registerWidget saveUserData textRegion textRegionSetCursor widgetCreateConsoleVariable
+-- luacheck: globals widgetSetConsoleVariable
 
-----------------------------------------------------------------------------------------------------
--- Math
-----------------------------------------------------------------------------------------------------
+-- CatoHUD
+-- luacheck: no self
+-- luacheck: allow defined top
+-- _luacheck: allow defined
+-- _luacheck: no redefined
+-- _luacheck: unused, ignore (for now)
+-- luacheck: ignore rad2deg clamp (math)
+-- luacheck: ignore consoleTablePrint consoleColorPrint (debug functions)
+
+------------------------------------------------------------------------------------------------------------------------
+-- Math/Lua
+------------------------------------------------------------------------------------------------------------------------
 
 local floor = math.floor
 local ceil = math.ceil
@@ -60,70 +46,15 @@ local max = math.max
 local sin = math.sin
 local csc = function(x) return 1 / sin(x) end
 local tan = math.tan
+local atan = math.atan
 local atan2 = math.atan2
 local pi = math.pi
+local sqrt = math.sqrt
 local deg2rad = function(x) return x * pi / 180 end
 local rad2deg = function(x) return x * 180 / pi end
 local format = string.format
 local rep = string.rep
 local sub = string.sub
-
-local function clamp(x, minVal, maxVal)
-   return max(min(x, maxVal), minVal)
-end
-
-local function round(x)
-   return x >= 0 and floor(x + 0.5) or ceil(x - 0.5)
-end
-
-local function lerp(x, y, k)
-   return (1 - k) * x + k * y
-end
-
-local function verticalFov(fov)
-   return 2 * atan((3 / 4) * tan(deg2rad(fov) / 2))
-end
-
-local function zoomSensRatio(fov, zoomFov, viewWidth, viewHeight, algorithm)
-   if algorithm == 'monitordistance' then
-      return atan((4 / 3) * tan(deg2rad(zoomFov) / 2)) / atan((4 / 3) * tan(deg2rad(fov) / 2))
-   elseif algorithm == 'viewspeed' then
-      return (csc(verticalFov(fov) / 2) / sqrt(2)) / (csc(verticalFov(zoomFov) / 2) / sqrt(2))
-   elseif algorithm == 'linear' then
-      return zoomFov / fov
-   end
-
-   return (atan2(viewHeight, viewWidth / tan(zoomFov / 360 * pi))) * 360 / pi / 75 -- Q3A
-end
-
-local function armorMax(armorProtection)
-   return floor(200 * (armorProtection + 2) / 4)
-end
-
-local function armorQuality(armorProtection)
-   return floor(100 * (armorProtection + 1) / (armorProtection + 2)) / 100
-end
-
-local function armorLimit(pArmorProt, iArmorProt)
-   return floor(armorMax(iArmorProt) * armorQuality(iArmorProt) / armorQuality(pArmorProt))
-end
-
--- Precalculate these constants to save time
-local armorMax = {armorMax(0), armorMax(1), armorMax(2)} -- {100, 150, 200}
-local armorQuality = {armorQuality(0), armorQuality(1), armorQuality(2)} -- {0.50, 0.66, 0.75}
-local armorLimit = {
-   {armorLimit(0, 0), armorLimit(0, 1), armorLimit(0, 2)}, -- 100, 198, 300
-   {armorLimit(1, 0), armorLimit(1, 1), armorLimit(1, 2)}, --  75, 150, 227
-   {armorLimit(2, 0), armorLimit(2, 1), armorLimit(2, 2)}, --  66, 132, 200
-}
-
-local function damageToKill(health, armor, armorProtection)
-   return min(armor, health * (armorProtection + 1)) + health
-end
-
-----------------------------------------------------------------------------------------------------
--- Lua
-----------------------------------------------------------------------------------------------------
 
 local function consoleTablePrint(key, val, depth)
    if not depth then depth = 0 end
@@ -157,9 +88,95 @@ local function checkResetConsoleVariable(cvar, resetValue)
    return oldValue
 end
 
-----------------------------------------------------------------------------------------------------
+local function clamp(x, minVal, maxVal)
+   return max(min(x, maxVal), minVal)
+end
+
+local function round(x)
+   return x >= 0 and floor(x + 0.5) or ceil(x - 0.5)
+end
+
+local function lerp(x, y, k)
+   return (1 - k) * x + k * y
+end
+
+local function verticalFov(fov)
+   return 2 * atan((3 / 4) * tan(deg2rad(fov) / 2))
+end
+
+local function zoomSensRatio(fov, zoomFov, viewWidth, viewHeight, algorithm)
+   if algorithm == 'monitordistance' then
+      return atan((4 / 3) * tan(deg2rad(zoomFov) / 2)) / atan((4 / 3) * tan(deg2rad(fov) / 2))
+   elseif algorithm == 'viewspeed' then
+      return (csc(verticalFov(fov) / 2) / sqrt(2)) / (csc(verticalFov(zoomFov) / 2) / sqrt(2))
+   elseif algorithm == 'linear' then
+      return zoomFov / fov
+   end
+
+   return (atan2(viewHeight, viewWidth / tan(zoomFov / 360 * pi))) * 360 / pi / 75 -- Q3A
+end
+
+-- local function armorMax(armorProtection)
+--    return floor(200 * (armorProtection + 2) / 4)
+-- end
+-- local function armorQuality(armorProtection)
+--    return floor(100 * (armorProtection + 1) / (armorProtection + 2)) / 100
+-- end
+-- local function armorLimit(pArmorProt, iArmorProt)
+--    return floor(armorMax(iArmorProt) * armorQuality(iArmorProt) / armorQuality(pArmorProt))
+-- end
+-- -- Precalculate these constants to save time
+-- local armorMax = {armorMax(0), armorMax(1), armorMax(2)} -- {100, 150, 200}
+-- local armorQuality = {armorQuality(0), armorQuality(1), armorQuality(2)} -- {0.50, 0.66, 0.75}
+-- local armorLimit = {
+--    {armorLimit(0, 0), armorLimit(0, 1), armorLimit(0, 2)}, -- 100, 198, 300
+--    {armorLimit(1, 0), armorLimit(1, 1), armorLimit(1, 2)}, --  75, 150, 227
+--    {armorLimit(2, 0), armorLimit(2, 1), armorLimit(2, 2)}, --  66, 132, 200
+-- }
+-- consolePrint('---')
+-- consoleTablePrint(armorMax)
+-- consoleTablePrint(armorQuality)
+-- consoleTablePrint(armorLimit)
+-- consolePrint('---')
+-- -- Precalculate these constants to save time
+-- local armorMax = {}
+-- local armorQuality = {}
+-- for i = 1, 3 do
+--    armorMax[i] = floor(200 * (i + 1) / 4)
+--    armorQuality[i] = floor(100 * i / (i + 1)) / 100
+-- end
+-- local armorLimit = {}
+-- for i = 1, 3 do
+--    armorLimit[i] = {}
+--    for j = 1, 3 do
+--       armorLimit[i][j] = floor(armorMax[j] * armorQuality[j] / armorQuality[i])
+--    end
+-- end
+-- consoleTablePrint(armorMax)
+-- consoleTablePrint(armorQuality)
+-- consoleTablePrint(armorLimit)
+-- consolePrint('---')
+-- NOTE: "Why not simply? What if they change in a future update?"
+--       The previous calculations are constant as well anyways, since nothing is tied to ruleset.
+local armorMax = {100, 150, 200}
+local armorQuality = {0.5, 0.66, 0.75}
+local armorLimit = {
+   {100, 198, 300},
+   { 75, 150, 227},
+   { 66, 132, 200},
+}
+-- consoleTablePrint(armorMax)
+-- consoleTablePrint(armorQuality)
+-- consoleTablePrint(armorLimit)
+-- consolePrint('---')
+
+local function damageToKill(health, armor, armorProtection)
+   return min(armor, health * (armorProtection + 1)) + health
+end
+
+------------------------------------------------------------------------------------------------------------------------
 -- Time
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 local MS_IN_S = 1000
 local S_IN_M = 60
@@ -233,52 +250,49 @@ local function yearsModSince(yearFrom, yearTo, modulo)
    return floor((yearTo - 1) / modulo) - floor((yearFrom - 1) / modulo)
 end
 
-function formatEpochTime(epochTimestamp, offsetUTC)
+local function formatEpochTime(epochTimestamp, offsetUTC)
    local epochSeconds = epochTimestamp + offsetUTC
-   local year = nil
-   local month = nil
-   if false then
-      -- TODO: Optimization (even further)
-      -- Overshoot yearTo such that epochSeconds < 0, and then add the year's seconds back to it?
-      -- Test case: year is k*365 or k*366 >= yearFrom, k >= 1
-      local yearFrom = 1970
-      year = yearFrom
-      while epochSeconds >= secondsInYear(year) do
-         year = year + floor(epochSeconds / S_IN_Y)
-         local yearsMod4Since = yearsModSince(yearFrom, year, 4)
-         local yearsMod100Since = yearsModSince(yearFrom, year, 100)
-         local yearsMod400Since = yearsModSince(yearFrom, year, 400)
-         local leapYears = yearsMod4Since - yearsMod100Since + yearsMod400Since
-         local nonLeapYears = year - leapYears
-         epochSeconds = epochSeconds - (leapYears * S_IN_LY + nonLeapYears * S_IN_Y)
-         yearFrom = year
-      end
 
-      month = 1
-      local monthSeconds = secondsInMonth(month, year)
-      while epochSeconds >= monthSeconds do
-         epochSeconds = epochSeconds - monthSeconds
-         month = month + 1
-         monthSeconds = secondsInMonth(month, year)
-      end
-   else
-      -- Working
-      year = 1970
-      local secondsInYearCurrent = secondsInYear(year)
-      while epochSeconds >= secondsInYearCurrent do
-         epochSeconds = epochSeconds - secondsInYearCurrent
-         year = year + 1
-         secondsInYearCurrent = secondsInYear(year)
-      end
-
-      month = 1
-      local secondsInMonthCurrent = secondsInMonth(month, year)
-      while epochSeconds >= secondsInMonthCurrent do
-         epochSeconds = epochSeconds - secondsInMonthCurrent
-         month = month + 1
-         secondsInMonthCurrent = secondsInMonth(month, year)
-      end
+   -- Working
+   local year = 1970
+   local secondsInYearCurrent = secondsInYear(year)
+   while epochSeconds >= secondsInYearCurrent do
+      epochSeconds = epochSeconds - secondsInYearCurrent
+      year = year + 1
+      secondsInYearCurrent = secondsInYear(year)
    end
+
+   local month = 1
+   local secondsInMonthCurrent = secondsInMonth(month, year)
+   while epochSeconds >= secondsInMonthCurrent do
+      epochSeconds = epochSeconds - secondsInMonthCurrent
+      month = month + 1
+      secondsInMonthCurrent = secondsInMonth(month, year)
+   end
+
+   -- -- TODO: Optimization (even further)
+   -- -- Overshoot yearTo such that epochSeconds < 0, and then add the year's seconds back to it?
+   -- -- Test case: year is k*365 or k*366 >= yearFrom, k >= 1
+   -- local yearFrom = 1970
+   -- local year = yearFrom
+   -- while epochSeconds >= secondsInYear(year) do
+   --    year = year + floor(epochSeconds / S_IN_Y)
+   --    local yearsMod4Since = yearsModSince(yearFrom, year, 4)
+   --    local yearsMod100Since = yearsModSince(yearFrom, year, 100)
+   --    local yearsMod400Since = yearsModSince(yearFrom, year, 400)
+   --    local leapYears = yearsMod4Since - yearsMod100Since + yearsMod400Since
+   --    local nonLeapYears = year - leapYears
+   --    epochSeconds = epochSeconds - (leapYears * S_IN_LY + nonLeapYears * S_IN_Y)
+   --    yearFrom = year
+   -- end
+
+   -- local month = 1
+   -- local monthSeconds = secondsInMonth(month, year)
+   -- while epochSeconds >= monthSeconds do
+   --    epochSeconds = epochSeconds - monthSeconds
+   --    month = month + 1
+   --    monthSeconds = secondsInMonth(month, year)
+   -- end
 
    local day = floor(epochSeconds / S_IN_D)
    epochSeconds = epochSeconds - day * S_IN_D
@@ -313,9 +327,9 @@ function formatEpochTime(epochTimestamp, offsetUTC)
    }
 end
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 -- Colors
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 local function Color(r, g, b, a, intensity)
    return {r = r, g = g, b = b, a = (a or 255) * (intensity or 1)}
@@ -383,9 +397,21 @@ local function armorColorLerp(armor, armorProtection, colorArmor)
    return lerpColor(colorArmor, colorToLerp, abs(lerpAmount))
 end
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 -- Default settings
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+
+local defaultFontFace = 'TitilliumWeb-Bold'
+local defaultFontSizeSmall = 32
+local defaultFontSizeMedium = 40
+local defaultFontSizeBig = 64
+local defaultFontSizeTimer = 120
+local defaultFontSizeHuge = 160
+local defaultSens = consoleGetVariable('m_speed')
+local defaultFov = consoleGetVariable('r_fov')
+local defaultZoomFov = 40
+local defaultZoomSensMult = 1.0915740009242504 -- FIXME: 1 for release
+local defaultZoomSens = defaultSens * zoomSensRatio(defaultFov, defaultZoomFov, 1440, 1080) * defaultZoomSensMult
 
 local defaultSettings = {
    ['CatoHUD'] = {
@@ -421,7 +447,7 @@ local defaultSettings = {
    ['Cato_Zoom'] = {
       userData = {
          fov = defaultZoomFov,
-         sensitivity = sens * zoomSensRatio(fov, defaultZoomFov, 1440, 1080) * defaultZoomSensMult,
+         sensitivity = defaultZoomSens,
          time = 0,
       },
    },
@@ -889,9 +915,9 @@ local defaultSettings = {
    },
 }
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 -- Widget cache
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 local indexCache = {}
 local indexCacheSize = 0
@@ -949,9 +975,28 @@ local function debugIndexCache()
    return debugLines
 end
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 -- UI/NVG
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+
+-- TODO: Various relative offsets (such as between lines in 'FOLLOWING\nplayer') depend on the
+--       font, so maybe a function that calculates the proper offset for all the default fonts?
+-- local fonts = {
+--    'oswald-regular',
+--    'oswald-bold',
+--    'roboto-regular',
+--    'roboto-bold',
+--    'titilliumWeb-regular',
+--    'TitilliumWeb-Bold',
+-- }
+-- nvgFontSize(120)
+-- for _, font in ipairs(fonts) do
+--    nvgFontFace(font)
+--    consolePrint(font)
+--    for i = 0, 9 do
+--       consolePrint(i .. ': ' .. nvgTextWidth(i))
+--    end
+-- end
 
 -- WIDGET_PROPERTIES_COL_INDENT = 250
 -- WIDGET_PROPERTIES_COL_WIDTH = 560
@@ -1009,7 +1054,7 @@ local function createTextElem(anchor, text, opts)
          -- local bounds = nvgTextBounds(text)
          -- consoleTablePrint(bounds)
          -- consolePrint('')
-         pos = getOffset({x = anchorX, y = anchorY}, width, opts.size)
+         local pos = getOffset({x = anchorX, y = anchorY}, width, opts.size)
          nvgFillColor(Color(0, 255, 0, 63))
          nvgBeginPath()
          nvgRect(pos.x, pos.y, width, opts.size)
@@ -1040,7 +1085,7 @@ local function createSvgElem(anchor, image, opts)
       nvgSvg(image, x, y, opts.size)
 
       if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
-         pos = getOffset(anchor, 2 * opts.size, 2 * opts.size)
+         local pos = getOffset(anchor, 2 * opts.size, 2 * opts.size)
          nvgFillColor(Color(0, 255, 0, 63))
          nvgBeginPath()
          nvgRect(pos.x, pos.y, 2 * opts.size, 2 * opts.size)
@@ -1070,21 +1115,26 @@ local function optFormatColor(color, hoverAmount, enabled, pressed)
 end
 
 local function optDelimiter(pos, opts)
+   -- WIDGET_PROPERTIES_COL_WIDTH = 520
    pos.y = pos.y + 8 -- padding
    nvgFillColor(opts.color)
    nvgBeginPath()
-   nvgRect(pos.x, pos.y, 580, 2)
+   nvgRect(pos.x, pos.y, WIDGET_PROPERTIES_COL_WIDTH + 20, 2)
    nvgFill()
    pos.y = pos.y + 10 -- padding
 
    if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
       nvgFillColor(Color(0, 255, 0, 63))
       nvgBeginPath()
-      nvgRect(pos.x, pos.y - 18, 580, 18)
+      nvgRect(pos.x, pos.y - 18, WIDGET_PROPERTIES_COL_WIDTH + 20, 18)
       nvgFill()
    end
 end
 
+-- FIXME: Copied from reflexcore and modified. DIY..
+editBox_flash = 0 -- hmm hidden globals
+editBox_offsetX = 0
+editBox_offsetX_id = 0
 local optInput = {
    checkBox = function(pos, value, opts)
       local enabled = opts.enabled == nil and true or opts.enabled
@@ -1120,14 +1170,11 @@ local optInput = {
    end,
 
    -- FIXME: Copied from reflexcore and modified. DIY..
-   __editBox_flash = 0, -- hmm hidden globals
-   __editBox_offsetX = 0,
-   __editBox_offsetX_id = 0,
    editBox = function(pos, value, opts)
       local enabled = opts.enabled == nil and true or opts.enabled
       local giveFocus = (opts.giveFocus ~= nil) and opts.giveFocus or false
 
-      local t = nil
+      local t
       if enabled then
          t = textRegion(pos.x, pos.y, opts.width, opts.height, value, opts.id or 0, giveFocus)
       else
@@ -1153,17 +1200,17 @@ local optInput = {
       -- apply font & calculate cursor pos
       nvgFontSize(32)
       nvgFontFace('titilliumWeb-regular')
-      local textUntilCursor = sub(t.text, 0, t.cursor)
-      local textWidthAtCursor = nvgTextWidth(textUntilCursor)
+      -- local textUntilCursor = sub(t.text, 0, t.cursor)
+      -- local textWidthAtCursor = nvgTextWidth(textUntilCursor)
 
       -- text positioning (this may be a frame behind at this point, but it used for input, one what
       -- is on the screen, so that's fine)
       local offsetX = 0
-      if t.focus then -- only use __editBox_offsetX if we have focus
-         if __editBox_offsetX_id == t.id then
-            offsetX = __editBox_offsetX
+      if t.focus then -- only use editBox_offsetX if we have focus
+         if editBox_offsetX_id == t.id then
+            offsetX = editBox_offsetX
          else
-            __editBox_offsetX_id = t.id
+            editBox_offsetX_id = t.id
             offsetX = 0
          end
       end
@@ -1200,8 +1247,8 @@ local optInput = {
       end
 
       -- update these, cursor may have changed!
-      textUntilCursor = sub(t.text, 0, t.cursor)
-      textWidthAtCursor = nvgTextWidth(textUntilCursor)
+      local textUntilCursor = sub(t.text, 0, t.cursor)
+      local textWidthAtCursor = nvgTextWidth(textUntilCursor)
 
       -- keep the cursor inside the bounds of the text entry
       if t.focus then
@@ -1221,12 +1268,12 @@ local optInput = {
          end
 
          -- store into common global var, we're the entry with focus
-         __editBox_offsetX = offsetX
-         __editBox_offsetX_id = t.id
+         editBox_offsetX = offsetX
+         editBox_offsetX_id = t.id
       else
          -- no-longer holding it, reset
-         if __editBox_offsetX_id == t.id then
-            __editBox_offsetX_id = 0
+         if editBox_offsetX_id == t.id then
+            editBox_offsetX_id = 0
          end
       end
 
@@ -1240,11 +1287,11 @@ local optInput = {
       if t.focus then
          local cursorFlashPeriod = 0.25
 
-         __editBox_flash = __editBox_flash + deltaTime
+         editBox_flash = editBox_flash + deltaTime
 
          -- if cursor moves, restart flash
          if t.cursorChanged then
-            __editBox_flash = 0
+            editBox_flash = 0
          end
 
          -- multiple selection, draw selection field
@@ -1261,15 +1308,15 @@ local optInput = {
          end
 
          -- flashing cursor
-         if __editBox_flash < cursorFlashPeriod then
+         if editBox_flash < cursorFlashPeriod then
             nvgBeginPath()
             nvgMoveTo(textX + textWidthAtCursor, textY - opts.height * 0.35)
             nvgLineTo(textX + textWidthAtCursor, textY + opts.height * 0.35)
             nvgStrokeColor(textColor)
             nvgStroke()
          else
-            if __editBox_flash > cursorFlashPeriod * 2 then
-               __editBox_flash = 0
+            if editBox_flash > cursorFlashPeriod * 2 then
+               editBox_flash = 0
             end
          end
       end
@@ -1314,9 +1361,9 @@ end
 --
 -- end
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 -- Game
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 -- FIXME: The condition is not sufficient for determining the player's index.
 --        Example: Two players with same name and same team will see each other frag messages
@@ -1337,9 +1384,12 @@ local function getPlayerByName(name, team)
    return fallbackPlayer
 end
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 -- CatoHUD
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
+
+local TEAM_ALPHA = 1
+local TEAM_ZETA  = 2
 
 local debugMode = nil
 local previewMode = nil
@@ -1397,12 +1447,12 @@ function CatoHUD:registerWidget(widgetName, widget)
       local settings = defaultSettings[widgetName] or {}
 
       for _, cvar in ipairs(settings.cvars or {}) do
-         if self == widget then
+         if not reset then
             widgetCreateConsoleVariable(cvar[1], cvar[2], cvar[3])
             if cvar[4] then
                widgetSetConsoleVariable(cvar[1], cvar[4])
             end
-         elseif reset then
+         else
             local resetVal = cvar[4] or cvar[3]
             consolePerformCommand('ui_' .. widgetName .. '_' .. cvar[1] .. ' ' .. resetVal)
          end
@@ -1567,7 +1617,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       end
 
       -- FIXME: Combine statements. Should be more efficient?
-      local widgetShow = nil
+      local widgetShow
       if widget.userData and widget.userData.show then
          widgetShow = widget.userData.show
       else
@@ -1652,7 +1702,7 @@ function CatoHUD:registerWidget(widgetName, widget)
    end
 end
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 function CatoHUD:init()
    local time = formatEpochTime(epochTime, CatoHUD.userData.offsetUTC)
@@ -1683,7 +1733,7 @@ function CatoHUD:drawWidget()
    map = world.mapName
    mapTitle = world.mapTitle
    ruleset = world.ruleset
-   gameTime = world.gameTime
+   gameTimeElapsed = world.gameTime
    gameTimeLimit = world.gameTimeLimit
 
    inReplay = replayActive and replayName ~= 'menu'
@@ -1727,9 +1777,7 @@ function CatoHUD:drawWidget()
    for _, event in ipairs(log) do
       -- consoleTablePrint(event)
       if event.type == LOG_TYPE_DEATHMESSAGE then
-         if event.deathSuicide then
-
-         else
+         if not event.deathSuicide then
             -- Cato_FragMessage
             if event.age * 1000 < 2500 then
                -- FIXME: Again. getPlayerByName is not a sufficient condition.
@@ -1744,14 +1792,14 @@ function CatoHUD:drawWidget()
    --    Cato_BurstAccuracy
    --    Cato_Chat
    --    Cato_FakeBeam
-   for _, p in ipairs(players) do
-      -- consoleTablePrint(p)
-   end
+   -- for _, p in ipairs(players) do
+   --    consoleTablePrint(p)
+   -- end
 end
 
 CatoHUD:registerWidget('CatoHUD', CatoHUD)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_GameTime = {}
 
@@ -1783,8 +1831,8 @@ function Cato_GameTime:drawWidget()
    if gameState == GAME_STATE_WARMUP then
       timeElapsed = warmupTimeElapsed
    elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
-      timeElapsed = gameTime
-      hideSeconds = (hideSeconds and gameTimeLimit - gameTime > 30000)
+      timeElapsed = gameTimeElapsed
+      hideSeconds = (hideSeconds and gameTimeLimit - gameTimeElapsed > 30000)
    end
 
    local timer = formatTimeMs(timeElapsed, gameTimeLimit, self.userData.countDown)
@@ -1814,7 +1862,7 @@ end
 
 CatoHUD:registerWidget('Cato_GameTime', Cato_GameTime)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_FollowingPlayer = {}
 
@@ -1862,7 +1910,7 @@ end
 
 CatoHUD:registerWidget('Cato_FollowingPlayer', Cato_FollowingPlayer)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_FPS = {}
 
@@ -1884,7 +1932,7 @@ end
 
 CatoHUD:registerWidget('Cato_FPS', Cato_FPS)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_Time = {}
 
@@ -2071,7 +2119,7 @@ end
 
 CatoHUD:registerWidget('Cato_Time', Cato_Time)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_Scores = {}
 
@@ -2097,10 +2145,10 @@ function Cato_Scores:drawWidget()
       },
    }
 
-   local scoreTeam = nil
-   local indexTeam = nil
-   local scoreEnemy = nil
-   local indexEnemy = nil
+   local scoreTeam
+   local indexTeam
+   local scoreEnemy
+   local indexEnemy
    local relativeColors = consoleGetVariable('cl_colors_relative') == 1
    if hasTeams then
       if povPlayer and povPlayer.state == PLAYER_STATE_INGAME then
@@ -2204,7 +2252,7 @@ end
 
 CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_GameModeName = {}
 
@@ -2226,7 +2274,7 @@ end
 
 CatoHUD:registerWidget('Cato_GameModeName', Cato_GameModeName)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_RulesetName = {}
 
@@ -2248,7 +2296,7 @@ end
 
 CatoHUD:registerWidget('Cato_RulesetName', Cato_RulesetName)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_MapName = {}
 
@@ -2270,7 +2318,7 @@ end
 
 CatoHUD:registerWidget('Cato_MapName', Cato_MapName)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_Mutators = {}
 
@@ -2333,7 +2381,7 @@ end
 
 CatoHUD:registerWidget('Cato_Mutators', Cato_Mutators)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_ReadyStatus = {}
 
@@ -2366,7 +2414,7 @@ end
 
 CatoHUD:registerWidget('Cato_ReadyStatus', Cato_ReadyStatus)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_FragMessage = {fragEvents = {}}
 
@@ -2375,7 +2423,7 @@ Cato_FragMessage = {fragEvents = {}}
 --            the widget code
 --        (2) Figure out whether it's possible to decisively conclude who actually (was) fragged
 function Cato_FragMessage:drawWidget()
-   local fragMessage = nil
+   local fragMessage
    if self.fragEvents[playerIndexCameraAttachedTo] then
       fragMessage = 'You fragged ' .. self.fragEvents[playerIndexCameraAttachedTo].deathKilled
    elseif previewMode then
@@ -2400,7 +2448,7 @@ end
 
 CatoHUD:registerWidget('Cato_FragMessage', Cato_FragMessage)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_GameMessage = {}
 
@@ -2418,14 +2466,14 @@ function Cato_GameMessage:drawWidget()
    local gameMessage = nil
    if world.timerActive then
       if gameState == GAME_STATE_WARMUP or gameState == GAME_STATE_ROUNDPREPARE then
-         local timer = formatTimeMs(gameTime, gameTimeLimit, true)
+         local timer = formatTimeMs(gameTimeElapsed, gameTimeLimit, true)
          if self.lastTickSeconds ~= timer.seconds then
             self.lastTickSeconds = timer.seconds
             playSound('internal/ui/match/match_countdown_tick')
          end
          gameMessage = timer.seconds
       elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
-         if gameTime < 2500 then
+         if gameTimeElapsed < 2500 then
             local overTimeCount = world.overTimeCount
             if overTimeCount <= 0 then
                gameMessage = (gameMode == 'race' or gameMode == 'training') and 'GO' or 'FIGHT'
@@ -2462,7 +2510,7 @@ end
 
 CatoHUD:registerWidget('Cato_GameMessage', Cato_GameMessage)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_Speed = {}
 
@@ -2484,7 +2532,7 @@ end
 
 CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_LowAmmo = {}
 
@@ -2562,7 +2610,7 @@ end
 
 CatoHUD:registerWidget('Cato_LowAmmo', Cato_LowAmmo)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_PacketLoss = {}
 
@@ -2594,7 +2642,7 @@ end
 
 CatoHUD:registerWidget('Cato_PacketLoss', Cato_PacketLoss)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_Ping = {}
 
@@ -2626,7 +2674,7 @@ end
 
 CatoHUD:registerWidget('Cato_Ping', Cato_Ping)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_HealthNumber = {}
 
@@ -2663,7 +2711,7 @@ end
 
 CatoHUD:registerWidget('Cato_HealthNumber', Cato_HealthNumber)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_ArmorNumber = {}
 
@@ -2751,7 +2799,7 @@ end
 
 CatoHUD:registerWidget('Cato_ArmorNumber', Cato_ArmorNumber)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_ArmorIcon = {}
 
@@ -2776,7 +2824,7 @@ end
 
 CatoHUD:registerWidget('Cato_ArmorIcon', Cato_ArmorIcon)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
 
 Cato_Zoom = {canHide = false, canPosition = false, canPreview = false}
 
@@ -2825,4 +2873,4 @@ end
 
 CatoHUD:registerWidget('Cato_Zoom', Cato_Zoom)
 
-----------------------------------------------------------------------------------------------------
+------------------------------------------------------------------------------------------------------------------------
