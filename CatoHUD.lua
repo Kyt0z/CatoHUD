@@ -1020,84 +1020,119 @@ local function nvgVerticalAlign(y)
    return y + 2
 end
 
-local function createTextElem(anchor, text, opts)
+local function createTextElem(widget, text, opts)
    -- FIXME: Is this a good idea?
    -- opts.size = opts.size * viewport.height / 1080
    -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
 
+   local height = opts.size
    nvgFontBlur(0)
    nvgFontFace(opts.font)
-   nvgFontSize(opts.size)
+   nvgFontSize(height)
+   local width = nvgTextWidth(text)
 
    local draw = function(x, y)
-      local anchorX = anchor.x
-      local anchorY = anchor.y
+      x = widget.x + x
+      y = widget.y + y
+
+      local anchorX = widget.anchor.x
+      local anchorY = widget.anchor.y
       if opts.anchor then
          if opts.anchor.x then anchorX = opts.anchor.x end
          if opts.anchor.y then anchorY = opts.anchor.y end
       end
       nvgTextAlign(nvgHorizontalAlign(anchorX), nvgVerticalAlign(anchorY))
-      nvgFontFace(opts.font)
 
       nvgFillColor(Color(0, 0, 0, opts.color.a * 3))
       nvgFontBlur(2)
-      nvgFontSize(opts.size)
       nvgText(x, y, text)
 
       nvgFillColor(opts.color)
       nvgFontBlur(0)
-      nvgFontSize(opts.size)
       nvgText(x, y, text)
 
+      widget.x_min = min(widget.x_min, x)
+      widget.x_max = max(widget.x_max, x + width)
+      widget.width = widget.x_max - widget.x_min
+
+      widget.y_min = min(widget.y_min, y)
+      widget.y_max = max(widget.y_max, y + height)
+      widget.height = widget.y_max - widget.y_min
+
       if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
-         local width = nvgTextWidth(text)
          -- local bounds = nvgTextBounds(text)
-         -- consoleTablePrint(bounds)
+         -- -- consoleTablePrint(bounds)
          -- consolePrint('')
-         local pos = getOffset({x = anchorX, y = anchorY}, width, opts.size)
+         -- nvgRect(bounds.minx, bounds.miny, bounds.maxx - bounds.minx, bounds.maxy - bounds.miny)
+         local pos = getOffset({x = anchorX, y = anchorY}, width, height)
          nvgFillColor(Color(0, 255, 0, 63))
          nvgBeginPath()
-         nvgRect(pos.x, pos.y, width, opts.size)
+         nvgRect(x + pos.x, y + pos.y, width, height)
          nvgFill()
       end
    end
 
-   return {width = nvgTextWidth(text), height = opts.size, draw = draw}
+   return {width = width, height = height, draw = draw}
 end
 
-local function createSvgElem(anchor, image, opts)
+local function createSvgElem(widget, image, opts)
    -- FIXME: Is this a good idea?
    -- opts.size = opts.size * viewport.height / 1080
    -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
 
+   local width = 2 * opts.size
+   local height = 2 * opts.size
+
    local draw = function(x, y)
-      x = x - anchor.x * opts.size
-      y = y - anchor.y * opts.size
+      x = widget.x + x
+      y = widget.y + y
+
+      local nvgX = x - widget.anchor.x * opts.size
+      local nvgY = y - widget.anchor.y * opts.size
 
       nvgFillColor(Color(0, 0, 0, opts.color.a))
-      nvgSvg(image, x, y, opts.size + 1.25)
+      nvgSvg(image, nvgX, nvgY, opts.size + 1.25)
       -- nvgSvg(image, x - 1.5, y - 1.5, opts.size)
       -- nvgSvg(image, x + 1.5, y - 1.5, opts.size)
       -- nvgSvg(image, x + 1.5, y + 1.5, opts.size)
       -- nvgSvg(image, x - 1.5, y + 1.5, opts.size)
 
       nvgFillColor(opts.color)
-      nvgSvg(image, x, y, opts.size)
+      nvgSvg(image, nvgX, nvgY, opts.size)
+
+      widget.x_min = min(widget.x_min, x)
+      widget.x_max = max(widget.x_max, x + width)
+      widget.width = widget.x_max - widget.x_min
+
+      widget.y_min = min(widget.y_min, y)
+      widget.y_max = max(widget.y_max, y + height)
+      widget.height = widget.y_max - widget.y_min
 
       if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
-         local pos = getOffset(anchor, 2 * opts.size, 2 * opts.size)
+         local pos = getOffset(widget.anchor, width, height)
          nvgFillColor(Color(0, 255, 0, 63))
          nvgBeginPath()
-         nvgRect(pos.x, pos.y, 2 * opts.size, 2 * opts.size)
+         nvgRect(x + pos.x, y + pos.y, width, height)
          nvgFill()
       end
    end
 
-   return {width = 2 * opts.size, height = 2 * opts.size, draw = draw}
+   return {width = width, height = height, draw = draw}
 end
 
 local function nvgTextUI(pos, text, opts)
-   local elem = createTextElem({x = -1, y = -1}, text, opts)
+   local widget = {
+      anchor = {x = -1, y = -1},
+      x = 0,
+      y = 0,
+      x_min = 0,
+      x_max = 0,
+      width = 0,
+      y_min = 0,
+      y_max = 0,
+      height = 0,
+   }
+   local elem = createTextElem(widget, text, opts)
    elem.draw(pos.x, pos.y)
    pos.y = pos.y + opts.size -- padding
    return {width = elem.width, height = elem.height}
@@ -1417,6 +1452,15 @@ CatoHUD = {canHide = false, canPosition = false}
 function CatoHUD:registerWidget(widgetName, widget)
    registerWidget(widgetName)
 
+   widget.x = 0
+   widget.y = 0
+   widget.x_min = widget.x
+   widget.x_max = widget.x
+   widget.width = 0
+   widget.y_min = widget.y
+   widget.y_max = widget.y
+   widget.height = 0
+
    function widget:resetProperties()
       local settings = defaultSettings[widgetName] or {}
 
@@ -1695,8 +1739,6 @@ function CatoHUD:registerWidget(widgetName, widget)
          widget.x = 0
          widget.y = 0
       end
-      widget.width = 0
-      widget.height = 0
 
       widget:drawWidget()
    end
@@ -1837,12 +1879,12 @@ function Cato_GameTime:drawWidget()
 
    local timer = formatTimeMs(timeElapsed, gameTimeLimit, self.userData.countDown)
 
-   local minutes = createTextElem(self.anchor, timer.minutes, opts.minutes)
-   local delimiter = createTextElem(self.anchor, ':', opts.delimiter)
+   local minutes = createTextElem(self, timer.minutes, opts.minutes)
+   local delimiter = createTextElem(self, ':', opts.delimiter)
    local seconds = hideSeconds and 'xx' or format('%02d', timer.seconds)
-   seconds = createTextElem(self.anchor, seconds, opts.seconds)
+   seconds = createTextElem(self, seconds, opts.seconds)
 
-   local x = self.x
+   local x = 0
    local spacing = delimiter.width / 2
    if self.anchor.x == -1 then
       x = x + minutes.width + spacing
@@ -1852,12 +1894,9 @@ function Cato_GameTime:drawWidget()
       x = x - (seconds.width + spacing)
    end
 
-   minutes.draw(x - spacing, self.y)
-   delimiter.draw(x, self.y)
-   seconds.draw(x + spacing, self.y)
-
-   self.width = minutes.width + delimiter.width + seconds.width
-   self.height = max(minutes.height, seconds.height, delimiter.height)
+   minutes.draw(x - spacing, 0)
+   delimiter.draw(x, 0)
+   seconds.draw(x + spacing, 0)
 end
 
 CatoHUD:registerWidget('Cato_GameTime', Cato_GameTime)
@@ -1879,10 +1918,10 @@ function Cato_FollowingPlayer:drawWidget()
       anchor = self.userData.textAnchor,
    }
 
-   local label = createTextElem(self.anchor, 'FOLLOWING', opts)
-   local name = createTextElem(self.anchor, povPlayer.name, opts)
+   local label = createTextElem(self, 'FOLLOWING', opts)
+   local name = createTextElem(self, povPlayer.name, opts)
 
-   local x = self.x
+   local x = 0
    if self.anchor.x == -1 then
       x = x + max(label.width, name.width) / 2
    elseif self.anchor.x == 0 then
@@ -1891,7 +1930,7 @@ function Cato_FollowingPlayer:drawWidget()
       x = x - (max(label.width, name.width) / 2)
    end
 
-   local y = self.y
+   local y = 0
    local offset = opts.size / 3
    if self.anchor.y == -1 then
       y = y + 0
@@ -1903,9 +1942,6 @@ function Cato_FollowingPlayer:drawWidget()
 
    label.draw(x, y)
    name.draw(x, y + label.height - offset)
-
-   self.width = max(label.width, name.width)
-   self.height = label.height + name.height
 end
 
 CatoHUD:registerWidget('Cato_FollowingPlayer', Cato_FollowingPlayer)
@@ -1923,11 +1959,8 @@ function Cato_FPS:drawWidget()
 
    local fps = min(round(1 / deltaTime), consoleGetVariable('com_maxfps'))
 
-   fps = createTextElem(self.anchor, fps .. 'fps', opts)
-   fps.draw(self.x, self.y)
-
-   self.width = fps.width
-   self.height = fps.height
+   fps = createTextElem(self, fps .. 'fps', opts)
+   fps.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_FPS', Cato_FPS)
@@ -1942,10 +1975,8 @@ function Cato_Time:drawWidget()
    --    local time = formatEpochTime(epochTime, CatoHUD.userData.offsetUTC)
    --    local epochSeconds = epochTime + CatoHUD.userData.offsetUTC
    --    opts.second.anchor = self.anchor
-   --    epochSeconds = createTextElem(self.anchor, epochSeconds, opts.second)
-   --    epochSeconds.draw(self.x, self.y)
-   --    self.width = epochSeconds.width
-   --    self.height = epochSeconds.height
+   --    epochSeconds = createTextElem(self, epochSeconds, opts.second)
+   --    epochSeconds.draw(0, 0)
    --    return
    -- end
 
@@ -1998,33 +2029,23 @@ function Cato_Time:drawWidget()
 
    --    local time = formatEpochTime(epochTime, CatoHUD.userData.offsetUTC)
 
-   --    local day = createTextElem(self.anchor, formatDay(time.day), opts.day)
-   --    local delimiterDate1 = createTextElem(self.anchor, ' ', opts.delimiter)
-   --    local month = createTextElem(self.anchor, formatMonth(time.month), opts.month)
-   --    self.width = self.width + day.width + delimiterDate1.width + month.width
-   --    self.height = max(self.height, day.height, delimiterDate1.height, month.height)
+   --    local day = createTextElem(self, formatDay(time.day), opts.day)
+   --    local delimiterDate1 = createTextElem(self, ' ', opts.delimiter)
+   --    local month = createTextElem(self, formatMonth(time.month), opts.month)
 
-   --    local delimiterDate2 = createTextElem(self.anchor, ' ', opts.delimiter)
-   --    local year = createTextElem(self.anchor, time.year, opts.year)
-   --    self.width = self.width + delimiterDate2.width + year.width
-   --    self.height = max(self.height, delimiterDate2.height, year.height)
+   --    local delimiterDate2 = createTextElem(self, ' ', opts.delimiter)
+   --    local year = createTextElem(self, time.year, opts.year)
 
-   --    local delimiter = createTextElem(self.anchor, ' ', opts.delimiter)
-   --    self.width = self.width + delimiter.width
-   --    self.height = max(self.height, delimiter.height)
+   --    local delimiter = createTextElem(self, ' ', opts.delimiter)
 
-   --    local hour = createTextElem(self.anchor, format('%02d', time.hour), opts.hour)
-   --    local delimiterTime1 = createTextElem(self.anchor, ':', opts.delimiter)
-   --    local minute = createTextElem(self.anchor, format('%02d', time.minute), opts.minute)
-   --    self.width = self.width + hour.width + delimiterTime1.width + minute.width
-   --    self.height = max(self.height, hour.height, delimiterTime1.height, minute.height)
+   --    local hour = createTextElem(self, format('%02d', time.hour), opts.hour)
+   --    local delimiterTime1 = createTextElem(self, ':', opts.delimiter)
+   --    local minute = createTextElem(self, format('%02d', time.minute), opts.minute)
 
-   --    local delimiterTime2 = createTextElem(self.anchor, ':', opts.delimiter)
-   --    local second = createTextElem(self.anchor, format('%02d', time.second), opts.second)
-   --    self.width = self.width + delimiterTime2.width + second.width
-   --    self.height = max(self.height, delimiterTime2.height, second.height)
+   --    local delimiterTime2 = createTextElem(self, ':', opts.delimiter)
+   --    local second = createTextElem(self, format('%02d', time.second), opts.second)
 
-   --    local x = self.x
+   --    local x = 0
    --    if self.anchor.x == -1 then
    --       x = x + 0
    --    elseif self.anchor.x == 0 then
@@ -2033,31 +2054,31 @@ function Cato_Time:drawWidget()
    --       x = x - self.width
    --    end
 
-   --    day.draw(x, self.y)
+   --    day.draw(x, 0)
    --    x = x + day.width
-   --    delimiterDate1.draw(x, self.y)
+   --    delimiterDate1.draw(x, 0)
    --    x = x + delimiterDate1.width
-   --    month.draw(x, self.y)
+   --    month.draw(x, 0)
    --    x = x + month.width
 
-   --    delimiterDate2.draw(x, self.y)
+   --    delimiterDate2.draw(x, 0)
    --    x = x + delimiterDate2.width
-   --    year.draw(x, self.y)
+   --    year.draw(x, 0)
    --    x = x + year.width
 
-   --    delimiter.draw(x, self.y)
+   --    delimiter.draw(x, 0)
    --    x = x + delimiter.width
 
-   --    hour.draw(x, self.y)
+   --    hour.draw(x, 0)
    --    x = x + hour.width
-   --    delimiterTime1.draw(x, self.y)
+   --    delimiterTime1.draw(x, 0)
    --    x = x + delimiterTime1.width
-   --    minute.draw(x, self.y)
+   --    minute.draw(x, 0)
    --    x = x + minute.width
 
-   --    delimiterTime2.draw(x, self.y)
+   --    delimiterTime2.draw(x, 0)
    --    x = x + delimiterTime2.width
-   --    second.draw(x, self.y)
+   --    second.draw(x, 0)
    -- end
 
    local opts = {
@@ -2096,13 +2117,11 @@ function Cato_Time:drawWidget()
    --    consolePrint(replay.timecodeCurrent)
    -- end
 
-   hour = createTextElem(self.anchor, format('%02d', hour), opts.hour)
-   delimiter = createTextElem(self.anchor, delimiter, opts.delimiter)
-   minute = createTextElem(self.anchor, format('%02d', minute), opts.minute)
-   self.width = self.width + hour.width + delimiter.width + minute.width
-   self.height = max(self.height, hour.height, delimiter.height, minute.height)
+   hour = createTextElem(self, format('%02d', hour), opts.hour)
+   delimiter = createTextElem(self, delimiter, opts.delimiter)
+   minute = createTextElem(self, format('%02d', minute), opts.minute)
 
-   local x = self.x
+   local x = 0
    local spacing = delimiter.width / 2
    if self.anchor.x == -1 then
       x = x + hour.width + spacing
@@ -2112,9 +2131,9 @@ function Cato_Time:drawWidget()
       x = x - (minute.width + spacing)
    end
 
-   hour.draw(x - spacing, self.y)
-   delimiter.draw(x, self.y)
-   minute.draw(x + spacing, self.y)
+   hour.draw(x - spacing, 0)
+   delimiter.draw(x, 0)
+   minute.draw(x + spacing, 0)
 end
 
 CatoHUD:registerWidget('Cato_Time', Cato_Time)
@@ -2220,19 +2239,21 @@ function Cato_Scores:drawWidget()
          end
       end
    elseif gameMode == 'race' then
-      return -- TODO
+      -- TODO: Implement
+      return
    elseif gameMode == 'training' then
-      return -- TODO
+      -- TODO: Implement
+      return
    else
       return
    end
 
-   scoreTeam = createTextElem(self.anchor, scoreTeam or 'N/A', opts.team)
-   local delimiter = createTextElem(self.anchor, '    ', opts.delimiter)
-   scoreEnemy = createTextElem(self.anchor, scoreEnemy or 'N/A', opts.enemy)
+   scoreTeam = createTextElem(self, scoreTeam or 'N/A', opts.team)
+   local delimiter = createTextElem(self, '    ', opts.delimiter)
+   scoreEnemy = createTextElem(self, scoreEnemy or 'N/A', opts.enemy)
 
    -- TODO: This alignment bs has to be figured out
-   local x = self.x
+   local x = 0
    local spacing = delimiter.width / 2
    if self.anchor.x == -1 then
       x = x + scoreTeam.width + spacing
@@ -2242,12 +2263,9 @@ function Cato_Scores:drawWidget()
       x = x - (scoreEnemy.width + spacing)
    end
 
-   scoreTeam.draw(x - spacing, self.y)
-   delimiter.draw(x, self.y)
-   scoreEnemy.draw(x + spacing, self.y)
-
-   self.width = scoreTeam.width + delimiter.width + scoreEnemy.width
-   self.height = max(scoreTeam.height, delimiter.height, scoreEnemy.height)
+   scoreTeam.draw(x - spacing, 0)
+   delimiter.draw(x, 0)
+   scoreEnemy.draw(x + spacing, 0)
 end
 
 CatoHUD:registerWidget('Cato_Scores', Cato_Scores)
@@ -2265,11 +2283,8 @@ function Cato_GameModeName:drawWidget()
       size = self.userData.fontSize,
    }
 
-   local gameModeName = createTextElem(self.anchor, gameMode, opts)
-   gameModeName.draw(self.x, self.y)
-
-   self.width = gameModeName.width
-   self.height = gameModeName.height
+   local gameModeName = createTextElem(self, gameMode, opts)
+   gameModeName.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_GameModeName', Cato_GameModeName)
@@ -2287,11 +2302,8 @@ function Cato_RulesetName:drawWidget()
       size = self.userData.fontSize,
    }
 
-   local rulesetName = createTextElem(self.anchor, ruleset, opts)
-   rulesetName.draw(self.x, self.y)
-
-   self.width = rulesetName.width
-   self.height = rulesetName.height
+   local rulesetName = createTextElem(self, ruleset, opts)
+   rulesetName.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_RulesetName', Cato_RulesetName)
@@ -2309,11 +2321,8 @@ function Cato_MapName:drawWidget()
       size = self.userData.fontSize,
    }
 
-   local mapName = createTextElem(self.anchor, mapTitle, opts)
-   mapName.draw(self.x, self.y)
-
-   self.width = mapName.width
-   self.height = mapName.height
+   local mapName = createTextElem(self, mapTitle, opts)
+   mapName.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_MapName', Cato_MapName)
@@ -2325,45 +2334,37 @@ Cato_Mutators = {}
 function Cato_Mutators:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
+   local x = -self.userData.iconSize * 2
    local spacing = self.userData.iconSize / 2
 
    local gameMutators = {}
+   -- TODO: Should this be ipairs and then use "gameMutators[i]" over "table.insert"?
    for mutator in world.mutators:gmatch('%w+') do
       mutator = mutatorDefinitions[string.upper(mutator)]
-      -- consolePrint(string.upper(mutator))
-      -- if mutator == nil then
-      --    consolePrint('nil mutator :<')
-      -- else
-      --    consolePrint('non-nil mutator :>')
-      --    consolePrint(mutator.icon)
-      --    consoleTablePrint(mutator.col)
-      -- end
 
       local opts = {
          color = mutator.col,
          size = self.userData.iconSize,
       }
 
-      mutator = createSvgElem(self.anchor, mutator.icon, opts)
+      mutator = createSvgElem(self, mutator.icon, opts)
+      x = x + mutator.width + spacing
+
       table.insert(gameMutators, mutator)
-
-      self.width = self.width + mutator.width + spacing
-      self.height = max(self.height, mutator.height)
    end
-   self.width = max(0, self.width - spacing) -- remove extra spacing
+   x = x - spacing -- spacing is only between the icons, adjust
 
-   local x = self.x
    if self.anchor.x == -1 then
-      x = x + self.width - 2 * self.userData.iconSize -- FIXME: Figure it out
+      x = 0
    elseif self.anchor.x == 0 then
-      x = x + self.width / 2 - self.userData.iconSize -- FIXME: Figure it out
+      x = -x / 2
    elseif self.anchor.x == 1 then
-      x = x + 0
+      x = -x
    end
 
    for _, mutator in ipairs(gameMutators) do
-      mutator.draw(x, self.y)
-      x = x - mutator.width - spacing
+      mutator.draw(x, 0)
+      x = x + mutator.width + spacing
    end
 
    -- local opts = {
@@ -2372,11 +2373,8 @@ function Cato_Mutators:drawWidget()
    --    size = self.userData.fontSize,
    -- }
 
-   -- local gameMutators = createTextElem(self.anchor, world.mutators, opts)
-   -- gameMutators.draw(self.x, self.y)
-
-   -- self.width = gameMutators.width
-   -- self.height = gameMutators.height
+   -- local gameMutators = createTextElem(self, world.mutators, opts)
+   -- gameMutators.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_Mutators', Cato_Mutators)
@@ -2405,11 +2403,8 @@ function Cato_ReadyStatus:drawWidget()
       end
    end
 
-   local ready = createTextElem(self.anchor, playersReady .. '/' .. playersGame .. ' ready', opts)
-   ready.draw(self.x, self.y)
-
-   self.width = ready.width
-   self.height = ready.height
+   local ready = createTextElem(self, playersReady .. '/' .. playersGame .. ' ready', opts)
+   ready.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_ReadyStatus', Cato_ReadyStatus)
@@ -2439,11 +2434,8 @@ function Cato_FragMessage:drawWidget()
    }
 
    -- TODO: Country flag
-   fragMessage = createTextElem(self.anchor, fragMessage, opts)
-   fragMessage.draw(self.x, self.y)
-
-   self.width = fragMessage.width
-   self.height = fragMessage.height
+   fragMessage = createTextElem(self, fragMessage, opts)
+   fragMessage.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_FragMessage', Cato_FragMessage)
@@ -2501,11 +2493,8 @@ function Cato_GameMessage:drawWidget()
       return
    end
 
-   gameMessage = createTextElem(self.anchor, gameMessage, opts)
-   gameMessage.draw(self.x, self.y)
-
-   self.width = gameMessage.width
-   self.height = gameMessage.height
+   gameMessage = createTextElem(self, gameMessage, opts)
+   gameMessage.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_GameMessage', Cato_GameMessage)
@@ -2523,11 +2512,8 @@ function Cato_Speed:drawWidget()
       size = self.userData.fontSize,
    }
 
-   local ups = createTextElem(self.anchor, ceil(povPlayer.speed) .. 'ups', opts)
-   ups.draw(self.x, self.y)
-
-   self.width = ups.width
-   self.height = ups.height
+   local ups = createTextElem(self, ceil(povPlayer.speed) .. 'ups', opts)
+   ups.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
@@ -2547,10 +2533,8 @@ function Cato_LowAmmo:drawWidget()
             color = Color(255, 255, 255),
             size = self.userData.fontSize,
       }
-      local ammoWarning = createTextElem(self.anchor, '(Low Ammo)', opts)
-      ammoWarning.draw(self.x, self.y)
-      self.width = ammoWarning.width
-      self.height = ammoWarning.height
+      local ammoWarning = createTextElem(self, '(Low Ammo)', opts)
+      ammoWarning.draw(0, 0)
       return
    end
 
@@ -2599,13 +2583,10 @@ function Cato_LowAmmo:drawWidget()
    -- end
 
    -- local lowAmmoText = ammo <= 0 and 'LOW AMMO: ' .. ammo or 'NO AMMO: ' .. ammo
-   -- local ammoWarning = createTextElem(self.anchor, lowAmmoText, opts)
+   -- local ammoWarning = createTextElem(self, lowAmmoText, opts)
 
-   local ammoWarning = createTextElem(self.anchor, ammo, opts)
-   ammoWarning.draw(self.x, self.y)
-
-   self.width = ammoWarning.width
-   self.height = ammoWarning.height
+   local ammoWarning = createTextElem(self, ammo, opts)
+   ammoWarning.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_LowAmmo', Cato_LowAmmo)
@@ -2633,11 +2614,8 @@ function Cato_PacketLoss:drawWidget()
       opts.color = Color(255, 0, 0)
    end
 
-   local packetloss = createTextElem(self.anchor, povPlayer.packetLoss .. ' PL', opts)
-   packetloss.draw(self.x, self.y)
-
-   self.width = packetloss.width
-   self.height = packetloss.height
+   local packetloss = createTextElem(self, povPlayer.packetLoss .. ' PL', opts)
+   packetloss.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_PacketLoss', Cato_PacketLoss)
@@ -2665,11 +2643,8 @@ function Cato_Ping:drawWidget()
       opts.color = Color(255, 0, 0)
    end
 
-   local ping = createTextElem(self.anchor, povPlayer.latency .. 'ms', opts)
-   ping.draw(self.x, self.y)
-
-   self.width = ping.width
-   self.height = ping.height
+   local ping = createTextElem(self, povPlayer.latency .. 'ms', opts)
+   ping.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_Ping', Cato_Ping)
@@ -2702,11 +2677,8 @@ function Cato_HealthNumber:drawWidget()
       end
    end
 
-   local health = createTextElem(self.anchor, playerHealth, opts)
-   health.draw(self.x, self.y)
-
-   self.width = health.width
-   self.height = health.height
+   local health = createTextElem(self, playerHealth, opts)
+   health.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_HealthNumber', Cato_HealthNumber)
@@ -2790,11 +2762,8 @@ function Cato_ArmorNumber:drawWidget()
    end
 
 
-   local armor = createTextElem(self.anchor, playerArmor, opts)
-   armor.draw(self.x, self.y)
-
-   self.width = armor.width
-   self.height = armor.height
+   local armor = createTextElem(self, playerArmor, opts)
+   armor.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_ArmorNumber', Cato_ArmorNumber)
@@ -2815,11 +2784,8 @@ function Cato_ArmorIcon:drawWidget()
       opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
    end
 
-   local armor = createSvgElem(self.anchor, 'internal/ui/icons/armor', opts)
-   armor.draw(self.x, self.y)
-
-   self.width = armor.width
-   self.height = armor.height
+   local armor = createSvgElem(self, 'internal/ui/icons/armor', opts)
+   armor.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_ArmorIcon', Cato_ArmorIcon)
