@@ -1001,6 +1001,13 @@ end
 -- WIDGET_PROPERTIES_COL_INDENT = 250
 -- WIDGET_PROPERTIES_COL_WIDTH = 560
 
+local function setAnchorWidget(widget)
+   widget.anchorWidget = _G[widget.userData.anchorWidget] or {x = 0, y = 0}
+   widget.anchorOffset = getProps(widget.userData.anchorWidget).offset or {x = 0, y = 0}
+   widget.x = widget.anchorWidget.x + widget.anchorOffset.x
+   widget.y = widget.anchorWidget.y + widget.anchorOffset.y
+end
+
 local function getOffset(anchor, width, height)
    return {
       x = -(anchor.x + 1) * width / 2,
@@ -1512,6 +1519,8 @@ function CatoHUD:registerWidget(widgetName, widget)
 
       widget:checkSetCvars()
 
+      setAnchorWidget(widget)
+
       if widget.init then
          widget:init()
       end
@@ -1613,9 +1622,10 @@ function CatoHUD:registerWidget(widgetName, widget)
       end
 
       -- widget.canAttach is nil defaults to true
-      if widget.canAttach ~= false and widget.userData and widget.userData.anchorWidget then
+      if widget.canAttach ~= false and widget.userData.anchorWidget then
          -- consolePrint(widgetName)
          -- consolePrint(widget.userData.anchorWidget)
+         -- TODO: Make text red if invalid anchorWidget is set
          optDelimiter(pos, opts.delimiter)
          widget.userData.anchorWidget = optRowInput(
             optInput.editBox,
@@ -1625,6 +1635,7 @@ function CatoHUD:registerWidget(widgetName, widget)
             opts.medium,
             opts.editBox
          )
+         setAnchorWidget(widget)
          -- consolePrint(widget.userData.anchorWidget)
       end
 
@@ -1662,7 +1673,7 @@ function CatoHUD:registerWidget(widgetName, widget)
 
       -- FIXME: Combine statements. Should be more efficient?
       local widgetShow
-      if widget.userData and widget.userData.show then
+      if widget.userData.show then
          widgetShow = widget.userData.show
       else
          widgetShow = {}
@@ -1729,16 +1740,6 @@ function CatoHUD:registerWidget(widgetName, widget)
       -- end
 
       widget.anchor = getProps(widgetName).anchor
-
-      local anchorWidget = _G[widget.userData and widget.userData.anchorWidget or nil]
-      if anchorWidget then
-         local anchorOffset = getProps(widget.userData.anchorWidget).offset or {}
-         widget.x = (anchorWidget.x or 0) + (anchorOffset.x or 0)
-         widget.y = (anchorWidget.y or 0) + (anchorOffset.y or 0)
-      else
-         widget.x = 0
-         widget.y = 0
-      end
 
       widget:drawWidget()
    end
