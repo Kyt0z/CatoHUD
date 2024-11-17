@@ -435,9 +435,9 @@ local defaultSettings = {
          weaponColor9 = Color(128, 0, 0),
       },
       cvars = {
-         {'box_debug', 'int', 0},
-         {'debug', 'int', 1},
-         {'preview', 'int', 0},
+         {'box_debug', 'int', 0, 0},
+         {'debug', 'int', 0},
+         {'preview', 'int', 0, 0},
          {'reset_widgets', 'int', 0, 0},
          {'warmuptimer_reset', 'int', 0, 0},
          {'widget_cache', 'int', 0, 0},
