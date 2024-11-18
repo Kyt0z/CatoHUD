@@ -1218,7 +1218,7 @@ function CatoHUD:registerWidget(widgetName, widget)
 
       widgetSetCvars(widgetName, widget)
 
-      setAnchorWidget(widget)
+      -- setAnchorWidget(widget)
 
       if widget.init then
          widget:init()
@@ -1304,7 +1304,7 @@ function CatoHUD:registerWidget(widgetName, widget)
             opts.medium,
             opts.editBox
          )
-         setAnchorWidget(widget)
+         -- setAnchorWidget(widget)
          -- consolePrint(widget.userData.anchorWidget)
       end
 
@@ -1399,6 +1399,7 @@ function CatoHUD:registerWidget(widgetName, widget)
       -- end
 
       widget.anchor = getProps(widgetName).anchor
+      setAnchorWidget(widget)
 
       widget:drawWidget()
    end
