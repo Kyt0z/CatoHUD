@@ -401,38 +401,41 @@ end
 -- Default settings
 ------------------------------------------------------------------------------------------------------------------------
 
-local defaultFontFace = 'TitilliumWeb-Bold'
-local defaultFontSizeSmall = 32
-local defaultFontSizeMedium = 40
-local defaultFontSizeBig = 64
-local defaultFontSizeTimer = 120
-local defaultFontSizeHuge = 160
-local defaultSens = consoleGetVariable('m_speed')
-local defaultFov = consoleGetVariable('r_fov')
-local defaultZoomFov = 40
-local defaultZoomSensMult = 1.0915740009242504 -- FIXME: 1 for release
-local defaultZoomSens = defaultSens * zoomSensRatio(defaultFov, defaultZoomFov, 1440, 1080) * defaultZoomSensMult
+local fontFace = 'TitilliumWeb-Bold'
+local fontSizeSmall = 32
+local fontSizeMedium = 40
+local fontSizeBig = 64
+local fontSizeTimer = 120
+local fontSizeHuge = 160
+local m_speed = consoleGetVariable('m_speed')
+local r_fov = consoleGetVariable('r_fov')
+local zoomFov = 40
+local zoomSensMult = 1.0915740009242504 -- FIXME: 1 for release
+local zoomSens = m_speed * zoomSensRatio(r_fov, zoomFov, 1440, 1080) * zoomSensMult
+local cl_color_friend = ColorHEX(consoleGetVariable('cl_color_friend'))
+local cl_color_enemy = ColorHEX(consoleGetVariable('cl_color_enemy'))
+
+local function defaultShow(showStr)
+   local showTable = {}
+   for showVar in showStr:gmatch('%w+') do
+      showTable[showVar] = true
+   end
+   return showTable
+end
 
 local defaultSettings = {
    ['CatoHUD'] = {
       userData = {
          offsetUTC = 2 * S_IN_H,
-         noArmorColor = Color(0, 0, 0, 255),
-         armorColor0 = Color(0, 255, 0),
-         armorColor1 = Color(255, 255, 0),
-         armorColor2 = Color(255, 0, 0),
+         armorColor = {Color(0, 255, 0), Color(255, 255, 0), Color(255, 0, 0)},
          megaColor = Color(60, 80, 255),
          carnageColor = Color(255, 0, 188),
          resistColor = Color(124, 32, 255),
-         weaponColor1 = Color(255, 255, 255),
-         weaponColor2 = Color(0, 255, 255),
-         weaponColor3 = Color(255, 150, 0),
-         weaponColor4 = Color(99, 221, 74),
-         weaponColor5 = Color(255, 0, 255),
-         weaponColor6 = Color(250, 0, 0),
-         weaponColor7 = Color(0, 128, 255),
-         weaponColor8 = Color(255, 255, 0),
-         weaponColor9 = Color(128, 0, 0),
+         weaponColor = {
+            Color(255, 255, 255), Color(0, 255, 255), Color(255, 150, 0),
+            Color(99, 221, 74), Color(255, 0, 255), Color(250, 0, 0),
+            Color(0, 128, 255), Color(255, 255, 0), Color(128, 0, 0),
+         },
       },
       cvars = {
          {'box_debug', 'int', 0, 0},
@@ -444,474 +447,179 @@ local defaultSettings = {
          {'zoom', 'int', 0, 0},
       },
    },
-   ['Cato_Zoom'] = {
-      userData = {
-         fov = defaultZoomFov,
-         sensitivity = defaultZoomSens,
-         time = 0,
-      },
-   },
    ['Cato_HealthNumber'] = {
-      visible = true,
-      props = {
-         offset = '-40 30',
-         anchor = '0 1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '-40 30', anchor = '0 1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeHuge,
-         textAnchor = {x = 1},
-         show = {
-            dead = true,
-            race = false,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
+         show = defaultShow('dead'),
+         text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHuge, anchor = {x = 1}},
       },
    },
    ['Cato_ArmorNumber'] = {
-      visible = true,
-      props = {
-         offset = '40 30',
-         anchor = '0 1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '40 30', anchor = '0 1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeHuge,
-         textAnchor = {x = -1},
-         show = {
-            dead = true,
-            race = false,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
+         show = defaultShow('dead'),
+         text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHuge, anchor = {x = -1}},
       },
    },
    ['Cato_ArmorIcon'] = {
-      visible = true,
-      props = {
-         offset = '0 -20',
-         anchor = '0 1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 -20', anchor = '0 1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         iconSize = 24,
-         show = {
-            dead = true,
-            race = false,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
+         show = defaultShow('dead'),
+         icon = {color = Color(191, 191, 191), size = 24},
       },
    },
    ['Cato_FPS'] = {
-      visible = true,
-      props = {
-         offset = '-3 -5',
-         anchor = '1 -1',
-         zIndex = '-999',
-         scale = '1',
-      },
+      visible = true, props = {offset = '-3 -5', anchor = '1 -1', zIndex = '-999', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = true,
-            menu = true,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = true,
-         },
+         show = defaultShow('dead editor freecam gameOver mainMenu menu race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
    ['Cato_Time'] = {
-      visible = true,
-      props = {
-         offset = '-3 18',
-         anchor = '1 -1',
-         zIndex = '-999',
-         scale = '1',
-      },
+      visible = true, props = {offset = '-3 18', anchor = '1 -1', zIndex = '-999', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = true,
-            menu = true,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = true,
+         show = defaultShow('dead editor freecam gameOver mainMenu menu race'),
+         text = {
+            delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeSmall, anchor = {x = 0}},
+            -- year = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
+            -- month = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
+            -- day = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
+            hour = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = 1}},
+            minute = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
+            -- second = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
          },
       },
    },
    ['Cato_Scores'] = {
-      visible = true,
-      props = {
-         offset = '0 23',
-         anchor = '1 -1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = 'Cato_Time',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = false,
+         show = defaultShow('dead freecam gameOver race'),
+         text = {
+            delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeSmall, anchor = {x = 0}},
+            team = {font = fontFace, color = cl_color_friend, size = fontSizeSmall, anchor = {x = 1}},
+            enemy = {font = fontFace, color = cl_color_enemy, size = fontSizeSmall, anchor = {x = -1}},
          },
       },
    },
    ['Cato_GameModeName'] = {
-      visible = true,
-      props = {
-         offset = '0 23',
-         anchor = '1 -1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = 'Cato_Scores',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam gameOver race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
    ['Cato_RulesetName'] = {
-      visible = true,
-      props = {
-         offset = '0 23',
-         anchor = '1 -1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = 'Cato_GameModeName',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam gameOver race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
    ['Cato_MapName'] = {
-      visible = true,
-      props = {
-         offset = '0 23',
-         anchor = '1 -1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = 'Cato_RulesetName',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam gameOver race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
    ['Cato_Mutators'] = {
-      visible = true,
-      props = {
-         offset = '0 33',
-         anchor = '1 -1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 33', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = 'Cato_MapName',
-         -- fontFace = defaultFontFace,
-         -- fontSize = defaultFontSizeSmall,
-         iconSize = 8,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam gameOver race'),
+         icon = {size = 8},
       },
    },
    ['Cato_LowAmmo'] = {
-      visible = true,
-      props = {
-         offset = '0 160',
-         anchor = '0 0',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 160', anchor = '0 0', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = false,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
+         show = defaultShow(', race'),
          preventEmptyAttack = true,
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
    ['Cato_Ping'] = {
-      visible = true,
-      props = {
-         offset = '-3 4',
-         anchor = '1 1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '-3 4', anchor = '1 1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam gameOver race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
    ['Cato_PacketLoss'] = {
-      visible = true,
-      props = {
-         offset = '-3 -16',
-         anchor = '1 1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '-3 -16', anchor = '1 1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = true,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam gameOver race'),
+         text = {font = fontFace, color = Color(255, 0, 0), size = fontSizeSmall},
       },
    },
    ['Cato_GameTime'] = {
-      visible = true,
-      props = {
-         offset = '0 -135',
-         anchor = '0 1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 -135', anchor = '0 1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
+         show = defaultShow('dead'),
          countDown = false,
          hideSeconds = false,
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeTimer,
-         show = {
-            dead = true,
-            race = false,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
+         text = {
+            delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeTimer, anchor = {x = 0}},
+            minutes = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTimer, anchor = {x = 1}},
+            seconds = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTimer, anchor = {x = -1}},
          },
       },
    },
    ['Cato_FollowingPlayer'] = {
-      visible = true,
-      props = {
-         offset = '0 0',
-         anchor = '0 -1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 0', anchor = '0 -1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeBig,
-         textAnchor = {x = 0},
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
+         show = defaultShow('dead race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeBig, anchor = {x = 0}},
       },
    },
    ['Cato_ReadyStatus'] = {
-      visible = true,
-      props = {
-         offset = '0 145',
-         anchor = '0 -1',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 145', anchor = '0 -1', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
    ['Cato_FragMessage'] = {
-      visible = false,
-      props = {
-         offset = '0 -250',
-         anchor = '0 0',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = false, props = {offset = '0 -250', anchor = '0 0', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeMedium,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
+         show = defaultShow('dead race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium},
       },
    },
    ['Cato_GameMessage'] = {
-      visible = true,
-      props = {
-         offset = '0 -80',
-         anchor = '0 0',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = true, props = {offset = '0 -80', anchor = '0 0', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeMedium,
-         show = {
-            dead = true,
-            race = true,
-            mainMenu = false,
-            menu = true,
-            hudOff = false,
-            gameOver = false,
-            freecam = true,
-            editor = false,
-         },
+         show = defaultShow('dead freecam menu race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium},
       },
    },
    ['Cato_Speed'] = {
-      visible = false,
-      props = {
-         offset = '0 60',
-         anchor = '0 0',
-         zIndex = '0',
-         scale = '1',
-      },
+      visible = false, props = {offset = '0 60', anchor = '0 0', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         fontFace = defaultFontFace,
-         fontSize = defaultFontSizeSmall,
-         show = {
-            dead = false,
-            race = true,
-            mainMenu = false,
-            menu = false,
-            hudOff = false,
-            gameOver = false,
-            freecam = false,
-            editor = false,
-         },
+         show = defaultShow('race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
+   },
+   ['Cato_Zoom'] = {
+      userData = {fov = zoomFov, sensitivity = zoomSens, time = 0},
    },
 }
 
@@ -998,8 +706,14 @@ end
 --    end
 -- end
 
--- WIDGET_PROPERTIES_COL_INDENT = 250
--- WIDGET_PROPERTIES_COL_WIDTH = 560
+local function copyOpts(opts, intensity)
+   return {
+      font = opts.font,
+      color = copyColor(opts.color, intensity),
+      size = opts.size,
+      anchor = opts.anchor and {x = opts.anchor.x, y = opts.anchor.y} or nil,
+   }
+end
 
 local function setAnchorWidget(widget)
    widget.anchorWidget = _G[widget.userData.anchorWidget] or {x = 0, y = 0}
@@ -1129,15 +843,7 @@ end
 
 local function nvgTextUI(pos, text, opts)
    local widget = {
-      anchor = {x = -1, y = -1},
-      x = 0,
-      y = 0,
-      x_min = 0,
-      x_max = 0,
-      width = 0,
-      y_min = 0,
-      y_max = 0,
-      height = 0,
+      anchor = {x = -1, y = -1}, x = 0, y = 0, x_min = 0, x_max = 0, width = 0, y_min = 0, y_max = 0, height = 0
    }
    local elem = createTextElem(widget, text, opts)
    elem.draw(pos.x, pos.y)
@@ -1157,18 +863,17 @@ local function optFormatColor(color, hoverAmount, enabled, pressed)
 end
 
 local function optDelimiter(pos, opts)
-   -- WIDGET_PROPERTIES_COL_WIDTH = 520
    pos.y = pos.y + 8 -- padding
    nvgFillColor(opts.color)
    nvgBeginPath()
-   nvgRect(pos.x, pos.y, WIDGET_PROPERTIES_COL_WIDTH + 20, 2)
+   nvgRect(pos.x, pos.y, opts.size, 2)
    nvgFill()
    pos.y = pos.y + 10 -- padding
 
    if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
       nvgFillColor(Color(0, 255, 0, 63))
       nvgBeginPath()
-      nvgRect(pos.x, pos.y - 18, WIDGET_PROPERTIES_COL_WIDTH + 20, 18)
+      nvgRect(pos.x, pos.y - 18, opts.size, 18)
       nvgFill()
    end
 end
@@ -1220,12 +925,7 @@ local optInput = {
       if enabled then
          t = textRegion(pos.x, pos.y, opts.width, opts.height, value, opts.id or 0, giveFocus)
       else
-         t = {
-            text = value,
-            focus = false,
-            apply = false,
-            hoverAmount = 0,
-         }
+         t = {text = value, focus = false, apply = false, hoverAmount = 0}
       end
 
       local backgroundColor = optFormatColor(opts.bg, t.hoverAmount, enabled)
@@ -1500,15 +1200,32 @@ function CatoHUD:registerWidget(widgetName, widget)
       for _, cvar in ipairs(settings.cvars or {}) do
          if not reset then
             widgetCreateConsoleVariable(cvar[1], cvar[2], cvar[3])
+            -- widget.createConsoleVariable(cvar[1], cvar[2], cvar[3])
             if cvar[4] then
                widgetSetConsoleVariable(cvar[1], cvar[4])
+               -- widget.setConsoleVariable(cvar[1], cvar[4])
             end
          else
-            local resetVal = cvar[4] or cvar[3]
-            consolePerformCommand('ui_' .. widgetName .. '_' .. cvar[1] .. ' ' .. resetVal)
+            consolePerformCommand('ui_' .. widgetName .. '_' .. cvar[1] .. ' ' .. (cvar[4] or cvar[3]))
          end
       end
    end
+
+   -- function widget:setConsoleVariable(varName, varValue)
+   --    widgetSetConsoleVariable(varName, varValue)
+   -- end
+
+   -- function widget:createConsoleVariable(varName, varType, valueDefault, valueInit, reset)
+   --    -- widgetCreateConsoleVariable(varName, varType, valueDefault)
+   --    if not reset then
+   --       widgetCreateConsoleVariable(varName, varType, valueDefault)
+   --       if valueInit then
+   --          widget.setConsoleVariable(varName, valueInit)
+   --       end
+   --    else
+   --       consolePerformCommand('ui_' .. widgetName .. '_' .. varName .. ' ' .. (valueInit or valueDefault))
+   --    end
+   -- end
 
    function widget:initialize()
       widget:resetProperties()
@@ -1535,55 +1252,25 @@ function CatoHUD:registerWidget(widgetName, widget)
    -- FIXME: You MUST check what happens if GoaHud is present
    function widget:drawOptions(x, y, intensity)
       local opts = {
-         small = {
-            size = 24,
-            font = 'roboto-regular',
-            color = Color(191, 191, 191, 255 * intensity),
-         },
-         medium = {
-            size = 28,
-            font = 'roboto-regular',
-            color = Color(255, 255, 255, 255 * intensity),
-         },
-         widgetName = {
-            size = 30,
-            font = 'roboto-bold',
-            color = Color(255, 255, 255, 255 * intensity),
-         },
-         warning = {
-            size = 28,
-            font = 'roboto-regular',
-            color = Color(255, 0, 0, 255 * intensity),
-         },
-         delimiter = {
-            color = Color(0, 0, 0, 63 * intensity),
-         },
+         small = {size = 24, font = 'roboto-regular', color = Color(191, 191, 191, 255 * intensity)},
+         medium = {size = 28, font = 'roboto-regular', color = Color(255, 255, 255, 255 * intensity)},
+         widgetName = {size = 30, font = 'roboto-bold', color = Color(255, 255, 255, 255 * intensity)},
+         warning = {size = 28, font = 'roboto-regular', color = Color(255, 0, 0, 255 * intensity)},
+         delimiter = {size = WIDGET_PROPERTIES_COL_WIDTH + 20, color = Color(0, 0, 0, 63 * intensity)},
          checkBox = {
-            width = 35,
-            height = 35,
-            bg = {
-               base = Color(26, 26, 26, 255 * intensity),
-               hover = Color(39, 39, 39, 255 * intensity),
-            },
+            width = 35, height = 35,
+            bg = {base = Color(26, 26, 26, 255 * intensity), hover = Color(39, 39, 39, 255 * intensity)},
             fg = {
-               base = Color(222, 222, 222, 255 * intensity),
-               hover = Color(255, 255, 255, 255 * intensity),
-               pressed = Color(200, 200, 200, 255 * intensity),
-               disabled = Color(100, 100, 100, 255 * intensity),
+               base = Color(222, 222, 222, 255 * intensity), hover = Color(255, 255, 255, 255 * intensity),
+               pressed = Color(200, 200, 200, 255 * intensity), disabled = Color(100, 100, 100, 255 * intensity),
             },
          },
          editBox = {
-            width = 300,
-            height = 35,
-            bg = {
-               base = Color(26, 26, 26, 255 * intensity),
-               hover = Color(39, 39, 39, 255 * intensity),
-            },
+            width = 300, height = 35,
+            bg = {base = Color(26, 26, 26, 255 * intensity), hover = Color(39, 39, 39, 255 * intensity)},
             fg = {
-               base = Color(222, 222, 222, 255 * intensity),
-               hover = Color(255, 255, 255, 255 * intensity),
-               pressed = Color(200, 200, 200, 255 * intensity),
-               disabled = Color(100, 100, 100, 255 * intensity),
+               base = Color(222, 222, 222, 255 * intensity), hover = Color(255, 255, 255, 255 * intensity),
+               pressed = Color(200, 200, 200, 255 * intensity), disabled = Color(100, 100, 100, 255 * intensity),
             },
          },
       }
@@ -1663,65 +1350,55 @@ function CatoHUD:registerWidget(widgetName, widget)
    end
 
    function widget:shouldShow()
-      if widgetName == 'CatoHUD' then return true end
-      if widgetName == 'Cato_Zoom' then return true end -- FIXME: Better solution
-
-      if previewMode then
+      if previewMode or not widget.userData.show then
          -- FIXME: preview should temporarily change zindex to -999?
          return true
       end
 
       -- FIXME: Combine statements. Should be more efficient?
-      local widgetShow
-      if widget.userData.show then
-         widgetShow = widget.userData.show
-      else
-         widgetShow = {}
-      end
-
-      if not widgetShow.mainMenu then
+      if not widget.userData.show.mainMenu then
          if replayActive and replayName == 'menu' then
             return false
          end
       end
 
-      if not widgetShow.menu then
+      if not widget.userData.show.menu then
          if loading.loadScreenVisible or isInMenu() then
             return false
          end
       end
 
-      if not widgetShow.dead then
+      if not widget.userData.show.dead then
          if not povPlayer or povPlayer.health <= 0 then
             return false
          end
       end
 
-      if not widgetShow.race then
+      if not widget.userData.show.race then
          if gameMode == 'race' or gameMode == 'training' then
             return false
          end
       end
 
-      if not widgetShow.hudOff then
+      if not widget.userData.show.hudOff then
          if consoleGetVariable('cl_show_hud') == 0 then
             return false
          end
       end
 
-      if not widgetShow.gameOver then
+      if not widget.userData.show.gameOver then
          if gameState == GAME_STATE_GAMEOVER then
             return false
          end
       end
 
-      if not widgetShow.freecam then
+      if not widget.userData.show.freecam then
          if localPov and povPlayer and povPlayer.state ~= PLAYER_STATE_INGAME then
             return false
          end
       end
 
-      if not widgetShow.editor then
+      if not widget.userData.show.editor then
          if povPlayer and povPlayer.state == PLAYER_STATE_EDITOR then
             return false
          end
@@ -1844,123 +1521,138 @@ CatoHUD:registerWidget('CatoHUD', CatoHUD)
 
 ------------------------------------------------------------------------------------------------------------------------
 
-Cato_GameTime = {}
+Cato_HealthNumber = {}
 
-function Cato_GameTime:drawWidget()
-   local opts = {
-      minutes = {
-         font = self.userData.fontFace,
-         color = Color(255, 255, 255),
-         size = self.userData.fontSize,
-         anchor = {x = 1},
-      },
-      seconds = {
-         font = self.userData.fontFace,
-         color = Color(255, 255, 255),
-         size = self.userData.fontSize,
-         anchor = {x = -1},
-      },
-      delimiter = {
-         font = self.userData.fontFace,
-         color = Color(127, 127, 127),
-         size = self.userData.fontSize,
-         anchor = {x = 0},
-      },
-   }
+function Cato_HealthNumber:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
 
-   local hideSeconds = self.userData.hideSeconds
+   local opts = copyOpts(self.userData.text)
 
-   local timeElapsed = 0
-   if gameState == GAME_STATE_WARMUP then
-      timeElapsed = warmupTimeElapsed
-   elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
-      timeElapsed = gameTimeElapsed
-      hideSeconds = (hideSeconds and gameTimeLimit - gameTimeElapsed > 30000)
+   local playerHealth = 'N/A'
+   if not povPlayer.infoHidden then
+      playerHealth = povPlayer.health
+
+      local damage = damageToKill(povPlayer.health, povPlayer.armor, povPlayer.armorProtection)
+      if damage <= 80 then
+         opts.color = Color(255, 0, 0)
+      elseif damage <= 100 then
+         opts.color = Color(255, 255, 0)
+      else
+         opts.color = Color(255, 255, 255)
+      end
    end
 
-   local timer = formatTimeMs(timeElapsed, gameTimeLimit, self.userData.countDown)
-
-   local minutes = createTextElem(self, timer.minutes, opts.minutes)
-   local delimiter = createTextElem(self, ':', opts.delimiter)
-   local seconds = hideSeconds and 'xx' or format('%02d', timer.seconds)
-   seconds = createTextElem(self, seconds, opts.seconds)
-
-   local x = 0
-   local spacing = delimiter.width / 2
-   if self.anchor.x == -1 then
-      x = x + minutes.width + spacing
-   elseif self.anchor.x == 0 then
-      x = x + 0
-   elseif self.anchor.x == 1 then
-      x = x - (seconds.width + spacing)
-   end
-
-   minutes.draw(x - spacing, 0)
-   delimiter.draw(x, 0)
-   seconds.draw(x + spacing, 0)
+   local health = createTextElem(self, playerHealth, opts)
+   health.draw(0, 0)
 end
 
-CatoHUD:registerWidget('Cato_GameTime', Cato_GameTime)
+CatoHUD:registerWidget('Cato_HealthNumber', Cato_HealthNumber)
 
 ------------------------------------------------------------------------------------------------------------------------
 
-Cato_FollowingPlayer = {}
+Cato_ArmorNumber = {}
 
-function Cato_FollowingPlayer:drawWidget()
-   if not povPlayer then return end
+function Cato_ArmorNumber:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
 
-   -- TODO: option for display on self
-   if not previewMode and localPov then return end
+   local opts = copyOpts(self.userData.text)
 
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-      anchor = self.userData.textAnchor,
-   }
+   local playerArmor = 'N/A'
+   if not povPlayer.infoHidden then
+      playerArmor = povPlayer.armor
 
-   local label = createTextElem(self, 'FOLLOWING', opts)
-   local name = createTextElem(self, povPlayer.name, opts)
+      opts.color = CatoHUD.userData['armorColor'][povPlayer.armorProtection + 1]
+      opts.color = armorColorLerp(playerArmor, povPlayer.armorProtection, opts.color)
 
-   local x = 0
-   if self.anchor.x == -1 then
-      x = x + max(label.width, name.width) / 2
-   elseif self.anchor.x == 0 then
-      x = x + 0
-   elseif self.anchor.x == 1 then
-      x = x - (max(label.width, name.width) / 2)
+      -- local lerpSteps = floor(playerArmor / armorLimit[povPlayer.armorProtection + 1][0])
+
+      -- local lerpSteps = -1
+      -- for itemArmorProtection = 0, 2 do
+      --    if playerArmor < armorLimit[povPlayer.armorProtection + 1][itemArmorProtection + 1] then
+      --       lerpSteps = lerpSteps + 1
+      --    end
+      -- end
+
+      -- local colorToLerp = lerpSteps < 0 and Color(255, 255, 255) or Color(0, 0, 0)
+      -- opts.color = lerpColor(opts.color, colorToLerp, abs(lerpSteps) * 0.33)
+
+      -- consoleColorPrint(opts.color)
+      -- consoleColorPrint(colorToLerp)
+
+      -- debug
+      -- playerArmor = povPlayer.armor .. ' ' .. armorQuality(povPlayer) * povPlayer.armor
+
+      -- local playerArmorLimit = playerArmor * armorQuality[povPlayer.armorProtection]
+      -- playerArmorLimit = ceil(playerArmorLimit)
+      -- if playerArmorLimit < armorQuality[0] * armorMax[0] then
+      --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 2 / 3)
+      -- elseif playerArmorLimit < armorQuality[1] * armorMax[1] then
+      --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 1 / 3)
+      -- elseif playerArmorLimit < armorQuality[2] * armorMax[2] then
+      --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 0)
+      -- end
+
+      -- FIXME: Better way?
+      -- opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
+      -- if povPlayer.armorProtection == 2 then
+      --     -- RA <  66 -> can pickup GA
+      --    if playerArmor < 66 then
+      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
+      --     -- RA < 132 -> can pickup YA
+      --    elseif playerArmor < 132 then
+      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.33)
+      --     -- RA < 200 -> can pickup RA
+      --    elseif playerArmor < 200 then
+      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0)
+      --    end
+      -- elseif povPlayer.armorProtection == 1 then
+      --     -- YA <  75 -> can pickup GA
+      --    if playerArmor < 75 then
+      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
+      --     -- YA < 150 -> can pickup YA
+      --    elseif playerArmor < 150 then
+      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.33)
+      --    end
+      -- elseif povPlayer.armorProtection == 0 then
+      --     -- GA < 100 -> can pickup GA
+      --    if playerArmor < 100 then
+      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
+      --    end
+      -- end
    end
 
-   local y = 0
-   local offset = opts.size / 3
-   if self.anchor.y == -1 then
-      y = y + 0
-   elseif self.anchor.y == 0 then
-      y = y - (label.height - offset) / 2
-   elseif self.anchor.y == 1 then
-      y = y - (name.height - offset)
-   end
-
-   label.draw(x, y)
-   name.draw(x, y + label.height - offset)
+   local armor = createTextElem(self, playerArmor, opts)
+   armor.draw(0, 0)
 end
 
-CatoHUD:registerWidget('Cato_FollowingPlayer', Cato_FollowingPlayer)
+CatoHUD:registerWidget('Cato_ArmorNumber', Cato_ArmorNumber)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Cato_ArmorIcon = {}
+
+function Cato_ArmorIcon:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+
+   local opts = copyOpts(self.userData.icon)
+
+   if not povPlayer.infoHidden then
+      opts.color = CatoHUD.userData['armorColor'][povPlayer.armorProtection + 1]
+   end
+
+   local armor = createSvgElem(self, 'internal/ui/icons/armor', opts)
+   armor.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_ArmorIcon', Cato_ArmorIcon)
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_FPS = {}
 
 function Cato_FPS:drawWidget()
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
    local fps = min(round(1 / deltaTime), consoleGetVariable('com_maxfps'))
-
-   fps = createTextElem(self, fps .. 'fps', opts)
+   fps = createTextElem(self, fps .. 'fps', self.userData.text)
    fps.draw(0, 0)
 end
 
@@ -1984,48 +1676,13 @@ function Cato_Time:drawWidget()
    -- full datetime
    -- if true then
    --    local opts = {
-   --       delimiter = {
-   --          font = self.userData.fontFace,
-   --          color = Color(127, 127, 127),
-   --          size = self.userData.fontSize,
-   --          anchor = {x = -1},
-   --       },
-   --       year = {
-   --          font = self.userData.fontFace,
-   --          color = Color(255, 255, 255),
-   --          size = self.userData.fontSize,
-   --          anchor = {x = -1},
-   --       },
-   --       month = {
-   --          font = self.userData.fontFace,
-   --          color = Color(255, 255, 255),
-   --          size = self.userData.fontSize,
-   --          anchor = {x = -1},
-   --       },
-   --       day = {
-   --          font = self.userData.fontFace,
-   --          color = Color(255, 255, 255),
-   --          size = self.userData.fontSize,
-   --          anchor = {x = -1},
-   --       },
-   --       hour = {
-   --          font = self.userData.fontFace,
-   --          color = Color(255, 255, 255),
-   --          size = self.userData.fontSize,
-   --          anchor = {x = -1},
-   --       },
-   --       minute = {
-   --          font = self.userData.fontFace,
-   --          color = Color(255, 255, 255),
-   --          size = self.userData.fontSize,
-   --          anchor = {x = -1},
-   --       },
-   --       second = {
-   --          font = self.userData.fontFace,
-   --          color = Color(255, 255, 255),
-   --          size = self.userData.fontSize,
-   --          anchor = {x = -1},
-   --       },
+   --       delimiter = copyOpts(self.userData.text.delimiter),
+   --       year = copyOpts(self.userData.text.year),
+   --       month = copyOpts(self.userData.text.month),
+   --       day = copyOpts(self.userData.text.day),
+   --       hour = copyOpts(self.userData.text.hour),
+   --       minute = copyOpts(self.userData.text.minute),
+   --       second = copyOpts(self.userData.text.second),
    --    }
 
    --    local time = formatEpochTime(epochTime, CatoHUD.userData.offsetUTC)
@@ -2082,31 +1739,8 @@ function Cato_Time:drawWidget()
    --    second.draw(x, 0)
    -- end
 
-   local opts = {
-      hour = {
-         font = self.userData.fontFace,
-         color = Color(255, 255, 255),
-         size = self.userData.fontSize,
-         anchor = {x = 1},
-      },
-      minute = {
-         font = self.userData.fontFace,
-         color = Color(255, 255, 255),
-         size = self.userData.fontSize,
-         anchor = {x = -1},
-      },
-      delimiter = {
-         font = self.userData.fontFace,
-         color = Color(127, 127, 127),
-         size = self.userData.fontSize,
-         anchor = {x = 0},
-      },
-   }
 
    local epochSeconds = epochTime + CatoHUD.userData.offsetUTC
-   local hour = floor(epochSeconds / S_IN_H) % H_IN_D
-   local delimiter = ':'
-   local minute = floor(epochSeconds / S_IN_M) % M_IN_H
 
    -- TODO: Figure out if time should be displayed during replay playback.
    --       It's a bit misleading since it displays current local time, and replays don't seem to
@@ -2118,10 +1752,11 @@ function Cato_Time:drawWidget()
    --    consolePrint(replay.timecodeCurrent)
    -- end
 
-   hour = createTextElem(self, format('%02d', hour), opts.hour)
-   delimiter = createTextElem(self, delimiter, opts.delimiter)
-   minute = createTextElem(self, format('%02d', minute), opts.minute)
+   local hour = createTextElem(self, format('%02d', floor(epochSeconds / S_IN_H) % H_IN_D), self.userData.text.hour)
+   local delimiter = createTextElem(self, ':', self.userData.text.delimiter)
+   local minute = createTextElem(self, format('%02d', floor(epochSeconds / S_IN_M) % M_IN_H), self.userData.text.minute)
 
+   -- TODO: This alignment bs has to be figured out
    local x = 0
    local spacing = delimiter.width / 2
    if self.anchor.x == -1 then
@@ -2145,24 +1780,9 @@ Cato_Scores = {}
 
 function Cato_Scores:drawWidget()
    local opts = {
-      team = {
-         font = self.userData.fontFace,
-         color = ColorHEX(consoleGetVariable('cl_color_friend')),
-         size = self.userData.fontSize,
-         anchor = {x = 1},
-      },
-      enemy = {
-         font = self.userData.fontFace,
-         color = ColorHEX(consoleGetVariable('cl_color_enemy')),
-         size = self.userData.fontSize,
-         anchor = {x = -1},
-      },
-      delimiter = {
-         font = self.userData.fontFace,
-         color = Color(127, 127, 127),
-         size = self.userData.fontSize,
-         anchor = {x = 0},
-      },
+      team = copyOpts(self.userData.text.team),
+      enemy = copyOpts(self.userData.text.enemy),
+      delimiter = copyOpts(self.userData.text.delimiter),
    }
 
    local scoreTeam
@@ -2278,13 +1898,7 @@ Cato_GameModeName = {}
 function Cato_GameModeName:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
-   local gameModeName = createTextElem(self, gameMode, opts)
+   local gameModeName = createTextElem(self, gameMode, self.userData.text)
    gameModeName.draw(0, 0)
 end
 
@@ -2297,13 +1911,7 @@ Cato_RulesetName = {}
 function Cato_RulesetName:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
-   local rulesetName = createTextElem(self, ruleset, opts)
+   local rulesetName = createTextElem(self, ruleset, self.userData.text)
    rulesetName.draw(0, 0)
 end
 
@@ -2316,13 +1924,7 @@ Cato_MapName = {}
 function Cato_MapName:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
-   local mapName = createTextElem(self, mapTitle, opts)
+   local mapName = createTextElem(self, mapTitle, self.userData.text)
    mapName.draw(0, 0)
 end
 
@@ -2335,20 +1937,15 @@ Cato_Mutators = {}
 function Cato_Mutators:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
-   local x = -self.userData.iconSize * 2
-   local spacing = self.userData.iconSize / 2
+   local x = -self.userData.icon.size * 2
+   local spacing = self.userData.icon.size / 2
 
    local gameMutators = {}
    -- TODO: Should this be ipairs and then use "gameMutators[i]" over "table.insert"?
    for mutator in world.mutators:gmatch('%w+') do
       mutator = mutatorDefinitions[string.upper(mutator)]
 
-      local opts = {
-         color = mutator.col,
-         size = self.userData.iconSize,
-      }
-
-      mutator = createSvgElem(self, mutator.icon, opts)
+      mutator = createSvgElem(self, mutator.icon, {color = mutator.col, size = self.userData.icon.size})
       x = x + mutator.width + spacing
 
       table.insert(gameMutators, mutator)
@@ -2368,11 +1965,7 @@ function Cato_Mutators:drawWidget()
       x = x + mutator.width + spacing
    end
 
-   -- local opts = {
-   --    font = self.userData.fontFace,
-   --    color = Color(255, 255, 255),
-   --    size = self.userData.fontSize,
-   -- }
+   -- local opts = copyOpts(self.userData.text)
 
    -- local gameMutators = createTextElem(self, world.mutators, opts)
    -- gameMutators.draw(0, 0)
@@ -2382,16 +1975,203 @@ CatoHUD:registerWidget('Cato_Mutators', Cato_Mutators)
 
 ------------------------------------------------------------------------------------------------------------------------
 
+Cato_LowAmmo = {}
+
+-- local attackButton = 'mouse1'
+-- local attackUnbound = false
+-- local attackCommand = '+attack; cl_camera_next_player; ui_RocketLagNullifier_attack 1'
+
+function Cato_LowAmmo:drawWidget()
+   if previewMode then
+      local ammoWarning = createTextElem(self, '(Low Ammo)', self.userData.text)
+      ammoWarning.draw(0, 0)
+      return
+   end
+
+   if not povPlayer or povPlayer.infoHidden then return end
+
+   local weaponIndexSelected = povPlayer.weaponIndexSelected
+   if weaponDefinitions[weaponIndexSelected] == nil then return end
+
+   local ammoLow = weaponDefinitions[weaponIndexSelected].lowAmmoWarning
+   local ammo = povPlayer.weapons[weaponIndexSelected].ammo
+   if ammo > ammoLow then return end
+
+   local opts = copyOpts(self.userData.text)
+
+   if ammo <= 0 then
+      opts.color = Color(95, 95, 95)
+   else
+      -- TODO: lerp color from white to yellow to red?
+      --       visual indicator of halfway point is useful!
+      -- TODO: optimize by precalculating midpoints between low ammo to no ammo
+      -- just lerp from yellow to red for now
+      opts.color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow)
+   end
+
+   -- FIXME: Doesn't work. Possible fixes:
+   --        (1) Temporarily unbind +attack until more ammo or weapon is switched
+   --        (2) Use a custom command for +attack (requires "holding detection"?)
+   --        (3) Just unbind +attack if no ammo for current weapon
+   -- if self.userData.preventEmptyAttack and localPov and povPlayer.buttons.attack then
+   --    consolePerformCommand('-attack')
+   --    consolePrint('No ammo. Prevent shooting')
+   -- end
+   -- attackButton = bindReverseLookup('+attack', 'game')
+   -- if localPov and self.userData.preventEmptyAttack then
+   --    if ammo > 0 then
+   --       consolePerformCommand('bind game ' .. attackButton .. ' ' .. attackCommand)
+   --    elseif ammo == 1 then
+   --       if povPlayer.buttons.attack then
+   --          consolePerformCommand('-attack')
+   --       end
+   --    else
+   --       consolePerformCommand('unbind game ' .. attackButton)
+   --    end
+   -- end
+
+   -- local lowAmmoText = ammo <= 0 and 'LOW AMMO: ' .. ammo or 'NO AMMO: ' .. ammo
+   -- local ammoWarning = createTextElem(self, lowAmmoText, opts)
+
+   local ammoWarning = createTextElem(self, ammo, opts)
+   ammoWarning.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_LowAmmo', Cato_LowAmmo)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Cato_Ping = {}
+
+function Cato_Ping:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+
+   local opts = copyOpts(self.userData.text)
+
+   if povPlayer.latency == 0 then
+      return
+   elseif povPlayer.latency <= 50 then
+      opts.color = Color(0, 255, 0)
+   elseif povPlayer.latency < 100 then
+      opts.color = Color(255, 255, 0)
+   else
+      opts.color = Color(255, 0, 0)
+   end
+
+   local ping = createTextElem(self, povPlayer.latency .. 'ms', opts)
+   ping.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_Ping', Cato_Ping)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Cato_PacketLoss = {}
+
+function Cato_PacketLoss:drawWidget()
+   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+
+   local opts = copyOpts(self.userData.text)
+
+   if povPlayer.packetLoss == 0 then
+      return
+   elseif povPlayer.packetLoss <= 5 then
+      opts.color = Color(255, 255, 255)
+   elseif povPlayer.packetLoss < 10 then
+      opts.color = Color(255, 255, 0)
+   else
+      opts.color = Color(255, 0, 0)
+   end
+
+   local packetloss = createTextElem(self, povPlayer.packetLoss .. ' PL', opts)
+   packetloss.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_PacketLoss', Cato_PacketLoss)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Cato_GameTime = {}
+
+function Cato_GameTime:drawWidget()
+   local hideSeconds = self.userData.hideSeconds
+
+   local timeElapsed = 0
+   if gameState == GAME_STATE_WARMUP then
+      timeElapsed = warmupTimeElapsed
+   elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
+      timeElapsed = gameTimeElapsed
+      hideSeconds = (hideSeconds and gameTimeLimit - gameTimeElapsed > 30000)
+   end
+
+   local timer = formatTimeMs(timeElapsed, gameTimeLimit, self.userData.countDown)
+
+   local minutes = createTextElem(self, timer.minutes, self.userData.text.minutes)
+   local delimiter = createTextElem(self, ':', self.userData.text.delimiter)
+   local seconds = hideSeconds and 'xx' or format('%02d', timer.seconds)
+   seconds = createTextElem(self, seconds, self.userData.text.seconds)
+
+   local x = 0
+   local spacing = delimiter.width / 2
+   if self.anchor.x == -1 then
+      x = x + minutes.width + spacing
+   elseif self.anchor.x == 0 then
+      x = x + 0
+   elseif self.anchor.x == 1 then
+      x = x - (seconds.width + spacing)
+   end
+
+   minutes.draw(x - spacing, 0)
+   delimiter.draw(x, 0)
+   seconds.draw(x + spacing, 0)
+end
+
+CatoHUD:registerWidget('Cato_GameTime', Cato_GameTime)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Cato_FollowingPlayer = {}
+
+function Cato_FollowingPlayer:drawWidget()
+   if not povPlayer then return end
+
+   -- TODO: option for display on self
+   if not previewMode and localPov then return end
+
+   local label = createTextElem(self, 'FOLLOWING', self.userData.opts)
+   local name = createTextElem(self, povPlayer.name, self.userData.opts)
+
+   local x = 0
+   if self.anchor.x == -1 then
+      x = x + max(label.width, name.width) / 2
+   elseif self.anchor.x == 0 then
+      x = x + 0
+   elseif self.anchor.x == 1 then
+      x = x - (max(label.width, name.width) / 2)
+   end
+
+   local y = 0
+   local offset = label.height / 3
+   if self.anchor.y == -1 then
+      y = y + 0
+   elseif self.anchor.y == 0 then
+      y = y - (label.height - offset) / 2
+   elseif self.anchor.y == 1 then
+      y = y - (name.height - offset)
+   end
+
+   label.draw(x, y)
+   name.draw(x, y + label.height - offset)
+end
+
+CatoHUD:registerWidget('Cato_FollowingPlayer', Cato_FollowingPlayer)
+
+------------------------------------------------------------------------------------------------------------------------
+
 Cato_ReadyStatus = {}
 
 function Cato_ReadyStatus:drawWidget()
    if gameState ~= GAME_STATE_WARMUP and not previewMode then return end
-
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
 
    local playersReady = 0
    local playersGame = 0
@@ -2404,7 +2184,7 @@ function Cato_ReadyStatus:drawWidget()
       end
    end
 
-   local ready = createTextElem(self, playersReady .. '/' .. playersGame .. ' ready', opts)
+   local ready = createTextElem(self, playersReady .. '/' .. playersGame .. ' ready', self.userData.text)
    ready.draw(0, 0)
 end
 
@@ -2428,14 +2208,8 @@ function Cato_FragMessage:drawWidget()
       return
    end
 
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
    -- TODO: Country flag
-   fragMessage = createTextElem(self, fragMessage, opts)
+   fragMessage = createTextElem(self, fragMessage, self.userData.text)
    fragMessage.draw(0, 0)
 end
 
@@ -2450,12 +2224,6 @@ function Cato_GameMessage:init()
 end
 
 function Cato_GameMessage:drawWidget()
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
    local gameMessage = nil
    if world.timerActive then
       if gameState == GAME_STATE_WARMUP or gameState == GAME_STATE_ROUNDPREPARE then
@@ -2494,7 +2262,7 @@ function Cato_GameMessage:drawWidget()
       return
    end
 
-   gameMessage = createTextElem(self, gameMessage, opts)
+   gameMessage = createTextElem(self, gameMessage, self.userData.text)
    gameMessage.draw(0, 0)
 end
 
@@ -2507,289 +2275,11 @@ Cato_Speed = {}
 function Cato_Speed:drawWidget()
    if not povPlayer then return end
 
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
-   local ups = createTextElem(self, ceil(povPlayer.speed) .. 'ups', opts)
+   local ups = createTextElem(self, ceil(povPlayer.speed) .. 'ups', self.userData.text)
    ups.draw(0, 0)
 end
 
 CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
-
-------------------------------------------------------------------------------------------------------------------------
-
-Cato_LowAmmo = {}
-
--- local attackButton = 'mouse1'
--- local attackUnbound = false
--- local attackCommand = '+attack; cl_camera_next_player; ui_RocketLagNullifier_attack 1'
-
-function Cato_LowAmmo:drawWidget()
-   if previewMode then
-      local opts = {
-            font = self.userData.fontFace,
-            color = Color(255, 255, 255),
-            size = self.userData.fontSize,
-      }
-      local ammoWarning = createTextElem(self, '(Low Ammo)', opts)
-      ammoWarning.draw(0, 0)
-      return
-   end
-
-   if not povPlayer or povPlayer.infoHidden then return end
-
-   local weaponIndexSelected = povPlayer.weaponIndexSelected
-   if weaponDefinitions[weaponIndexSelected] == nil then return end
-
-   local ammoLow = weaponDefinitions[weaponIndexSelected].lowAmmoWarning
-   local ammo = povPlayer.weapons[weaponIndexSelected].ammo
-   if ammo > ammoLow then return end
-
-   local opts = {
-      font = self.userData.fontFace,
-   -- TODO: lerp color from white to yellow to red?
-   --       visual indicator of halfway point is useful!
-   -- TODO: optimize by precalculating midpoints between low ammo to no ammo
-   -- just lerp from yellow to red for now
-      color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow),
-      size = self.userData.fontSize,
-   }
-
-   if ammo <= 0 then
-      opts.color = Color(95, 95, 95)
-   end
-
-   -- FIXME: Doesn't work. Possible fixes:
-   --        (1) Temporarily unbind +attack until more ammo or weapon is switched
-   --        (2) Use a custom command for +attack (requires "holding detection"?)
-   --        (3) Just unbind +attack if no ammo for current weapon
-   -- if self.userData.preventEmptyAttack and localPov and povPlayer.buttons.attack then
-   --    consolePerformCommand('-attack')
-   --    consolePrint('No ammo. Prevent shooting')
-   -- end
-   -- attackButton = bindReverseLookup('+attack', 'game')
-   -- if localPov and self.userData.preventEmptyAttack then
-   --    if ammo > 0 then
-   --       consolePerformCommand('bind game ' .. attackButton .. ' ' .. attackCommand)
-   --    elseif ammo == 1 then
-   --       if povPlayer.buttons.attack then
-   --          consolePerformCommand('-attack')
-   --       end
-   --    else
-   --       consolePerformCommand('unbind game ' .. attackButton)
-   --    end
-   -- end
-
-   -- local lowAmmoText = ammo <= 0 and 'LOW AMMO: ' .. ammo or 'NO AMMO: ' .. ammo
-   -- local ammoWarning = createTextElem(self, lowAmmoText, opts)
-
-   local ammoWarning = createTextElem(self, ammo, opts)
-   ammoWarning.draw(0, 0)
-end
-
-CatoHUD:registerWidget('Cato_LowAmmo', Cato_LowAmmo)
-
-------------------------------------------------------------------------------------------------------------------------
-
-Cato_PacketLoss = {}
-
-function Cato_PacketLoss:drawWidget()
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
-
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 0, 0),
-      size = self.userData.fontSize,
-   }
-
-   if povPlayer.packetLoss == 0 then
-      return
-   elseif povPlayer.packetLoss <= 5 then
-      opts.color = Color(255, 255, 255)
-   elseif povPlayer.packetLoss < 10 then
-      opts.color = Color(255, 255, 0)
-   else
-      opts.color = Color(255, 0, 0)
-   end
-
-   local packetloss = createTextElem(self, povPlayer.packetLoss .. ' PL', opts)
-   packetloss.draw(0, 0)
-end
-
-CatoHUD:registerWidget('Cato_PacketLoss', Cato_PacketLoss)
-
-------------------------------------------------------------------------------------------------------------------------
-
-Cato_Ping = {}
-
-function Cato_Ping:drawWidget()
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
-
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(255, 255, 255),
-      size = self.userData.fontSize,
-   }
-
-   if povPlayer.latency == 0 then
-      return
-   elseif povPlayer.latency <= 50 then
-      opts.color = Color(0, 255, 0)
-   elseif povPlayer.latency < 100 then
-      opts.color = Color(255, 255, 0)
-   else
-      opts.color = Color(255, 0, 0)
-   end
-
-   local ping = createTextElem(self, povPlayer.latency .. 'ms', opts)
-   ping.draw(0, 0)
-end
-
-CatoHUD:registerWidget('Cato_Ping', Cato_Ping)
-
-------------------------------------------------------------------------------------------------------------------------
-
-Cato_HealthNumber = {}
-
-function Cato_HealthNumber:drawWidget()
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
-
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(191, 191, 191),
-      size = self.userData.fontSize,
-      anchor = self.userData.textAnchor,
-   }
-
-   local playerHealth = 'N/A'
-   if not povPlayer.infoHidden then
-      playerHealth = povPlayer.health
-
-      local damage = damageToKill(povPlayer.health, povPlayer.armor, povPlayer.armorProtection)
-      if damage <= 80 then
-         opts.color = Color(255, 0, 0)
-      elseif damage <= 100 then
-         opts.color = Color(255, 255, 0)
-      else
-         opts.color = Color(255, 255, 255)
-      end
-   end
-
-   local health = createTextElem(self, playerHealth, opts)
-   health.draw(0, 0)
-end
-
-CatoHUD:registerWidget('Cato_HealthNumber', Cato_HealthNumber)
-
-------------------------------------------------------------------------------------------------------------------------
-
-Cato_ArmorNumber = {}
-
-function Cato_ArmorNumber:drawWidget()
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
-
-   local opts = {
-      font = self.userData.fontFace,
-      color = Color(191, 191, 191),
-      size = self.userData.fontSize,
-      anchor = self.userData.textAnchor,
-   }
-
-   local playerArmor = 'N/A'
-   if not povPlayer.infoHidden then
-      playerArmor = povPlayer.armor
-
-      opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
-      opts.color = armorColorLerp(playerArmor, povPlayer.armorProtection, opts.color)
-
-      -- local lerpSteps = floor(playerArmor / armorLimit[povPlayer.armorProtection + 1][0])
-
-      -- local lerpSteps = -1
-      -- for itemArmorProtection = 0, 2 do
-      --    if playerArmor < armorLimit[povPlayer.armorProtection + 1][itemArmorProtection + 1] then
-      --       lerpSteps = lerpSteps + 1
-      --    end
-      -- end
-
-      -- local colorToLerp = lerpSteps < 0 and Color(255, 255, 255) or Color(0, 0, 0)
-      -- opts.color = lerpColor(opts.color, colorToLerp, abs(lerpSteps) * 0.33)
-
-      -- consoleColorPrint(opts.color)
-      -- consoleColorPrint(colorToLerp)
-
-      -- debug
-      -- playerArmor = povPlayer.armor .. ' ' .. armorQuality(povPlayer) * povPlayer.armor
-
-      -- local playerArmorLimit = playerArmor * armorQuality[povPlayer.armorProtection]
-      -- playerArmorLimit = ceil(playerArmorLimit)
-      -- if playerArmorLimit < armorQuality[0] * armorMax[0] then
-      --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 2 / 3)
-      -- elseif playerArmorLimit < armorQuality[1] * armorMax[1] then
-      --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 1 / 3)
-      -- elseif playerArmorLimit < armorQuality[2] * armorMax[2] then
-      --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 0)
-      -- end
-
-      -- FIXME: Better way?
-      -- opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
-      -- if povPlayer.armorProtection == 2 then
-      --     -- RA <  66 -> can pickup GA
-      --    if playerArmor < 66 then
-      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
-      --     -- RA < 132 -> can pickup YA
-      --    elseif playerArmor < 132 then
-      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.33)
-      --     -- RA < 200 -> can pickup RA
-      --    elseif playerArmor < 200 then
-      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0)
-      --    end
-      -- elseif povPlayer.armorProtection == 1 then
-      --     -- YA <  75 -> can pickup GA
-      --    if playerArmor < 75 then
-      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
-      --     -- YA < 150 -> can pickup YA
-      --    elseif playerArmor < 150 then
-      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.33)
-      --    end
-      -- elseif povPlayer.armorProtection == 0 then
-      --     -- GA < 100 -> can pickup GA
-      --    if playerArmor < 100 then
-      --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
-      --    end
-      -- end
-   end
-
-
-   local armor = createTextElem(self, playerArmor, opts)
-   armor.draw(0, 0)
-end
-
-CatoHUD:registerWidget('Cato_ArmorNumber', Cato_ArmorNumber)
-
-------------------------------------------------------------------------------------------------------------------------
-
-Cato_ArmorIcon = {}
-
-function Cato_ArmorIcon:drawWidget()
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
-
-   local opts = {
-      color = CatoHUD.userData.noArmorColor,
-      size = self.userData.iconSize,
-   }
-
-   if not povPlayer.infoHidden then
-      opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
-   end
-
-   local armor = createSvgElem(self, 'internal/ui/icons/armor', opts)
-   armor.draw(0, 0)
-end
-
-CatoHUD:registerWidget('Cato_ArmorIcon', Cato_ArmorIcon)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2800,19 +2290,15 @@ function Cato_Zoom:init()
 end
 
 function Cato_Zoom:drawWidget()
-   local zoomFov = abs(self.userData.fov)
-   local zoomSens = abs(self.userData.sensitivity)
-   local zoomAnimTime = abs(self.userData.time)
-
    -- TODO: Animation
    if consoleGetVariable('ui_CatoHUD_zoom') ~= 0 then
       if showScores and not self.zooming then
             self.zooming = true
             self.zoomTime = 0
             consolePerformCommand('cl_show_gun 0')
-            consolePerformCommand('m_speed ' .. zoomSens)
-            if zoomAnimTime == 0 then
-               consolePerformCommand('r_fov ' .. zoomFov)
+            consolePerformCommand('m_speed ' .. self.userData.sensitivity)
+            if self.userData.time == 0 then
+               consolePerformCommand('r_fov ' .. self.userData.fov)
             end
             if self.zoomPreScoreboard then
                consolePerformCommand('ui_hide_widget Scoreboard')
@@ -2823,7 +2309,7 @@ function Cato_Zoom:drawWidget()
          self.zooming = false
          consolePerformCommand('cl_show_gun ' .. self.zoomPreGun)
          consolePerformCommand('m_speed ' .. self.zoomPreSens)
-         if zoomAnimTime == 0 then
+         if self.userData.time == 0 then
             consolePerformCommand('r_fov ' .. self.zoomPreFov)
          end
          if self.zoomPreScoreboard then
