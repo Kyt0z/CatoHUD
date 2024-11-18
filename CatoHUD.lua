@@ -2120,8 +2120,8 @@ function Cato_FollowingPlayer:drawWidget()
    -- TODO: option for display on self
    if not previewMode and localPov then return end
 
-   local label = createTextElem(self, 'FOLLOWING', self.userData.opts)
-   local name = createTextElem(self, povPlayer.name, self.userData.opts)
+   local label = createTextElem(self, 'FOLLOWING', self.userData.text)
+   local name = createTextElem(self, povPlayer.name, self.userData.text)
 
    local x = 0
    if self.anchor.x == -1 then
