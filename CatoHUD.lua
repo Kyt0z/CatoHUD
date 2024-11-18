@@ -623,6 +623,39 @@ local defaultSettings = {
    },
 }
 
+local function resetProperties(widgetName)
+   consolePerformCommand((defaultSettings[widgetName].visible and 'ui_show_widget ' or 'ui_hide_widget ') .. widgetName)
+
+   for prop, val in pairs(defaultSettings[widgetName].props or {}) do
+      consolePerformCommand('ui_set_widget_' .. prop .. ' ' .. widgetName .. ' ' .. val)
+   end
+end
+
+local function widgetSetUserData(widgetName, widget, reset)
+   if reset or not widget.userData then widget.userData = {} end
+
+   for var, val in pairs(defaultSettings[widgetName].userData or {}) do
+      if not widget.userData[var] or type(widget.userData[var]) ~= type(val) then
+         widget.userData[var] = val
+      end
+   end
+
+   saveUserData(widget.userData)
+end
+
+local function widgetSetCvars(widgetName, widget, reset)
+   for _, cvar in ipairs(defaultSettings[widgetName].cvars or {}) do
+      if not reset then
+         widget:createConsoleVariable(cvar[1], cvar[2], cvar[3])
+         if cvar[4] then
+            widget:setConsoleVariable(cvar[1], cvar[4])
+         end
+      else
+         consolePerformCommand('ui_' .. widgetName .. '_' .. cvar[1] .. ' ' .. (cvar[4] or cvar[3]))
+      end
+   end
+end
+
 ------------------------------------------------------------------------------------------------------------------------
 -- Widget cache
 ------------------------------------------------------------------------------------------------------------------------
@@ -1168,73 +1201,22 @@ function CatoHUD:registerWidget(widgetName, widget)
    widget.y_max = widget.y
    widget.height = 0
 
-   function widget:resetProperties()
-      local settings = defaultSettings[widgetName] or {}
-
-      local showCommand = settings.visible and 'ui_show_widget' or 'ui_hide_widget'
-      consolePerformCommand(showCommand .. ' ' .. widgetName)
-
-      for prop, val in pairs(settings.props or {}) do
-         consolePerformCommand('ui_set_widget_' .. prop .. ' ' .. widgetName .. ' ' .. val)
-      end
+   function widget:setConsoleVariable(varName, varValue)
+      widgetSetConsoleVariable(varName, varValue)
    end
 
-   function widget:checkSetUserData(reset)
-      local settings = defaultSettings[widgetName] or {}
-
-      if reset then widget.userData = nil end
-
-      widget.userData = widget.userData or {}
-      for var, val in pairs(settings.userData or {}) do
-         if not widget.userData[var] or type(widget.userData[var]) ~= type(val) then
-            widget.userData[var] = val
-         end
-      end
-
-      saveUserData(widget.userData)
+   function widget:createConsoleVariable(varName, varType, valueDefault)
+      widgetCreateConsoleVariable(varName, varType, valueDefault)
    end
-
-   function widget:checkSetCvars(reset)
-      local settings = defaultSettings[widgetName] or {}
-
-      for _, cvar in ipairs(settings.cvars or {}) do
-         if not reset then
-            widgetCreateConsoleVariable(cvar[1], cvar[2], cvar[3])
-            -- widget.createConsoleVariable(cvar[1], cvar[2], cvar[3])
-            if cvar[4] then
-               widgetSetConsoleVariable(cvar[1], cvar[4])
-               -- widget.setConsoleVariable(cvar[1], cvar[4])
-            end
-         else
-            consolePerformCommand('ui_' .. widgetName .. '_' .. cvar[1] .. ' ' .. (cvar[4] or cvar[3]))
-         end
-      end
-   end
-
-   -- function widget:setConsoleVariable(varName, varValue)
-   --    widgetSetConsoleVariable(varName, varValue)
-   -- end
-
-   -- function widget:createConsoleVariable(varName, varType, valueDefault, valueInit, reset)
-   --    -- widgetCreateConsoleVariable(varName, varType, valueDefault)
-   --    if not reset then
-   --       widgetCreateConsoleVariable(varName, varType, valueDefault)
-   --       if valueInit then
-   --          widget.setConsoleVariable(varName, valueInit)
-   --       end
-   --    else
-   --       consolePerformCommand('ui_' .. widgetName .. '_' .. varName .. ' ' .. (valueInit or valueDefault))
-   --    end
-   -- end
 
    function widget:initialize()
-      widget:resetProperties()
+      resetProperties(widgetName)
 
       -- consoleTablePrint(widgetName .. '.userData', widget.userData)
-      widget:checkSetUserData()
+      widgetSetUserData(widgetName, widget)
       -- consoleTablePrint(widgetName .. '.userData', widget.userData)
 
-      widget:checkSetCvars()
+      widgetSetCvars(widgetName, widget)
 
       setAnchorWidget(widget)
 
@@ -1460,9 +1442,9 @@ function CatoHUD:drawWidget()
 
    if checkResetConsoleVariable('ui_CatoHUD_reset_widgets', 0) ~= 0 then
       for widgetName, _ in pairs(defaultSettings) do
-         _G[widgetName]:resetProperties()
-         _G[widgetName]:checkSetUserData(true)
-         _G[widgetName]:checkSetCvars(true)
+         resetProperties(widgetName)
+         widgetSetUserData(widgetName, _G[widgetName], true)
+         widgetSetCvars(widgetName, _G[widgetName], true)
       end
       consolePrint('CatoHUD widgets have been reset')
       if debugMode then consolePerformCommand('saveconfig') end
