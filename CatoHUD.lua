@@ -1449,7 +1449,8 @@ function CatoHUD:drawWidget()
             if event.age * 1000 < 2500 then
                -- FIXME: Again. getPlayerByName is not a sufficient condition.
                local killer = getPlayerByName(event.deathKiller, event.deathTeamIndexKiller)
-               Cato_FragMessage.fragEvents[killer.index] = event
+               -- FIXME: This crashes on mapchange for some reason?
+               if killer then Cato_FragMessage.fragEvents[killer.index] = event end
             end
          end
       end
