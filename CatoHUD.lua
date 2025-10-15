@@ -390,7 +390,7 @@ end
 local defaultSettings = {
    ['CatoHUD'] = {
       userData = {
-         offsetUTC = 2 * S_IN_H,
+         offsetUTC = 3 * S_IN_H,
          armorColor = {Color(0, 255, 0), Color(255, 255, 0), Color(255, 0, 0)},
          megaColor = Color(60, 80, 255),
          carnageColor = Color(255, 0, 188),
@@ -1599,7 +1599,8 @@ CatoHUD:registerWidget('Cato_ArmorIcon', Cato_ArmorIcon)
 Cato_FPS = {}
 
 function Cato_FPS:drawWidget()
-   local fps = min(round(1 / deltaTime), consoleGetVariable('com_maxfps'))
+   -- local fps = min(round(1 / deltaTime), consoleGetVariable('com_maxfps'))
+   local fps = max(round(1 / deltaTime), 0)
    fps = createTextElem(self, fps .. 'fps', self.userData.text)
    fps.draw(0, 0)
 end
