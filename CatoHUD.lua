@@ -390,7 +390,7 @@ end
 local defaultSettings = {
    ['CatoHUD'] = {
       userData = {
-         offsetUTC = 3 * S_IN_H,
+         offsetUTC = 2 * S_IN_H, -- TODO: Add DST behavior, e.g. date when observing starts/end
          armorColor = {Color(0, 255, 0), Color(255, 255, 0), Color(255, 0, 0)},
          megaColor = Color(60, 80, 255),
          carnageColor = Color(255, 0, 188),
