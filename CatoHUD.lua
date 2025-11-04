@@ -1599,8 +1599,15 @@ CatoHUD:registerWidget('Cato_ArmorIcon', Cato_ArmorIcon)
 Cato_FPS = {}
 
 function Cato_FPS:drawWidget()
+   -- NOTE: Doesn't work when using an external FPS limiter
    -- local fps = min(round(1 / deltaTime), consoleGetVariable('com_maxfps'))
-   local fps = max(round(1 / deltaTime), 0)
+
+   -- NOTE: Gives "inffps" during end game scoreboard
+   -- local fps = max(round(1 / deltaTime), 0)
+
+   -- TODO: Figure out if this is actually a good solution.
+   local fps = max(round(1 / (deltaTime ~= 0 and deltaTime or deltaTimeRaw)), 0)
+
    fps = createTextElem(self, fps .. 'fps', self.userData.text)
    fps.draw(0, 0)
 end
