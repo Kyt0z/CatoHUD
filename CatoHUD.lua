@@ -7,16 +7,21 @@ local ceil = math.ceil
 local abs = math.abs
 local min = math.min
 local max = math.max
+local pow = function (x, y) return x ^ y end
+-- local pow = math.pow -- deprecated
 local sin = math.sin
 local csc = function(x) return 1 / sin(x) end
 local tan = math.tan
 local atan = math.atan
-local atan2 = math.atan2
+-- local atan2 = function(x, y) return math.atan(y, x) end
+local atan2 = math.atan2 -- deprecated
 local pi = math.pi
 local sqrt = math.sqrt
-local deg2rad = function(x) return x * pi / 180 end
-local rad2deg = function(x) return x * 180 / pi end
+local deg2rad = math.rad -- function(x) return x * pi / 180 end
+local rad2deg = math.deg -- function(x) return x * 180 / pi end
+local huge = math.huge
 local format = string.format
+local gsub = string.gsub
 local rep = string.rep
 local sub = string.sub
 
@@ -62,22 +67,6 @@ end
 
 local function lerp(x, y, k)
    return (1 - k) * x + k * y
-end
-
-local function verticalFov(fov)
-   return 2 * atan((3 / 4) * tan(deg2rad(fov) / 2))
-end
-
-local function zoomSensRatio(fov, zoomFov, viewWidth, viewHeight, algorithm)
-   if algorithm == 'monitordistance' then
-      return atan((4 / 3) * tan(deg2rad(zoomFov) / 2)) / atan((4 / 3) * tan(deg2rad(fov) / 2))
-   elseif algorithm == 'viewspeed' then
-      return (csc(verticalFov(fov) / 2) / sqrt(2)) / (csc(verticalFov(zoomFov) / 2) / sqrt(2))
-   elseif algorithm == 'linear' then
-      return zoomFov / fov
-   end
-
-   return (atan2(viewHeight, viewWidth / tan(zoomFov / 360 * pi))) * 360 / pi / 75 -- Q3A
 end
 
 -- local function armorMax(armorProtection)
@@ -371,11 +360,6 @@ local fontSizeMedium = 40
 local fontSizeBig = 64
 local fontSizeTimer = 120
 local fontSizeHuge = 160
-local m_speed = consoleGetVariable('m_speed')
-local r_fov = consoleGetVariable('r_fov')
-local zoomFov = 40
-local zoomSensMult = 1.0915740009242504 -- FIXME: 1 for release
-local zoomSens = m_speed * zoomSensRatio(r_fov, zoomFov, 1440, 1080) * zoomSensMult
 local cl_color_friend = ColorHEX(consoleGetVariable('cl_color_friend'))
 local cl_color_enemy = ColorHEX(consoleGetVariable('cl_color_enemy'))
 
@@ -408,7 +392,6 @@ local defaultSettings = {
          {'reset_widgets', 'int', 0, 0},
          {'warmuptimer_reset', 'int', 0, 0},
          {'widget_cache', 'int', 0, 0},
-         {'zoom', 'int', 0, 0},
       },
    },
    ['Cato_HealthNumber'] = {
@@ -474,7 +457,7 @@ local defaultSettings = {
    ['Cato_GameModeName'] = {
       visible = true, props = {offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
-         anchorWidget = 'Cato_Scores',
+         anchorWidget = 'Cato_RulesetName',
          show = defaultShow('dead freecam gameOver race'),
          text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
@@ -482,7 +465,7 @@ local defaultSettings = {
    ['Cato_RulesetName'] = {
       visible = true, props = {offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
-         anchorWidget = 'Cato_GameModeName',
+         anchorWidget = 'Cato_Scores',
          show = defaultShow('dead freecam gameOver race'),
          text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
@@ -490,7 +473,7 @@ local defaultSettings = {
    ['Cato_MapName'] = {
       visible = true, props = {offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
       userData = {
-         anchorWidget = 'Cato_RulesetName',
+         anchorWidget = 'Cato_GameModeName',
          show = defaultShow('dead freecam gameOver race'),
          text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
@@ -507,9 +490,9 @@ local defaultSettings = {
       visible = true, props = {offset = '0 160', anchor = '0 0', zIndex = '0', scale = '1'},
       userData = {
          anchorWidget = '',
-         show = defaultShow(', race'),
+         show = defaultShow('race'),
          preventEmptyAttack = true,
-         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium}, -- fontSizeSmall
       },
    },
    ['Cato_Ping'] = {
@@ -582,12 +565,11 @@ local defaultSettings = {
          text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
       },
    },
-   ['Cato_Zoom'] = {
-      userData = {fov = zoomFov, sensitivity = zoomSens, time = 0},
-   },
 }
 
 local function resetProperties(widgetName)
+   if not defaultSettings[widgetName] then return end
+
    consolePerformCommand((defaultSettings[widgetName].visible and 'ui_show_widget ' or 'ui_hide_widget ') .. widgetName)
 
    for prop, val in pairs(defaultSettings[widgetName].props or {}) do
@@ -596,6 +578,8 @@ local function resetProperties(widgetName)
 end
 
 local function widgetSetUserData(widgetName, widget, reset)
+   if not defaultSettings[widgetName] then return end
+
    if reset or not widget.userData then widget.userData = {} end
 
    for var, val in pairs(defaultSettings[widgetName].userData or {}) do
@@ -608,6 +592,8 @@ local function widgetSetUserData(widgetName, widget, reset)
 end
 
 local function widgetSetCvars(widgetName, widget, reset)
+   if not defaultSettings[widgetName] then return end
+
    for _, cvar in ipairs(defaultSettings[widgetName].cvars or {}) do
       if not reset then
          widget:createConsoleVariable(cvar[1], cvar[2], cvar[3])
@@ -650,6 +636,7 @@ end
 -- Note: Calling this before initialize will fail.
 --       If the widget is not present, a widget cache update is triggered,
 --       which loops the entire widgets table (not smart to do every frame).
+-- FIXME: Move to CatoHUD:getProps?
 local function getProps(widgetName)
    local widgetIndex = indexCache[widgetName]
    if not widgetIndex or not widgets[widgetIndex] or widgets[widgetIndex].name ~= widgetName then
@@ -1069,7 +1056,7 @@ local optInput = {
 
       if t.apply then
          -- apply, return new value
-         playSound("internal/ui/sounds/buttonClick")
+         playSound('internal/ui/sounds/buttonClick')
          return t.text
       elseif t.focus then
          -- return value at time of focus started
@@ -1384,8 +1371,11 @@ function CatoHUD:init()
       time.second,
       offsetHours ~= 0 and (offsetHours > 0 and '+' .. offsetHours or offsetHours) or ''
    ))
+   -- consoleTablePrint(widgets)
+   -- consoleTablePrint(indexCache)
 end
 
+-- local weapTime = 0
 function CatoHUD:drawWidget()
    debugMode = consoleGetVariable('ui_CatoHUD_debug') ~= 0
    previewMode = consoleGetVariable('ui_CatoHUD_preview') ~= 0
@@ -1402,6 +1392,19 @@ function CatoHUD:drawWidget()
    ruleset = world.ruleset
    gameTimeElapsed = world.gameTime
    gameTimeLimit = world.gameTimeLimit
+
+   -- if localPlayer then
+   --    if localPlayer.weaponSelectionIntensity == 1 then
+   --       if weapTime ~= 0 then
+   --          consolePrint('Swap time: ' .. weapTime)
+   --          weapTime = 0
+   --       end
+   --    else
+   --       weapTime = weapTime + 1000 * deltaTime
+   --    end
+   -- end
+
+   -- consoleTablePrint(workshopMaps)
 
    inReplay = replayActive and replayName ~= 'menu'
 
@@ -1442,8 +1445,9 @@ function CatoHUD:drawWidget()
    -- FIXME: Is there a better way? Cato_FragMessage.fragEvents needs to be cleared after 2.5s
    Cato_FragMessage.fragEvents = {}
    for _, event in ipairs(log) do
-      -- consoleTablePrint(event)
       if event.type == LOG_TYPE_DEATHMESSAGE then
+         -- consolePrint(' ')
+         -- consoleTablePrint(event)
          if not event.deathSuicide then
             -- Cato_FragMessage
             if event.age * 1000 < 2500 then
@@ -1865,7 +1869,7 @@ CatoHUD:registerWidget('Cato_GameModeName', Cato_GameModeName)
 Cato_RulesetName = {}
 
 function Cato_RulesetName:drawWidget()
-   if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
+   -- if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
    local rulesetName = createTextElem(self, ruleset, self.userData.text)
    rulesetName.draw(0, 0)
@@ -2092,7 +2096,7 @@ function Cato_FollowingPlayer:drawWidget()
    if not povPlayer then return end
 
    -- TODO: option for display on self
-   if not previewMode and localPov then return end
+   if not previewMode and not inReplay and localPov then return end
 
    local label = createTextElem(self, 'FOLLOWING', self.userData.text)
    local name = createTextElem(self, povPlayer.name, self.userData.text)
@@ -2236,50 +2240,5 @@ function Cato_Speed:drawWidget()
 end
 
 CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
-
-------------------------------------------------------------------------------------------------------------------------
-
-Cato_Zoom = {canHide = false, canPosition = false, canPreview = false}
-
-function Cato_Zoom:init()
-   self.scoreboardFound = getProps('Scoreboard').visible ~= nil
-end
-
-function Cato_Zoom:drawWidget()
-   -- TODO: Animation
-   if consoleGetVariable('ui_CatoHUD_zoom') ~= 0 then
-      if showScores and not self.zooming then
-            self.zooming = true
-            self.zoomTime = 0
-            consolePerformCommand('cl_show_gun 0')
-            consolePerformCommand('m_speed ' .. self.userData.sensitivity)
-            if self.userData.time == 0 then
-               consolePerformCommand('r_fov ' .. self.userData.fov)
-            end
-            if self.zoomPreScoreboard then
-               consolePerformCommand('ui_hide_widget Scoreboard')
-            end
-      elseif (not showScores or isInMenu()) and self.zooming then
-         consolePerformCommand('-showscores')
-         consolePerformCommand('ui_CatoHUD_zoom 0')
-         self.zooming = false
-         consolePerformCommand('cl_show_gun ' .. self.zoomPreGun)
-         consolePerformCommand('m_speed ' .. self.zoomPreSens)
-         if self.userData.time == 0 then
-            consolePerformCommand('r_fov ' .. self.zoomPreFov)
-         end
-         if self.zoomPreScoreboard then
-            consolePerformCommand('ui_show_widget Scoreboard')
-         end
-      end
-   elseif self.zoomTime == nil then
-      self.zoomPreFov = consoleGetVariable('r_fov')
-      self.zoomPreSens = consoleGetVariable('m_speed')
-      self.zoomPreGun = consoleGetVariable('cl_show_gun')
-      self.zoomPreScoreboard = self.scoreboardFound and getProps('Scoreboard').visible
-   end
-end
-
-CatoHUD:registerWidget('Cato_Zoom', Cato_Zoom)
 
 ------------------------------------------------------------------------------------------------------------------------
