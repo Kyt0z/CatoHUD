@@ -374,6 +374,7 @@ end
 local defaultSettings = {
    ['CatoHUD'] = {
       userData = {
+         configBackup = nil,
          offsetUTC = 2 * S_IN_H, -- TODO: Add DST behavior, e.g. date when observing starts/end
          armorColor = {Color(0, 255, 0), Color(255, 255, 0), Color(255, 0, 0)},
          megaColor = Color(60, 80, 255),
@@ -386,6 +387,7 @@ local defaultSettings = {
          },
       },
       cvars = {
+         {'backup_config', 'int', 0},
          {'box_debug', 'int', 0, 0},
          {'debug', 'int', 0},
          {'preview', 'int', 0, 0},
@@ -1373,6 +1375,46 @@ function CatoHUD:init()
    ))
    -- consoleTablePrint(widgets)
    -- consoleTablePrint(indexCache)
+
+   if consoleGetVariable('ui_CatoHUD_backup_config') ~= 0 then
+      local configBackup = format(
+         'configs/%s-%d%02d%02d_%02d%02d%02d', -- 'configs/%s-%d_%02d_%02d-%02d_%02d',
+         'game', -- consoleGetVariable('name'),
+         time.year,
+         time.month,
+         time.day,
+         time.hour,
+         time.minute,
+         time.second
+      )
+
+      -- FIXME: userData is broken here?
+      -- consoleTablePrint(CatoHUD.userData)
+      -- self.userData = loadUserData()
+      -- CatoHUD.userData = loadUserData()
+      -- consoleTablePrint(CatoHUD.userData)
+      -- consolePrint(self.userData.configBackup)
+      -- consolePrint(CatoHUD.userData.configBackup)
+
+      -- if CatoHUD.userData.configBackup ~= nil then
+      --    consolePrint('| configBackup = "' .. CatoHUD.userData.configBackup .. '"')
+      -- else
+      --    consolePrint('| configBackup = nil')
+      -- end
+
+      if CatoHUD.userData.configBackup ~= configBackup then
+         CatoHUD.userData.configBackup = configBackup
+         saveUserData(CatoHUD.userData)
+
+         consolePerformCommand('saveconfig ' .. configBackup)
+
+         playSound('CatoHUD/toasty')
+      else
+         consolePrint('config \'' .. configBackup .. '.cfg\' exists.')
+      end
+   end
+
+   consolePrint('')
 end
 
 -- local weapTime = 0
@@ -2203,6 +2245,7 @@ function Cato_GameMessage:drawWidget()
             end
          end
       elseif gameState == GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON then
+         -- FIXME: This shit just straight up showing the wrong name
          if povPlayer ~= nil then
             local name = hasTeams and world.teams[povPlayer.team].name or povPlayer.name
             gameMessage = name .. ' WINS'
