@@ -1526,9 +1526,11 @@ function Cato_HealthNumber:drawWidget()
    if not povPlayer.infoHidden then
       playerHealth = povPlayer.health
 
-      local damage = damageToKill(povPlayer.health, povPlayer.armor, povPlayer.armorProtection)
+      local damage = damageToKill(playerHealth, povPlayer.armor, povPlayer.armorProtection)
       if damage <= 80 then
          opts.color = Color(255, 0, 0)
+      elseif damage <= 90 then
+         opts.color = Color(255, 127, 0)
       elseif damage <= 100 then
          opts.color = Color(255, 255, 0)
       else
