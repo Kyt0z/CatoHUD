@@ -7,7 +7,7 @@ local ceil = math.ceil
 local abs = math.abs
 local min = math.min
 local max = math.max
-local pow = function (x, y) return x ^ y end
+local pow = function(x, y) return x ^ y end
 -- local pow = math.pow -- deprecated
 local sin = math.sin
 local csc = function(x) return 1 / sin(x) end
@@ -565,6 +565,29 @@ local defaultSettings = {
          anchorWidget = '',
          show = defaultShow('race'),
          text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+      },
+   },
+   ['Cato_Crosshair'] = {
+      visible = true, props = {offset = '0 0', anchor = '0 0', zIndex = '0', scale = '1'},
+      userData = {
+         anchorWidget = '',
+         show = defaultShow('race'),
+         crosshairWidth = 2,
+         crosshairHeight = 2,
+         crosshairStroke = 1,
+         crosshairThickness = 2,
+         crosshairGapWidth = 0,
+         crosshairGapHeight = 0,
+         crosshairDotWidth = 0,
+         crosshairDotHeight = 0,
+         crosshairDotStroke = 0,
+         crosshairColor = Color(255, 255, 255, 255),
+         crosshairStrokeColor = Color(0, 0, 0, 255),
+         crosshairDotColor = Color(255, 255, 255, 255),
+         crosshairDotStrokeColor = Color(0, 0, 0, 255),
+      },
+      cvars = {
+         {'debug', 'int', 0, 0},
       },
    },
 }
@@ -2285,5 +2308,121 @@ function Cato_Speed:drawWidget()
 end
 
 CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
+
+------------------------------------------------------------------------------------------------------------------------
+
+Cato_Crosshair = {}
+
+function Cato_Crosshair:drawWidget()
+   -- drawCrosshair(self.userData, 0, 0, 1)
+   local mode
+   local resolution
+   if consoleGetVariable('r_fullscreen') ~= 0 then
+      resolution = consoleGetVariable('r_resolution_fullscreen')
+      mode = 'Fullscreen'
+   elseif consoleGetVariable('r_windowed_fullscreen') ~= 0 then
+      resolution = {viewport.width, viewport.height}
+      mode = 'Windowed Fullscreen'
+   else
+      resolution = consoleGetVariable('r_resolution_windowed')
+      mode = 'Windowed'
+   end
+
+   if checkResetConsoleVariable('ui_Cato_Crosshair_debug', 0) ~= 0 then
+      consolePrint('Mode: ' .. mode)
+      consolePrint('Resolution: ' .. resolution[1] .. 'x' .. resolution[2])
+      consolePrint('Viewport: ' .. viewport.width .. 'x' .. viewport.height)
+      consoleTablePrint(renderModes)
+   end
+
+   local x = 0
+   local y = 0
+
+   local pxsh = viewport.width / resolution[1]
+   local pxsv = viewport.height / resolution[2]
+
+   local cw = self.userData.crosshairWidth
+   local ch = self.userData.crosshairHeight
+   local cs = self.userData.crosshairStroke
+   local ct = self.userData.crosshairThickness
+
+   local gw = self.userData.crosshairGapWidth
+   local gh = self.userData.crosshairGapHeight
+
+   local dw = self.userData.crosshairDotWidth
+   local dh = self.userData.crosshairDotHeight
+   local ds = self.userData.crosshairDotStroke
+
+   local crosshairColor = copyColor(self.userData.crosshairColor)
+   local crosshairStrokeColor = copyColor(self.userData.crosshairStrokeColor)
+   local crosshairDotColor = copyColor(self.userData.crosshairDotColor)
+   local crosshairDotStrokeColor = copyColor(self.userData.crosshairDotStrokeColor)
+
+   -- fix for odd values of thickness
+   if ct % 2 ~= 0 then
+      x = x - 0.5
+      y = y - 0.5
+   end
+
+   -- draw dot
+   if dw > 0 or dh > 0 then
+      -- dot stroke
+      if ds > 0 then
+         nvgBeginPath()
+         nvgRect(x + pxsh * (-dw / 2 - ds), y + pxsv * (-dh / 2 - ds), pxsh * (dw + ds * 2), pxsv * (dh + ds * 2))
+         nvgFillColor(crosshairDotStrokeColor)
+         nvgFill()
+      end
+
+      -- dot
+      nvgBeginPath()
+      nvgRect(x + pxsh * -dw / 2, y + pxsv * -dh / 2, pxsh * dw, pxsv * dh)
+      nvgFillColor(crosshairDotColor)
+      nvgFill()
+   end
+
+   -- draw cross
+   if gh > 0 or gw > 0 then
+      -- 4 rect cross
+      -- stroke
+      if cs > 0 then
+         nvgBeginPath()
+         nvgRect(x + pxsh * (-ct / 2 - cs),          y + pxsv * (-ch / 2 - gh / 2 - cs), pxsh * (ct + cs * 2),     pxsv * (ch / 2 + cs * 2))
+         nvgRect(x + pxsh * (-ct / 2 - cs),          y + pxsv * (gh / 2 - cs),           pxsh * (ct + cs * 2),     pxsv * (ch / 2 + cs * 2))
+         nvgRect(x + pxsh * (-cw / 2 - gw / 2 - cs), y + pxsv * (-ct / 2 - cs),          pxsh * (cw / 2 + cs * 2), pxsv * (ct + cs * 2))
+         nvgRect(x + pxsh * (gw / 2 - cs),           y + pxsv * (-ct / 2 - cs),          pxsh * (cw / 2 + cs * 2), pxsv * (ct + cs * 2))
+         nvgFillColor(crosshairStrokeColor)
+         nvgFill()
+      end
+
+      -- cross
+      nvgBeginPath()
+      nvgRect(x + pxsh * -ct / 2,            y + pxsv * (-ch / 2 - gh / 2), pxsh * ct,     pxsv * ch / 2)
+      nvgRect(x + pxsh * -ct / 2,            y + pxsv * gh / 2,             pxsh * ct,     pxsv * ch / 2)
+      nvgRect(x + pxsh * (-cw / 2 - gw / 2), y + pxsv * -ct / 2,            pxsh * cw / 2, pxsv * ct)
+      nvgRect(x + pxsh * gw / 2,             y + pxsv * -ct / 2,            pxsh * cw / 2, pxsv * ct)
+      nvgFillColor(crosshairColor)
+      nvgFill()
+   else
+      -- 2 rect cross
+      -- stroke
+      if cs > 0 then
+         nvgBeginPath()
+         nvgRect(x + pxsh * (-ct / 2 - cs), y + pxsv * (-ch / 2 - cs), pxsh * (ct + cs * 2), pxsv * (ch + cs * 2))
+         nvgRect(x + pxsh * (-cw / 2 - cs), y + pxsv * (-ct / 2 - cs), pxsh * (cw + cs * 2), pxsv * (ct + cs * 2))
+         nvgFillColor(crosshairStrokeColor)
+         nvgFill()
+      end
+
+      -- cross
+      nvgBeginPath()
+      nvgRect(x + pxsh * -ct / 2, y + pxsv * -ch / 2, pxsh * ct, pxsv * ch)
+      nvgRect(x + pxsh * -cw / 2, y + pxsv * -ct / 2, pxsh * cw, pxsv * ct)
+      nvgFillColor(crosshairColor)
+      nvgFill()
+   end
+end
+
+CatoHUD:registerWidget('Cato_Crosshair', Cato_Crosshair)
 
 ------------------------------------------------------------------------------------------------------------------------
