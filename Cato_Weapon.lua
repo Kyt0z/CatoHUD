@@ -4,32 +4,39 @@ Cato_Weapon = {
 }
 
 function Cato_Weapon:init()
-   self:createConsoleVariable('text_time_1', 'string', '1') -- melee
-   self:createConsoleVariable('text_time_2', 'string', '1') -- burst
-   self:createConsoleVariable('text_time_3', 'string', '1') -- shotgun
-   self:createConsoleVariable('text_time_4', 'string', '1') -- grenade
-   self:createConsoleVariable('text_time_5', 'string', '1') -- plasma
-   self:createConsoleVariable('text_time_6', 'string', '1') -- rocket
-   self:createConsoleVariable('text_time_7', 'string', '1') -- ion
-   self:createConsoleVariable('text_time_8', 'string', '1') -- bolt
-   self:createConsoleVariable('text_time_9', 'string', '1') -- stake
+   self:createConsoleVariable('text_time_1_equip', 'float', 1.000000) -- melee
+   self:createConsoleVariable('text_time_1_shoot', 'float', 1.000000) -- melee
+   self:createConsoleVariable('text_time_2_equip', 'float', 1.000000) -- burst
+   self:createConsoleVariable('text_time_2_shoot', 'float', 1.000000) -- burst
+   self:createConsoleVariable('text_time_3_equip', 'float', 1.000000) -- shotgun
+   self:createConsoleVariable('text_time_3_shoot', 'float', 1.000000) -- shotgun
+   self:createConsoleVariable('text_time_4_equip', 'float', 1.000000) -- grenade
+   self:createConsoleVariable('text_time_4_shoot', 'float', 1.000000) -- grenade
+   self:createConsoleVariable('text_time_5_equip', 'float', 1.000000) -- plasma
+   self:createConsoleVariable('text_time_5_shoot', 'float', 1.000000) -- plasma
+   self:createConsoleVariable('text_time_6_equip', 'float', 1.000000) -- rocket
+   self:createConsoleVariable('text_time_6_shoot', 'float', 1.000000) -- rocket
+   self:createConsoleVariable('text_time_7_equip', 'float', 1.000000) -- ion
+   self:createConsoleVariable('text_time_7_shoot', 'float', 1.000000) -- ion
+   self:createConsoleVariable('text_time_8_equip', 'float', 1.000000) -- bolt
+   self:createConsoleVariable('text_time_8_shoot', 'float', 1.000000) -- bolt
+   self:createConsoleVariable('text_time_9_equip', 'float', 1.000000) -- stake
+   self:createConsoleVariable('text_time_9_shoot', 'float', 1.000000) -- stake
 end
 
 function Cato_Weapon:drawWidget()
    local povPlayer = players[playerIndexCameraAttachedTo]
    if not povPlayer then return end
 
-   local damageNumberTime = consoleGetVariable('ui_Cato_Weapon_text_time_' .. povPlayer.weaponIndexSelected)
-   -- consolePrint('cl_text_time for weapon ' .. povPlayer.weaponIndexSelected .. ' is "' .. damageNumberTime .. '"')
-   -- if povPlayer.weaponIndexSelected == 7 and povPlayer.buttons.attack then
-   if damageNumberTime ~= '' then
-      if tonumber(damageNumberTime) < 0 then
-         if povPlayer.buttons.attack then
-            consolePerformCommand('cl_text_time ' .. string.sub(damageNumberTime, 2, -1))
-         end
-      else
-         consolePerformCommand('cl_text_time ' .. damageNumberTime)
-      end
+   local weaponIndexSelected = povPlayer.weaponIndexSelected
+   if povPlayer.buttons.attack and povPlayer.weapons[weaponIndexSelected].ammo > 0 then
+      consolePerformCommand(
+         'cl_text_time ' .. consoleGetVariable('ui_Cato_Weapon_text_time_' .. weaponIndexSelected .. '_shoot')
+      )
+   else
+      consolePerformCommand(
+         'cl_text_time ' .. consoleGetVariable('ui_Cato_Weapon_text_time_' .. weaponIndexSelected .. '_equip')
+      )
    end
 end
 
