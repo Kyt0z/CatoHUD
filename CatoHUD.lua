@@ -394,6 +394,9 @@ local defaultSettings = {
          {'reset_widgets', 'int', 0, 0},
          {'warmuptimer_reset', 'int', 0, 0},
          {'widget_cache', 'int', 0, 0},
+         {'cl_error_check', 'int', 0, 0},
+         {'cl_error_reset', 'int', 0, 0},
+         {'cl_error_set_all', 'string', 'NaN', 'NaN'},
       },
    },
    ['Cato_HealthNumber'] = {
@@ -754,6 +757,9 @@ local function createTextElem(widget, text, opts)
    -- FIXME: Is this a good idea?
    -- opts.size = opts.size * viewport.height / 1080
    -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
+   -- FIXME: Is this a better idea?
+   -- opts.size = opts.size * viewport.height / consoleGetVariable('r_resolution_fullscreen')[2]
+   -- Answer: Better? Yes. Good? Sorta. Scaling and positioning are fine. (Fixable by adjusting y?)
 
    local height = opts.size
    nvgFontBlur(0)
@@ -809,6 +815,10 @@ local function createSvgElem(widget, image, opts)
    -- FIXME: Is this a good idea?
    -- opts.size = opts.size * viewport.height / 1080
    -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
+   -- FIXME: Is this a better idea?
+   -- local width = 2 * opts.size * viewport.width / consoleGetVariable('r_resolution_fullscreen')[1]
+   -- local height = 2 * opts.size * viewport.height / consoleGetVariable('r_resolution_fullscreen')[2]
+   -- Answer: Better? Yes. Good? Sorta. Scaling and positioning are fine. (Fixable by adjusting y?)
 
    local width = 2 * opts.size
    local height = 2 * opts.size
@@ -1457,6 +1467,8 @@ function CatoHUD:drawWidget()
    ruleset = world.ruleset
    gameTimeElapsed = world.gameTime
    gameTimeLimit = world.gameTimeLimit
+   timeLimit = world.timeLimit
+   timeLimitRound = world.timeLimitRound
 
    -- if localPlayer then
    --    if localPlayer.weaponSelectionIntensity == 1 then
@@ -1472,6 +1484,31 @@ function CatoHUD:drawWidget()
    -- consoleTablePrint(workshopMaps)
 
    inReplay = replayActive and replayName ~= 'menu'
+
+   local cl_error_set_all = checkResetConsoleVariable('ui_CatoHUD_cl_error_set_all', 'NaN')
+   if cl_error_set_all ~= 'NaN' then
+      consolePerformCommand('cl_error_correct_angles_speed ' .. cl_error_set_all)
+      consolePerformCommand('cl_error_correct_position_speed ' .. cl_error_set_all)
+      consolePerformCommand('cl_error_decay_angles ' .. cl_error_set_all)
+      consolePerformCommand('cl_error_decay_position ' .. cl_error_set_all)
+      consolePerformCommand('ui_CatoHUD_cl_error_check 1')
+   end
+
+   if checkResetConsoleVariable('ui_CatoHUD_cl_error_reset', 0) ~= 0 then
+      consolePerformCommand('cl_error_correct_angles_speed 0.000000')
+      consolePerformCommand('cl_error_correct_position_speed 16.000000')
+      consolePerformCommand('cl_error_decay_angles 25.000000')
+      consolePerformCommand('cl_error_decay_position 4.000000')
+      consolePerformCommand('ui_CatoHUD_cl_error_check 1')
+   end
+
+   if checkResetConsoleVariable('ui_CatoHUD_cl_error_check', 0) ~= 0 then
+      -- consolePrint('|cl_error_* variables are set to:')
+      consolePrint('  | cl_error_correct_angles_speed ' .. consoleGetVariable('cl_error_correct_angles_speed'))
+      consolePrint('  | cl_error_correct_position_speed ' .. consoleGetVariable('cl_error_correct_position_speed'))
+      consolePrint('  | cl_error_decay_angles ' .. consoleGetVariable('cl_error_decay_angles'))
+      consolePrint('  | cl_error_decay_position ' .. consoleGetVariable('cl_error_decay_position'))
+   end
 
    if checkResetConsoleVariable('ui_CatoHUD_reset_widgets', 0) ~= 0 then
       for widgetName, _ in pairs(defaultSettings) do
@@ -1925,7 +1962,8 @@ Cato_GameModeName = {}
 function Cato_GameModeName:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
-   local gameModeName = createTextElem(self, gameMode, self.userData.text)
+   local tl = formatTimeMs(timeLimit * 1000)
+   local gameModeName = createTextElem(self, format('%s %d:%02d', gameMode, tl.minutes, tl.seconds), self.userData.text)
    gameModeName.draw(0, 0)
 end
 
@@ -2317,22 +2355,31 @@ function Cato_Crosshair:drawWidget()
    -- drawCrosshair(self.userData, 0, 0, 1)
    local mode
    local resolution
+   local refreshrate
    if consoleGetVariable('r_fullscreen') ~= 0 then
       resolution = consoleGetVariable('r_resolution_fullscreen')
+      refreshrate = consoleGetVariable('r_refreshrate')
       mode = 'Fullscreen'
    elseif consoleGetVariable('r_windowed_fullscreen') ~= 0 then
       resolution = {viewport.width, viewport.height}
+      refreshrate = consoleGetVariable('r_refreshrate')
       mode = 'Windowed Fullscreen'
    else
       resolution = consoleGetVariable('r_resolution_windowed')
+      refreshrate = consoleGetVariable('r_refreshrate')
       mode = 'Windowed'
    end
 
    if checkResetConsoleVariable('ui_Cato_Crosshair_debug', 0) ~= 0 then
+      -- NOTE: Too optimistic
+      -- viewport.width = 640
+      -- viewport.height = 480
       consolePrint('Mode: ' .. mode)
-      consolePrint('Resolution: ' .. resolution[1] .. 'x' .. resolution[2])
+      consolePrint('Resolution: ' .. resolution[1] .. 'x' .. resolution[2] .. '@' .. refreshrate .. 'hz')
       consolePrint('Viewport: ' .. viewport.width .. 'x' .. viewport.height)
-      consoleTablePrint(renderModes)
+      -- consoleTablePrint(resolution)
+      -- consoleTablePrint(viewport)
+      -- consoleTablePrint(renderModes)
    end
 
    local x = 0
