@@ -25,30 +25,33 @@ local gsub = string.gsub
 local rep = string.rep
 local sub = string.sub
 
-local function consoleTablePrint(key, val, depth)
+local function consoleVarPrint(varName, var, depth)
    if not depth then depth = 0 end
+   if not varName then varName = '' end
 
-   if type(key) == 'table' then
-      for k, v in pairs(key) do
-         consoleTablePrint(k, v, depth + 1)
+   local comma = depth > 0 and ',' or ''
+   local indent = '  | ' .. rep('   ', depth)
+   local varType = type(var)
+   if varType == 'table' then
+      consolePrint(indent .. varName .. ' = {' .. comma .. ' -- (' .. varType .. ')')
+      for k, v in pairs(var) do
+         consoleVarPrint(k, v, depth + 1)
       end
-      return
-   end
-
-   local typeval = type(val)
-   local indent = rep(' ', depth)
-   if typeval == 'table' then
-      consolePrint(indent .. key .. ':')
-      consoleTablePrint(val, nil, depth + 1)
-   elseif typeval == 'boolean' then
-      consolePrint(indent .. key .. ' = ' .. (val and 'true' or 'false') .. ' (' .. typeval .. ')')
-   elseif typeval == 'number' or typeval == 'string' then
-      consolePrint(indent .. key .. ' = ' .. val .. ' (' .. typeval .. ')')
+      consolePrint(indent .. '}' .. comma)
+   elseif varType == 'boolean' then
+      consolePrint(indent .. varName .. ' = ' .. (var and 'true' or 'false') .. comma .. ' -- (' .. varType .. ')')
+   elseif varType == 'number' then
+      consolePrint(indent .. varName .. ' = ' .. var .. comma .. ' -- (' .. varType .. ')')
+   elseif varType == 'string' then
+      consolePrint(indent .. varName .. ' = "' .. var .. '"' .. comma .. ' -- (' .. varType .. ')')
+   elseif varType == 'function' then
+      consolePrint(indent .. varName .. ' = ' .. varType .. '()' .. comma .. ' -- (' .. varType .. ')')
    else
-      consolePrint(indent .. key .. ' =  (' .. typeval .. ')')
+      consolePrint(indent .. varName .. ' = ' .. varType  .. comma .. ' -- (' .. varType .. ')')
    end
 end
 
+-- FIXME: what about setting strings to ''?
 local function checkResetConsoleVariable(cvar, resetValue)
    local oldValue = consoleGetVariable(cvar)
    if oldValue ~= resetValue then
@@ -87,9 +90,9 @@ end
 --    {armorLimit(2, 0), armorLimit(2, 1), armorLimit(2, 2)}, --  66, 132, 200
 -- }
 -- consolePrint('---')
--- consoleTablePrint(armorMax)
--- consoleTablePrint(armorQuality)
--- consoleTablePrint(armorLimit)
+-- consoleVarPrint('armorMax', armorMax)
+-- consoleVarPrint('armorQuality', armorQuality)
+-- consoleVarPrint('armorLimit', armorLimit)
 -- consolePrint('---')
 -- -- Precalculate these constants to save time
 -- local armorMax = {}
@@ -105,9 +108,9 @@ end
 --       armorLimit[i][j] = floor(armorMax[j] * armorQuality[j] / armorQuality[i])
 --    end
 -- end
--- consoleTablePrint(armorMax)
--- consoleTablePrint(armorQuality)
--- consoleTablePrint(armorLimit)
+-- consoleVarPrint('armorMax', armorMax)
+-- consoleVarPrint('armorQuality', armorQuality)
+-- consoleVarPrint('armorLimit', armorLimit)
 -- consolePrint('---')
 -- NOTE: "Why not simply? What if they change in a future update?"
 --       The previous calculations are constant as well anyways, since nothing is tied to ruleset.
@@ -118,9 +121,9 @@ local armorLimit = {
    { 75, 150, 227},
    { 66, 132, 200},
 }
--- consoleTablePrint(armorMax)
--- consoleTablePrint(armorQuality)
--- consoleTablePrint(armorLimit)
+-- consoleVarPrint('armorMax', armorMax)
+-- consoleVarPrint('armorQuality', armorQuality)
+-- consoleVarPrint('armorLimit', armorLimit)
 -- consolePrint('---')
 
 local function damageToKill(health, armor, armorProtection)
@@ -394,9 +397,11 @@ local defaultSettings = {
          {'reset_widgets', 'int', 0, 0},
          {'warmuptimer_reset', 'int', 0, 0},
          {'widget_cache', 'int', 0, 0},
-         {'cl_error_check', 'int', 0, 0},
-         {'cl_error_reset', 'int', 0, 0},
-         {'cl_error_set_all', 'string', 'NaN', 'NaN'},
+         {'error_check', 'int', 0, 0},
+         {'error_reset', 'int', 0, 0},
+         {'error_set_all', 'string', '', ''},
+         {'cvar_print', 'string', '', ''},
+         {'var_print', 'string', '', ''},
       },
    },
    ['Cato_HealthNumber'] = {
@@ -797,7 +802,7 @@ local function createTextElem(widget, text, opts)
 
       if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
          -- local bounds = nvgTextBounds(text)
-         -- -- consoleTablePrint(bounds)
+         -- -- consoleVarPrint('bounds', bounds)
          -- consolePrint('')
          -- nvgRect(bounds.minx, bounds.miny, bounds.maxx - bounds.minx, bounds.maxy - bounds.miny)
          local pos = getOffset({x = anchorX, y = anchorY}, width, height)
@@ -1198,9 +1203,9 @@ function CatoHUD:registerWidget(widgetName, widget)
    function widget:initialize()
       resetProperties(widgetName)
 
-      -- consoleTablePrint(widgetName .. '.userData', widget.userData)
+      -- consoleVarPrint(widgetName .. '.userData', widget.userData)
       widgetSetUserData(widgetName, widget)
-      -- consoleTablePrint(widgetName .. '.userData', widget.userData)
+      -- consoleVarPrint(widgetName .. '.userData', widget.userData)
 
       widgetSetCvars(widgetName, widget)
 
@@ -1406,12 +1411,14 @@ function CatoHUD:init()
       time.second,
       offsetHours ~= 0 and (offsetHours > 0 and '+' .. offsetHours or offsetHours) or ''
    ))
-   -- consoleTablePrint(widgets)
-   -- consoleTablePrint(indexCache)
+   -- consoleVarPrint('widgets', widgets)
+   -- consoleVarPrint('indexCache', indexCache)
 
    if consoleGetVariable('ui_CatoHUD_backup_config') ~= 0 then
       local configBackup = format(
-         'configs/%s-%d%02d%02d_%02d%02d%02d', -- 'configs/%s-%d_%02d_%02d-%02d_%02d',
+         -- 'configs/%s-%d%02d%02d_%02d%02d%02d', -- 'configs/%s-%d_%02d_%02d-%02d_%02d',
+         -- 'configs/%s-%d%02d%02d_%02d%02d', -- 'configs/%s-%d_%02d_%02d-%02d_%02d',
+         'configs/%s-%d%02d%02d', -- 'configs/%s-%d_%02d_%02d-%02d_%02d',
          'game', -- consoleGetVariable('name'),
          time.year,
          time.month,
@@ -1422,10 +1429,10 @@ function CatoHUD:init()
       )
 
       -- FIXME: userData is broken here?
-      -- consoleTablePrint(CatoHUD.userData)
+      -- consoleVarPrint('CatoHUD.userData', CatoHUD.userData)
       -- self.userData = loadUserData()
       -- CatoHUD.userData = loadUserData()
-      -- consoleTablePrint(CatoHUD.userData)
+      -- consoleVarPrint('CatoHUD.userData', CatoHUD.userData)
       -- consolePrint(self.userData.configBackup)
       -- consolePrint(CatoHUD.userData.configBackup)
 
@@ -1481,28 +1488,57 @@ function CatoHUD:drawWidget()
    --    end
    -- end
 
-   -- consoleTablePrint(workshopMaps)
+   -- consoleVarPrint('workshopMaps', workshopMaps)
 
    inReplay = replayActive and replayName ~= 'menu'
 
-   local cl_error_set_all = checkResetConsoleVariable('ui_CatoHUD_cl_error_set_all', 'NaN')
-   if cl_error_set_all ~= 'NaN' then
-      consolePerformCommand('cl_error_correct_angles_speed ' .. cl_error_set_all)
-      consolePerformCommand('cl_error_correct_position_speed ' .. cl_error_set_all)
-      consolePerformCommand('cl_error_decay_angles ' .. cl_error_set_all)
-      consolePerformCommand('cl_error_decay_position ' .. cl_error_set_all)
-      consolePerformCommand('ui_CatoHUD_cl_error_check 1')
+   local printVar = consoleGetVariable('ui_CatoHUD_var_print')
+   if printVar ~= '' then
+      widgetSetConsoleVariable('var_print', '')
+      if printVar:lower() == 'povplayer' or printVar:lower() == 'player' then
+         consoleVarPrint(printVar, povPlayer)
+      elseif printVar:lower() == 'localplayer' then
+         consoleVarPrint(printVar, localPlayer)
+      else
+         consoleVarPrint(printVar, _G[printVar])
+      end
    end
 
-   if checkResetConsoleVariable('ui_CatoHUD_cl_error_reset', 0) ~= 0 then
+   local printCvar = consoleGetVariable('ui_CatoHUD_cvar_print')
+   if printCvar ~= '' then
+      widgetSetConsoleVariable('cvar_print', '')
+      printCvar = printCvar:gmatch('%S+')()
+      -- consolePerformCommand(printCvar)
+      local cvarValue = consoleGetVariable(printCvar)
+      if type(cvarValue) == 'table' then
+         local cvarValueStr = ''
+         for _, v in ipairs(cvarValue) do cvarValueStr = cvarValueStr .. v .. ' ' end
+         cvarValueStr = cvarValueStr:sub(1, -2)
+         consolePrint('  | ' .. printCvar .. ' ' .. cvarValueStr .. ' (table)')
+      elseif cvarValue ~= nil then
+         consolePrint('  | ' .. printCvar .. ' ' .. cvarValue .. ' (' .. type(cvarValue) .. ')')
+      end
+   end
+
+   local setAllErrors = consoleGetVariable('ui_CatoHUD_error_set_all')
+   if setAllErrors ~= '' then
+      widgetSetConsoleVariable('error_set_all', '')
+      consolePerformCommand('cl_error_correct_angles_speed ' .. setAllErrors)
+      consolePerformCommand('cl_error_correct_position_speed ' .. setAllErrors)
+      consolePerformCommand('cl_error_decay_angles ' .. setAllErrors)
+      consolePerformCommand('cl_error_decay_position ' .. setAllErrors)
+      consolePerformCommand('ui_CatoHUD_error_check 1')
+   end
+
+   if checkResetConsoleVariable('ui_CatoHUD_error_reset', 0) ~= 0 then
       consolePerformCommand('cl_error_correct_angles_speed 0.000000')
       consolePerformCommand('cl_error_correct_position_speed 16.000000')
       consolePerformCommand('cl_error_decay_angles 25.000000')
       consolePerformCommand('cl_error_decay_position 4.000000')
-      consolePerformCommand('ui_CatoHUD_cl_error_check 1')
+      consolePerformCommand('ui_CatoHUD_error_check 1')
    end
 
-   if checkResetConsoleVariable('ui_CatoHUD_cl_error_check', 0) ~= 0 then
+   if checkResetConsoleVariable('ui_CatoHUD_error_check', 0) ~= 0 then
       -- consolePrint('|cl_error_* variables are set to:')
       consolePrint('  | cl_error_correct_angles_speed ' .. consoleGetVariable('cl_error_correct_angles_speed'))
       consolePrint('  | cl_error_correct_position_speed ' .. consoleGetVariable('cl_error_correct_position_speed'))
@@ -1549,7 +1585,7 @@ function CatoHUD:drawWidget()
    for _, event in ipairs(log) do
       if event.type == LOG_TYPE_DEATHMESSAGE then
          -- consolePrint(' ')
-         -- consoleTablePrint(event)
+         -- consoleVarPrint('event', event)
          if not event.deathSuicide then
             -- Cato_FragMessage
             if event.age * 1000 < 2500 then
@@ -2352,7 +2388,6 @@ CatoHUD:registerWidget('Cato_Speed', Cato_Speed)
 Cato_Crosshair = {}
 
 function Cato_Crosshair:drawWidget()
-   -- drawCrosshair(self.userData, 0, 0, 1)
    local mode
    local resolution
    local refreshrate
@@ -2361,6 +2396,7 @@ function Cato_Crosshair:drawWidget()
       refreshrate = consoleGetVariable('r_refreshrate')
       mode = 'Fullscreen'
    elseif consoleGetVariable('r_windowed_fullscreen') ~= 0 then
+      -- FIXME: Can't get resolution for this mode yet :<
       resolution = {viewport.width, viewport.height}
       refreshrate = consoleGetVariable('r_refreshrate')
       mode = 'Windowed Fullscreen'
@@ -2377,9 +2413,9 @@ function Cato_Crosshair:drawWidget()
       consolePrint('Mode: ' .. mode)
       consolePrint('Resolution: ' .. resolution[1] .. 'x' .. resolution[2] .. '@' .. refreshrate .. 'hz')
       consolePrint('Viewport: ' .. viewport.width .. 'x' .. viewport.height)
-      -- consoleTablePrint(resolution)
-      -- consoleTablePrint(viewport)
-      -- consoleTablePrint(renderModes)
+      -- consoleVarPrint('resolution', resolution)
+      -- consoleVarPrint('viewport', viewport)
+      -- consoleVarPrint('renderModes', renderModes)
    end
 
    local x = 0
