@@ -2120,9 +2120,9 @@ function Cato_LowAmmo:drawWidget()
    if ammo <= 0 then
       ammo = 'NO AMMO'
       if povPlayer.buttons.attack then
-         opts.color = Color(255, 0, 0)
-      else
          opts.color = Color(255, 255, 255)
+      else
+         opts.color = Color(255, 0, 0)
       -- opts.color = Color(95, 95, 95)
       end
    elseif ammo <= ammoLow / 2 then
@@ -2131,7 +2131,7 @@ function Cato_LowAmmo:drawWidget()
    elseif ammo <= ammoLow then
       opts.color = Color(255, 127, 0)
    elseif ammo <= ammoMed then
-      opts.color = Color(255, 255, 255)
+      opts.color = Color(255, 255, 0)
    end
 
    -- TODO: lerp color from white to yellow to red?
@@ -2268,31 +2268,51 @@ local delayRespawnMax = 4.0
 Cato_RespawnDelay = {}
 
 function Cato_RespawnDelay:init()
-   self.deadTime = 0.0
+   self.deadTime = nil
 end
 
 function Cato_RespawnDelay:drawWidget()
    if not povPlayer or povPlayer.state ~= PLAYER_STATE_INGAME then return end
 
    -- FIXME: Switching POVs is going to give us trouble here
-   if povPlayer.health <= 0 then
-      self.deadTime = self.deadTime + deltaTime
-   elseif self.deadTime >= 0.0 then
-      self.deadTime = 0.0
-      -- self.deadTime = -deltaTime
-      return
+   -- if povPlayer.health <= 0 then
+   --    self.deadTime = self.deadTime + deltaTime
+   -- elseif self.deadTime > delayRespawnMax then
+   --    self.deadTime = 0.0
+   --    -- self.deadTime = -deltaTime
+   --    return
+   -- end
+
+   if self.deadTime ~= nil then
+      if povPlayer.health > 0 then
+         self.deadTime = nil
+         return
+      else
+         self.deadTime = self.deadTime + deltaTime
+      end
+   else
+      if povPlayer.health <= 0 then
+         self.deadTime = 0.0
+      else
+         return
+      end
    end
 
    local opts = copyOpts(self.userData.text)
    if self.deadTime < delayRespawnMin then
-      opts.color = Color(255, 0, 0)
+      opts.color = povPlayer.buttons.attack and Color(255, 255, 0) or Color(255, 0, 0)
+   else
+      -- NOTE: povPlayer.buttons.attack is false when dead?
+      opts.color = povPlayer.buttons.attack and Color(255, 255, 255) or Color(0, 255, 0)
    end
 
    local delay = string.format(
       '%.01f',
+      -- '%.06f',
+      -- '%f',
       -- FIXME: Figure out the timer and don't clamp, noob
-      clamp(delayCountDown and delayRespawnMax - self.deadTime or self.deadTime, 0.0, delayRespawnMax)
-      -- delayCountDown and delayRespawnMax - self.deadTime or self.deadTime
+      -- clamp(delayCountDown and delayRespawnMax - self.deadTime or self.deadTime, 0.0, delayRespawnMax)
+      delayCountDown and delayRespawnMax - self.deadTime or self.deadTime
    )
    delay = createTextElem(self, delay, opts)
    delay.draw(0, 0)
