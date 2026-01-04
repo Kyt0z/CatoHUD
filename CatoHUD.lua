@@ -287,6 +287,7 @@ end
 -- Colors
 ------------------------------------------------------------------------------------------------------------------------
 
+-- FIXME: Rename to newColor?
 local function Color(r, g, b, a, intensity)
    return {r = r, g = g, b = b, a = (a or 255) * (intensity or 1)}
 end
@@ -300,10 +301,13 @@ local function ColorHEX(hex, intensity)
    }
 end
 
+-- FIXME: Rename to newColor?
 local function copyColor(color, intensity)
    return Color(color.r, color.g, color.b, color.a, intensity)
 end
 
+-- FIXME: We should probably not make a new table every time?
+--        Consider setColorLerp, newColorLerp?
 local function lerpColor(color1, color2, k, intensity)
    return {
       r = lerp(color1.r, color2.r, k),
@@ -533,6 +537,14 @@ local defaultSettings = {
             minutes = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTimer, anchor = {x = 1}},
             seconds = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTimer, anchor = {x = -1}},
          },
+      },
+   },
+   ['Cato_RespawnDelay'] = {
+      visible = true, props = {offset = '80 -90', anchor = '0 1', zIndex = '0', scale = '1'},
+      userData = {
+         anchorWidget = 'Cato_GameTime',
+         show = defaultShow('dead race'),
+         text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium},
       },
    },
    ['Cato_FollowingPlayer'] = {
@@ -2089,26 +2101,44 @@ function Cato_LowAmmo:drawWidget()
       return
    end
 
-   if not povPlayer or povPlayer.infoHidden then return end
+   if not povPlayer or povPlayer.infoHidden or povPlayer.health <= 0 then return end
 
-   local weaponIndexSelected = povPlayer.weaponIndexSelected
-   if weaponDefinitions[weaponIndexSelected] == nil then return end
+   -- local weaponIndexSelected = povPlayer.weaponIndexSelected
+   local weaponIndexweaponChangingTo = povPlayer.weaponIndexweaponChangingTo
+   if weaponIndexweaponChangingTo == 1 then return end
 
-   local ammoLow = weaponDefinitions[weaponIndexSelected].lowAmmoWarning
-   local ammo = povPlayer.weapons[weaponIndexSelected].ammo
-   if ammo > ammoLow then return end
+   local weaponDefinition = weaponDefinitions[weaponIndexweaponChangingTo]
+   if weaponDefinition == nil then return end
+
+   local ammoLow = weaponDefinition.lowAmmoWarning
+   local ammoMed = ammoLow + ceil(1000 / weaponDefinition.reloadTime)
+   local ammo = povPlayer.weapons[weaponIndexweaponChangingTo].ammo
+   if ammo > ammoMed then return end
 
    local opts = copyOpts(self.userData.text)
 
    if ammo <= 0 then
-      opts.color = Color(95, 95, 95)
-   else
-      -- TODO: lerp color from white to yellow to red?
-      --       visual indicator of halfway point is useful!
-      -- TODO: optimize by precalculating midpoints between low ammo to no ammo
-      -- just lerp from yellow to red for now
-      opts.color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow)
+      ammo = 'NO AMMO'
+      if povPlayer.buttons.attack then
+         opts.color = Color(255, 0, 0)
+      else
+         opts.color = Color(255, 255, 255)
+      -- opts.color = Color(95, 95, 95)
+      end
+   elseif ammo <= ammoLow / 2 then
+      -- opts.color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow)
+      opts.color = Color(255, 0, 0)
+   elseif ammo <= ammoLow then
+      opts.color = Color(255, 127, 0)
+   elseif ammo <= ammoMed then
+      opts.color = Color(255, 255, 255)
    end
+
+   -- TODO: lerp color from white to yellow to red?
+   --       visual indicator of halfway point is useful!
+   -- TODO: optimize by precalculating midpoints between low ammo to no ammo
+   -- just lerp from yellow to red for now
+   -- opts.color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow)
 
    -- FIXME: Doesn't work. Possible fixes:
    --        (1) Temporarily unbind +attack until more ammo or weapon is switched
@@ -2231,6 +2261,47 @@ CatoHUD:registerWidget('Cato_GameTime', Cato_GameTime)
 
 ------------------------------------------------------------------------------------------------------------------------
 
+local delayCountDown = true
+local delayRespawnMin = 1.0
+local delayRespawnMax = 4.0
+
+Cato_RespawnDelay = {}
+
+function Cato_RespawnDelay:init()
+   self.deadTime = 0.0
+end
+
+function Cato_RespawnDelay:drawWidget()
+   if not povPlayer or povPlayer.state ~= PLAYER_STATE_INGAME then return end
+
+   -- FIXME: Switching POVs is going to give us trouble here
+   if povPlayer.health <= 0 then
+      self.deadTime = self.deadTime + deltaTime
+   elseif self.deadTime >= 0.0 then
+      self.deadTime = 0.0
+      -- self.deadTime = -deltaTime
+      return
+   end
+
+   local opts = copyOpts(self.userData.text)
+   if self.deadTime < delayRespawnMin then
+      opts.color = Color(255, 0, 0)
+   end
+
+   local delay = string.format(
+      '%.01f',
+      -- FIXME: Figure out the timer and don't clamp, noob
+      clamp(delayCountDown and delayRespawnMax - self.deadTime or self.deadTime, 0.0, delayRespawnMax)
+      -- delayCountDown and delayRespawnMax - self.deadTime or self.deadTime
+   )
+   delay = createTextElem(self, delay, opts)
+   delay.draw(0, 0)
+end
+
+CatoHUD:registerWidget('Cato_RespawnDelay', Cato_RespawnDelay)
+
+------------------------------------------------------------------------------------------------------------------------
+
 Cato_FollowingPlayer = {}
 
 function Cato_FollowingPlayer:drawWidget()
@@ -2285,7 +2356,12 @@ function Cato_ReadyStatus:drawWidget()
       end
    end
 
-   local ready = createTextElem(self, playersReady .. '/' .. playersGame .. ' ready', self.userData.text)
+   local opts = copyOpts(self.userData.text)
+   if povPlayer and not povPlayer.ready then
+      opts.color = Color(191, 191, 191)
+   end
+
+   local ready = createTextElem(self, playersReady .. '/' .. playersGame .. ' ready', opts)
    ready.draw(0, 0)
 end
 
