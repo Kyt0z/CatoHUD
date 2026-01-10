@@ -2299,11 +2299,13 @@ function Cato_RespawnDelay:drawWidget()
    end
 
    local opts = copyOpts(self.userData.text)
+   local buttons = povPlayer.buttons
+   local respawnButtons = buttons.attack or buttons.jump
    if self.deadTime < delayRespawnMin then
-      opts.color = povPlayer.buttons.attack and Color(255, 255, 0) or Color(255, 0, 0)
+      opts.color = respawnButtons and Color(255, 255, 0) or Color(255, 0, 0)
    else
-      -- NOTE: povPlayer.buttons.attack is false when dead?
-      opts.color = povPlayer.buttons.attack and Color(255, 255, 255) or Color(0, 255, 0)
+      -- NOTE: respawnButtons is false when dead?
+      opts.color = respawnButtons and Color(255, 255, 255) or Color(0, 255, 0)
    end
 
    local delay = string.format(
