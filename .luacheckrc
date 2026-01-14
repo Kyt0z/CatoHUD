@@ -31,6 +31,7 @@ read_globals = {
    'playerIndexCameraAttachedTo',
    'playerIndexLocalPlayer',
    'players',
+   'renderModes',
    'replayActive',
    'replayName',
    'teamColors',

@@ -5,7 +5,6 @@ local atan = math.atan
 -- local atan2 = function(y, x) return math.atan(y, x) end -- math.atan2 is deprecated
 local atan2 = math.atan2  -- math.atan2 is deprecated
 local ceil = math.ceil
-local csc = function(x) return 1 / sin(x) end
 local deg2rad = math.rad -- function(x) return x * pi / 180 end
 local floor = math.floor
 local huge = math.huge
@@ -17,13 +16,24 @@ local rad2deg = math.deg -- function(x) return x * 180 / pi end
 local sin = math.sin
 local sqrt = math.sqrt
 local tan = math.tan
+local csc = function(x) return 1 / sin(x) end
 
 -- string
-local format = string.format
-local gsub = string.gsub
-local rep = string.rep
-local sub = string.sub
+-- local format = string.format
+local gmatch = string.gmatch
+-- local gsub = string.gsub
+-- local len = string.len
+-- local rep = string.rep
+-- local sub = string.sub
+-- local upper = string.upper
+-- -- better names
+-- local gsubstr = string.gsub
+-- local len = string.len
+-- local strrep = string.rep
 local strf = string.format -- NOTE: For performance prefer concatenation (..) over string.format
+local strlen = string.len
+local strupper = string.upper
+local substr = string.sub
 
 -- table
 local tbli = table.insert
@@ -43,6 +53,7 @@ local tbli = table.insert
    local playerIndexCameraAttachedTo = playerIndexCameraAttachedTo
    local playerIndexLocalPlayer = playerIndexLocalPlayer
    local players = players
+   local renderModes = renderModes
    local replayActive = replayActive
    local replayName = replayName
    local teamColors = teamColors
@@ -56,7 +67,17 @@ local tbli = table.insert
 -- LuaFunctions.txt
 local consoleGetVariable = consoleGetVariable
 local consolePerformCommand = consolePerformCommand
-local consolePrint = consolePrint
+-- local consolePrint = consolePrint
+-- Doing this so we can more easily spot CatoHUD output
+local prefixCato = ' | '
+local ConsolePrint = consolePrint
+local consolePrint = function(str)
+   if str ~= '' then
+      ConsolePrint(prefixCato .. str)
+   else
+      ConsolePrint(str)
+   end
+end
 local isInMenu = isInMenu
 local loadUserData = loadUserData
 local mouseRegion = mouseRegion
@@ -112,17 +133,6 @@ local WIDGET_PROPERTIES_COL_WIDTH = WIDGET_PROPERTIES_COL_WIDTH
 -- gamestrings.lua
 require 'base/internal/ui/gamestrings'
 local mutatorDefinitions = mutatorDefinitions
-
--- Doing this so we can more easily spot CatoHUD output
-local prefixCato = ' | '
-local ConsolePrint = consolePrint
-local consolePrint = function(str)
-   if str ~= '' then
-      ConsolePrint(prefixCato .. str)
-   else
-      ConsolePrint(str)
-   end
-end
 
 -- FIXME: Currently requiring this for debug messages, because the ConsoleVarPrint code might change a bit in the near
 --        future. But once it gets settled/before release just copy the function here. Doesn't hurt to still see if
@@ -378,7 +388,7 @@ local function formatEpochTime(epochTimestamp, offsetUTC)
    -- epochSeconds = epochTimestamp + offsetUTC
    -- local dateTime = '%s-%02d-%02d %02d:%02d:%02d'
    -- dateTime = formatdateTime, year, month, day, hour, minute, second)
-   -- consolePrint(('%s (%s)'):format(dateTime, epochTimestamp + offsetUTC))
+   -- consolePrint(strf('%s (%s)', dateTime, epochTimestamp + offsetUTC))
 
    -- local day = floor(epochSeconds / S_IN_D) % daysInMonth(month, year)
    -- local hour = floor(epochSeconds / S_IN_H) % H_IN_D
@@ -406,10 +416,10 @@ end
 
 local function ColorHEX(hex, intensity)
    return {
-      r = tonumber('0x' .. hex:sub(1, 2)),
-      g = tonumber('0x' .. hex:sub(3, 4)),
-      b = tonumber('0x' .. hex:sub(5, 6)),
-      a = (tonumber('0x' .. hex:sub(7, 8)) or 255) * (intensity or 1)
+      r = tonumber('0x' .. substr(hex, 1, 2)),
+      g = tonumber('0x' .. substr(hex, 3, 4)),
+      b = tonumber('0x' .. substr(hex, 5, 6)),
+      a = (tonumber('0x' .. substr(hex, 7, 8)) or 255) * (intensity or 1)
    }
 end
 
@@ -430,7 +440,7 @@ local function lerpColor(color1, color2, k, intensity)
 end
 
 local function consoleColorPrint(color)
-   consolePrint(('(%s, %s, %s, %s)'):format(color.r, color.g, color.b, color.a))
+   consolePrint(strf('(%s, %s, %s, %s)', color.r, color.g, color.b, color.a))
 end
 
 local function armorColorLerp(armor, armorProtection, colorArmor)
@@ -480,7 +490,7 @@ local cl_color_enemy = ColorHEX(consoleGetVariable('cl_color_enemy'))
 -- FIXME: Get rid of this
 local function defaultShow(showStr)
    local showTable = {}
-   for showVar in showStr:gmatch('%w+') do
+   for showVar in gmatch(showStr, '%w+') do
       showTable[showVar] = true
    end
    return showTable
@@ -576,22 +586,22 @@ end
 
 local function debugIndexCache(widgets)
    local debugLines = {}
-   debugLines:insert('widgets:')
+   tbli(debugLines, 'widgets:')
    for widgetIndex, widget in ipairs(widgets) do
       if indexCache[widget.name] then
-         debugLines:insert('  ' .. widgetIndex .. ': ' .. widget.name)
+         tbli(debugLines, '  ' .. widgetIndex .. ': ' .. widget.name)
       end
    end
-   debugLines:insert('indexCache:')
+   tbli(debugLines, 'indexCache:')
    for widgetName, widgetIndex in pairs(indexCache) do
       local mismatch = ''
       if widgets[widgetIndex].name ~= widgetName then
          mismatch = '*'
       end
-      debugLines:insert('  ' .. widgetName .. ': ' .. widgetIndex .. mismatch)
+      tbli(debugLines, '  ' .. widgetName .. ': ' .. widgetIndex .. mismatch)
    end
-   debugLines:insert('indexCacheSize: ' .. indexCacheSize)
-   debugLines:insert('indexCacheUpdates: ' .. indexCacheUpdates)
+   tbli(debugLines, 'indexCacheSize: ' .. indexCacheSize)
+   tbli(debugLines, 'indexCacheUpdates: ' .. indexCacheUpdates)
    return debugLines
 end
 
@@ -871,7 +881,7 @@ local optInput = {
       -- apply font & calculate cursor pos
       nvgFontSize(32)
       nvgFontFace('titilliumWeb-regular')
-      -- local textUntilCursor = t.text:sub(0, t.cursor)
+      -- local textUntilCursor = substr(t.text, 0, t.cursor)
       -- local textWidthAtCursor = nvgTextWidth(textUntilCursor)
 
       -- text positioning (this may be a frame behind at this point, but it used for input, one what
@@ -892,11 +902,11 @@ local optInput = {
       -- handle clicking inside region to change cursor location / drag select multiple characters
       -- (note: this can update the cursor inside t)
       if (t.leftDown or t.leftHeld) and t.mouseInside then
-         local textLength = string.len(t.text)
+         local textLength = strlen(t.text)
          local prevDistance = nil
          local newCursor = textLength
          for l = 0, textLength do
-            local distance = abs(textX + nvgTextWidth(t.text:sub(0, l)) - t.mousex)
+            local distance = abs(textX + nvgTextWidth(substr(t.text, 0, l)) - t.mousex)
 
             -- was prev distance closer?
             if l > 0 then
@@ -918,7 +928,7 @@ local optInput = {
       end
 
       -- update these, cursor may have changed!
-      local textUntilCursor = t.text:sub(0, t.cursor)
+      local textUntilCursor = substr(t.text, 0, t.cursor)
       local textWidthAtCursor = nvgTextWidth(textUntilCursor)
 
       -- keep the cursor inside the bounds of the text entry
@@ -967,7 +977,7 @@ local optInput = {
 
          -- multiple selection, draw selection field
          if t.cursor ~= t.cursorStart then
-            local textUntilCursorStart = t.text:sub(0, t.cursorStart)
+            local textUntilCursorStart = substr(t.text, 0, t.cursorStart)
             local textWidthAtCursorStart = nvgTextWidth(textUntilCursorStart)
 
             local selX = min(textWidthAtCursor, textWidthAtCursorStart)
@@ -1087,8 +1097,10 @@ end
 local TEAM_ALPHA = 1
 local TEAM_ZETA  = 2
 
-local debugMode = nil
 local previewMode = nil
+
+local resolutionWidth = nil
+local resolutionHeight = nil
 
 local povPlayer = nil
 local localPlayer = nil
@@ -1103,6 +1115,9 @@ local mapTitle = nil
 local ruleset = nil
 local gameTimeElapsed = nil
 local gameTimeLimit = nil
+
+local timeLimit = nil
+local timeLimitRound = nil
 
 local inReplay = nil
 local previousMap = nil
@@ -1128,12 +1143,11 @@ CatoHUD = {
       {'backup_config', 'int', 1},
       {'box_debug', 'int', 0, 0},
       {'debug', 'int', 0},
+      {'display_mode', 'int', 0, 0},
       {'preview', 'int', 0, 0},
       {'reset_widgets', 'int', 0, 0},
       {'warmuptimer_reset', 'int', 0, 0},
       {'widget_cache', 'int', 0, 0},
-      {'cvar_print', 'string', '', ''},
-      {'var_print', 'string', '', ''},
    },
 }
 
@@ -1283,7 +1297,7 @@ function CatoHUD:registerWidget(widgetName, widget)
          widget:drawOpts(pos)
       end
 
-      if debugMode then
+      if consoleGetVariable('ui_CatoHUD_debug') ~= 0 then
          optDelimiter(pos, opts.delimiter)
          uiTextCato(pos, 'Debug', opts.medium)
 
@@ -1387,7 +1401,7 @@ function CatoHUD:init()
    local offsetHours = self.userData.offsetUTC / S_IN_H
    consolePrint('')
    consolePrint('CatoHUD loaded')
-   consolePrint(('%d-%02d-%02d %02d:%02d:%02d (UTC%s)'):format(
+   consolePrint(strf('%d-%02d-%02d %02d:%02d:%02d (UTC%s)',
       time.year,
       time.month,
       time.day,
@@ -1401,7 +1415,7 @@ function CatoHUD:init()
    -- consoleVarPrint('indexCache', indexCache)
 
    if consoleGetVariable('ui_CatoHUD_backup_config') ~= 0 then
-      local configBackup = ('configs/%s-%d%02d%02d'):format(
+      local configBackup = strf('configs/%s-%d%02d%02d',
          'game', -- consoleGetVariable('name'),
          time.year,
          time.month,
@@ -1444,8 +1458,41 @@ end
 
 -- local weapTime = 0
 function CatoHUD:drawWidget()
-   debugMode = consoleGetVariable('ui_CatoHUD_debug') ~= 0
    previewMode = consoleGetVariable('ui_CatoHUD_preview') ~= 0
+
+   if checkResetConsoleVariable('ui_CatoHUD_display_mode', 0) ~= 0 then
+      local displayMode = nil
+      local refreshRate = consoleGetVariable('r_refreshrate')
+      local monitorIndex = consoleGetVariable('r_monitor')
+      if consoleGetVariable('r_fullscreen') ~= 0 then
+         displayMode = 'Fullscreen'
+         local resolution = consoleGetVariable('r_resolution_fullscreen')
+         resolutionWidth = resolution[1]
+         resolutionHeight = resolution[2]
+      elseif consoleGetVariable('r_windowed_fullscreen') ~= 0 then
+         displayMode = 'Borderless'
+         -- FIXME: Can't get resolution for this displayMode yet? :<
+         resolutionWidth = viewport.width
+         resolutionHeight = viewport.height
+         refreshRate = 'N/A' -- FIXME: fml
+      else
+         displayMode = 'Windowed'
+         local resolution = consoleGetVariable('r_resolution_windowed')
+         resolutionWidth = resolution[1]
+         resolutionHeight = resolution[2]
+      end
+
+      consolePrint('Display mode ' .. displayMode)
+      consolePrint('Monitor index: ' .. monitorIndex)
+      consolePrint('Resolution: ' .. resolutionWidth .. 'x' .. resolutionHeight .. '@' .. refreshRate .. 'hz')
+      -- consoleVarPrint('resolution', resolution)
+      -- consoleVarPrint('viewport', viewport)
+      if displayMode == 'Borderless' then
+         consolePrint('renderModes:')
+         consoleVarPrint('[1]', renderModes[1])
+      end
+      consolePrint('Viewport: ' .. viewport.width .. 'x' .. viewport.height)
+   end
 
    povPlayer = players[playerIndexCameraAttachedTo]
    localPlayer = players[playerIndexLocalPlayer]
@@ -1477,38 +1524,30 @@ function CatoHUD:drawWidget()
 
    inReplay = replayActive and replayName ~= 'menu'
 
-   local printVar = consoleGetVariable('ui_CatoHUD_var_print')
-   if printVar ~= '' then
-      widgetSetConsoleVariable('var_print', '')
-      if printVar:lower() == 'povplayer' or printVar:lower() == 'player' then
-         consoleVarPrint(printVar, povPlayer)
-      elseif printVar:lower() == 'localplayer' then
-         consoleVarPrint(printVar, localPlayer)
-      else
-         consoleVarPrint(printVar, _G[printVar])
-      end
-   end
+   -- FIXME: Most genious of optimization ideas ever?
+   --        Maybe nah bro cos u still gotta do the bitwise checks albeit there might be less table lookups overall
+   -- local connectedPlayers = 0
+   -- local inGamePlayers = 0
+   -- local teamAlphaPlayers = 0
+   -- local teamZetaPlayers = 0
+   -- for i, p in ipairs(players) do
+   --    if p.connected then connectedPlayers = connectedPlayers + (i - 1) ^ 2 end
+   --    if p.state == PLAYER_STATE_INGAME then inGamePlayers = inGamePlayers + (i - 1) ^ 2 end
+   --    if p.team == TEAM_ALPHA then teamAlphaPlayers = teamAlphaPlayers + (i - 1) ^ 2 end
+   --    if p.team == TEAM_ZETA then teamZetaPlayers = teamZetaPlayers + (i - 1) ^ 2 end
+   -- end
+   -- Now we can check if playerIndex & connectedPlayers then do smth
 
-   local printCvar = consoleGetVariable('ui_CatoHUD_cvar_print')
-   if printCvar ~= '' then
-      widgetSetConsoleVariable('cvar_print', '')
-      printCvar = printCvar:gmatch('%S+')()
-      -- consolePerformCommand(printCvar)
-      local cvarValue = consoleGetVariable(printCvar)
-      if type(cvarValue) == 'table' then
-         local cvarValueStr = ''
-         for _, v in ipairs(cvarValue) do cvarValueStr = cvarValueStr .. v .. ' ' end
-         cvarValueStr = cvarValueStr:sub(1, -2)
-         consolePrint(printCvar .. ' ' .. cvarValueStr .. ' (table)')
-      elseif cvarValue ~= nil then
-         consolePrint(printCvar .. ' ' .. cvarValue .. ' (' .. type(cvarValue) .. ')')
-      end
-   end
-
+   -- TODO: Resetting a specific widget should be doable as well
+   -- local resetWdiget = consoleGetVariable('ui_CatoHUD_reset_widget')
+   -- if resetWdiget ~= '' then
+   --    widget:setConsoleVariable('reset_widget', '')
+   --    -- NOTE: Could just space split reset_widgets and 'all' is for all?
+   -- end
    if checkResetConsoleVariable('ui_CatoHUD_reset_widgets', 0) ~= 0 then
       for _, w in ipairs(widgets) do
-         if w.name:sub(1, 5) == 'Cato_' then
-            cW = _G[w.name]
+         if substr(w.name, 1, 5) == 'Cato_' then
+            local cW = _G[w.name]
             cW:loadSettings({})
             setWidgetUserData(cW, 'userData', cW.defaultData)
             setWidgetProperties(w.name, cW, true)
@@ -1545,7 +1584,7 @@ function CatoHUD:drawWidget()
    --    Cato_FragMessage
    --    Cato_Toasty
    -- FIXME: Is there a better way? Cato_FragMessage.fragEvents needs to be cleared after 2.5s
-   -- TODO: Speaking of log, we should totally use log:insert(messageFromWidget) to display e.g. readying up etc.
+   -- TODO: Speaking of log, we should totally use tbli(log, messageFromWidget) to display e.g. readying up etc.
    Cato_FragMessage.fragEvents = {}
    for _, event in ipairs(log) do
       if event.type == LOG_TYPE_DEATHMESSAGE then
@@ -1804,12 +1843,12 @@ function Cato_Time:drawWidget()
 
    --    local delimiter = createTextElem(self, ' ', opts.delimiter)
 
-   --    local hour = createTextElem(self, ('%02d'):format(time.hour), opts.hour)
+   --    local hour = createTextElem(self, strf('%02d', time.hour), opts.hour)
    --    local delimiterTime1 = createTextElem(self, ':', opts.delimiter)
-   --    local minute = createTextElem(self, ('%02d'):format(time.minute), opts.minute)
+   --    local minute = createTextElem(self, strf('%02d', time.minute), opts.minute)
 
    --    local delimiterTime2 = createTextElem(self, ':', opts.delimiter)
-   --    local second = createTextElem(self, ('%02d'):format(time.second), opts.second)
+   --    local second = createTextElem(self, strf('%02d', time.second), opts.second)
 
    --    local x = 0
    --    if self.anchor.x == -1 then
@@ -1860,9 +1899,9 @@ function Cato_Time:drawWidget()
    --    consolePrint(replay.timecodeCurrent)
    -- end
 
-   local hour = createTextElem(self, ('%02d'):format(floor(epochSeconds / S_IN_H) % H_IN_D), self.userData.text.hour)
+   local hour = createTextElem(self, strf('%02d', floor(epochSeconds / S_IN_H) % H_IN_D), self.userData.text.hour)
    local delimiter = createTextElem(self, ':', self.userData.text.delimiter)
-   local minute = createTextElem(self, ('%02d'):format(floor(epochSeconds / S_IN_M) % M_IN_H), self.userData.text.minute)
+   local minute = createTextElem(self, strf('%02d', floor(epochSeconds / S_IN_M) % M_IN_H), self.userData.text.minute)
 
    -- TODO: This alignment bs has to be figured out
    local x = 0
@@ -2021,11 +2060,6 @@ Cato_RulesetName = {
    },
 }
 
-
--- function Cato_RulesetName:init()
---    ruleset = world.ruleset
--- end
-
 function Cato_RulesetName:drawWidget()
    -- if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
@@ -2050,7 +2084,7 @@ function Cato_GameModeName:drawWidget()
    if not inReplay and gameState ~= GAME_STATE_WARMUP then return end
 
    local tl = formatTimeMs(timeLimit * 1000)
-   local gameModeName = createTextElem(self, ('%s %d:%02d'):format(gameMode, tl.minutes, tl.seconds), self.userData.text)
+   local gameModeName = createTextElem(self, strf('%s %d:%02d', gameMode, tl.minutes, tl.seconds), self.userData.text)
    gameModeName.draw(0, 0)
 end
 
@@ -2094,14 +2128,14 @@ function Cato_Mutators:drawWidget()
    local spacing = self.userData.icon.size / 2
 
    local gameMutators = {}
-   -- TODO: Should this be ipairs and then use "gameMutators[i]" over "gameMutators:insert"?
-   for mutator in world.mutators:gmatch('%w+') do
-      mutator = mutatorDefinitions[string.upper(mutator)]
+   -- TODO: Should this be ipairs and then use "gameMutators[i]" over "tbli(gameMutators, mutator)"?
+   for mutator in gmatch(world.mutators, '%w+') do
+      mutator = mutatorDefinitions[strupper(mutator)]
 
       mutator = createSvgElem(self, mutator.icon, {color = mutator.col, size = self.userData.icon.size})
       x = x + mutator.width + spacing
 
-      gameMutators:insert(mutator)
+      tbli(gameMutators, mutator)
    end
    x = x - spacing -- spacing is only between the icons, adjust
 
@@ -2314,7 +2348,7 @@ function Cato_GameTime:drawWidget()
 
    local minutes = createTextElem(self, timer.minutes, self.userData.text.minutes)
    local delimiter = createTextElem(self, ':', self.userData.text.delimiter)
-   local seconds = hideSeconds and 'xx' or ('%02d'):format(timer.seconds)
+   local seconds = hideSeconds and 'xx' or strf('%02d', timer.seconds)
    seconds = createTextElem(self, seconds, self.userData.text.seconds)
 
    local x = 0
@@ -2380,11 +2414,11 @@ function Cato_RespawnDelay:drawWidget()
       opts.color = respawnButtons and Color(255, 255, 255) or Color(0, 255, 0)
    end
 
+   -- TODO: Keep remaining time visible for a short duration after respawn
+
    -- FIXME: Figure out the timer and don't clamp, noob
-   -- local delay = '%f'
-   -- delay = delay:format(delayCountDown and delayRespawnMax - deadTime or deadTime)
-   local delay = '%.01f'
-   delay = delay:format(clamp(delayCountDown and delayRespawnMax - deadTime or deadTime, 0.0, delayRespawnMax))
+   -- local delay = strf('%f', delayCountDown and delayRespawnMax - deadTime or deadTime)
+   local delay = strf('%.01f', clamp(delayCountDown and delayRespawnMax - deadTime or deadTime, 0.0, delayRespawnMax))
    delay = createTextElem(self, delay, opts)
    delay.draw(0, 0)
 end
@@ -2603,46 +2637,14 @@ Cato_Crosshair = {
       crosshairDotColor = Color(255, 255, 255, 255),
       crosshairDotStrokeColor = Color(0, 0, 0, 255),
    },
-   defaultConsoleVariables = {
-      {'debug', 'int', 0, 0},
-   },
 }
 
 function Cato_Crosshair:drawWidget()
-   local displayMode = nil
-   local monitorIndex = consoleGetVariable('r_monitor')
-   local resolution = nil
-   local refreshRate = nil
-   if consoleGetVariable('r_fullscreen') ~= 0 then
-      displayMode = 'Fullscreen'
-      resolution = consoleGetVariable('r_resolution_fullscreen')
-      refreshRate = consoleGetVariable('r_refreshrate')
-   elseif consoleGetVariable('r_windowed_fullscreen') ~= 0 then
-      displayMode = 'Borderless' -- 'Windowed Fullscreen'
-      -- FIXME: Can't get resolution for this displayMode yet :<
-      resolution = {viewport.width, viewport.height}
-      refreshRate = consoleGetVariable('r_refreshrate')
-   else
-      displayMode = 'Windowed'
-      resolution = consoleGetVariable('r_resolution_windowed')
-      refreshRate = consoleGetVariable('r_refreshrate')
-   end
-
-   if checkResetConsoleVariable('ui_Cato_Crosshair_debug', 0) ~= 0 then
-      consolePrint('Display mode: ' .. displayMode)
-      consolePrint('Monitor index: ' .. monitorIndex)
-      consolePrint('Resolution: ' .. resolution[1] .. 'x' .. resolution[2] .. '@' .. refreshRate .. 'hz')
-      consolePrint('Viewport: ' .. viewport.width .. 'x' .. viewport.height)
-      -- consoleVarPrint('resolution', resolution)
-      -- consoleVarPrint('viewport', viewport)
-      -- consoleVarPrint('renderModes', renderModes)
-   end
-
    local x = 0
    local y = 0
 
-   local pixelWidth = viewport.width / resolution[1]
-   local pixelHeight = viewport.height / resolution[2]
+   local pixelWidth = viewport.width / resolutionWidth
+   local pixelHeight = viewport.height / resolutionHeight
 
    local userData = self.userData
 
