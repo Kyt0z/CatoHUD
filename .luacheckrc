@@ -1,5 +1,8 @@
 -- FIXME: Can I not get these warnings suppressed easier?
 read_globals = {
+   -- ConsoleVarPrint.lua
+   'ConsoleVarPrint',
+
    -- reflexcore.lua
    'GAME_STATE_ACTIVE',
    'GAME_STATE_GAMEOVER',
@@ -12,9 +15,6 @@ read_globals = {
    'PLAYER_STATE_EDITOR',
    'PLAYER_STATE_INGAME',
    'PLAYER_STATE_SPECTATOR',
-   'STATE_CONNECTED',
-   'STATE_CONNECTING',
-   'STATE_DISCONNECTED',
    'WIDGET_PROPERTIES_COL_WIDTH',
 
    -- gamestrings.lua
@@ -22,6 +22,7 @@ read_globals = {
 
    -- LuaVariables.txt
    'deltaTime',
+   'deltaTimeRaw',
    'epochTime',
    'extendedColors',
    'gamemodes',
@@ -32,8 +33,9 @@ read_globals = {
    'players',
    'replayActive',
    'replayName',
-   'showScores',
    'teamColors',
+   'timeLimit',
+   'viewport',
    'weaponDefinitions',
    'widgets',
    'world',
@@ -43,6 +45,7 @@ read_globals = {
    'consolePerformCommand',
    'consolePrint',
    'isInMenu',
+   'loadUserData',
    'mouseRegion',
    'nvgBeginPath',
    'nvgFill',
@@ -61,6 +64,7 @@ read_globals = {
    'nvgSvg',
    'nvgText',
    'nvgTextAlign',
+   'nvgTextBounds',
    'nvgTextWidth',
    'playSound',
    'registerWidget',
@@ -68,6 +72,7 @@ read_globals = {
    'textRegion',
    'textRegionSetCursor',
    'widgetCreateConsoleVariable',
+   'widgetGetConsoleVariable',
    'widgetSetConsoleVariable',
 }
 
@@ -77,9 +82,9 @@ allow_defined_top = true
 
 ignore = {
    -- math
-   'clamp',
-   'rad2deg',
+   -- 'clamp',
+   -- 'rad2deg',
    -- debug
-   'consoleColorPrint',
-   'consoleTablePrint',
+   -- 'consoleColorPrint',
+   -- 'consoleTablePrint',
 }
