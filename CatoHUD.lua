@@ -23,7 +23,7 @@ local csc = function(x) return 1 / sin(x) end
 -- string
 --
 -- local format = string.format
-local gmatch = string.gmatch
+local gmatch = string.gmatch -- NOTE: For performance prefer whatever gets the index
 -- local gsub = string.gsub
 -- local len = string.len
 -- local rep = string.rep
@@ -1010,7 +1010,7 @@ end
 -- local CW_SHOW_EDITOR = 128 -- povPlayer and povPlayer.state == PLAYER_STATE_EDITOR -> false
 
 -- local CW_HIDE_NOPLAYER = 1
--- local CW_HIDE_PLAYERHIDDEN = 4
+-- local CW_HIDE_PLAYERHIDDEN = 2
 -- local CW_HIDE_PLAYERDEAD = 4
 
 -- local function defaultBits(mode, str)
@@ -1040,45 +1040,6 @@ local previewMode = nil
 
 local povPlayer = nil
 local localPlayer = nil
-
-
-
-
--- local playerIndex = nil
--- local playerName = nil
-
--- local playerConnected = nil
--- local playerState = nil
--- local playerHidden = nil
--- local playerReady = nil
-
--- local playerLatency = nil
--- local playerPacketloss = nil
-
--- local playerHealth = nil
--- local playerArmor = nil
--- local playerArmorType = nil
--- local playerDamageResilience = nil
--- local playerIsDead = nil
-
--- local playerSpeed = nil
-
--- local playerWeaponIndexSelected = nil
--- local playerWeaponIndexChangingTo = nil
--- local playerWeaponChangingTo = nil
--- local playerAmmo = nil
--- local playerSelectedWeaponDefinition = nil
--- local playerChangingToWeaponDefinition = nil
--- local playerLowAmmo = nil
-
--- local playerTeam = nil
--- local playerScore = nil
-
--- local playerButtonsAttack = nil
--- local playerButtonsJump = nil
-
-
-
 local localPov = nil
 
 local gameState = nil
@@ -1097,7 +1058,7 @@ local inReplay = nil
 local previousMap = nil
 local warmupTimeElapsed = 0
 
-local cl_show_hud = nil
+local hudOff = nil
 local r_fullscreen = nil
 local r_windowed_fullscreen = nil
 local resolutionHeight = nil
@@ -1226,8 +1187,9 @@ local function CatoRegisterWidget(widgetName, widget)
       setWidgetUserData(self, 'userData', defaultUserData[self.name])
       setWidgetProperties(self, resetProperties)
       setWidgetConsoleVariables(self, false)
-      saveUserData(self.userData)
-      self.userData = loadUserData()
+      -- FIXME: We shouldn't need to save/load on init anymore?
+      -- saveUserData(self.userData)
+      -- self.userData = loadUserData()
 
       if self.init then
          self:init()
@@ -1362,7 +1324,7 @@ local function CatoRegisterWidget(widgetName, widget)
        or (not show.menu and (loading.loadScreenVisible or isInMenu()))
        or (not show.dead and (not povPlayer or povPlayer.health <= 0))
        or (not show.race and (gameMode == 'race' or gameMode == 'training'))
-       or (not show.hudOff and (cl_show_hud == 0))
+       or (not show.hudOff and hudOff)
        or (not show.gameOver and (gameState == GAME_STATE_GAMEOVER))
        or (not show.freecam and (localPov and povPlayer and povPlayer.state ~= PLAYER_STATE_INGAME))
        or (not show.editor and (povPlayer and povPlayer.state == PLAYER_STATE_EDITOR)) then
@@ -1442,16 +1404,6 @@ end
 function CatoHUD:draw()
    previewMode = widgetGetConsoleVariable('preview') ~= 0
 
-   -- playerWeaponIndexSelected = nil = player.weaponIndexSelected
-   -- playerWeaponIndexChangingTo = nil = player.weaponIndexweaponChangingTo
-   -- playerWeaponChangingTo = nil = player.weapons[playerWeaponIndexChangingTo]
-   -- playerAmmo = nil = player.weapons[playerWeaponIndexChangingTo].ammo
-   -- playerDamageResilience = nil = damageToKill(playerHealth, playerArmor, playerArmorType)
-   -- playerSelectedWeaponDefinition = nil  = weaponDefinitions[playerWeaponIndexSelected]
-   -- playerChangingToWeaponDefinition = nil = weaponDefinitions[playerWeaponIndexChangingTo]
-   -- playerLowAmmo = nil = playerChangingToWeapon.lowAmmoWarning
-
-   -- FIXME: Get all the requisite povPlayer/localPlayer fields here
    povPlayer = players[playerIndexCameraAttachedTo]
    localPlayer = players[playerIndexLocalPlayer]
    localPov = playerIndexCameraAttachedTo == playerIndexLocalPlayer
@@ -1469,7 +1421,7 @@ function CatoHUD:draw()
 
    inReplay = replayActive and replayName ~= 'menu'
 
-   cl_show_hud = consoleGetVariable('cl_show_hud')
+   hudOff = consoleGetVariable('cl_show_hud') == 0
 
    r_fullscreen = consoleGetVariable('r_fullscreen')
    r_windowed_fullscreen = consoleGetVariable('r_windowed_fullscreen')
@@ -1484,6 +1436,106 @@ function CatoHUD:draw()
    end
    viewportWidth = viewport.width
    viewportHeight = viewport.height
+
+   -- FIXME: Get all the requisite povPlayer/localPlayer fields here and pass on to widgets
+   --[[
+   -- world variables
+   local gameModes = gamemodes
+   local world = world
+
+   local worldGameState = world.gameState
+   local worldMapName = world.mapName
+   local worldMapTitle = world.mapTitle
+   local worldRuleset = world.ruleset
+
+   local worldGameTimeElapsed = world.gameTime
+   local worldGameTimeLimit = world.gameTimeLimit
+   local worldTimeLimit = world.timeLimit
+   local worldTimeLimitRound = world.timeLimitRound
+
+   local worldGameModeIndex = world.gameModeIndex
+   local worldGameMode = gameModes[worldGameModeIndex]
+   local worldGameModeHasTeams = worldGameMode.hasTeams
+   local worldGameModeShortName = worldGameMode.shortName
+
+   -- player variables
+   local players = players
+
+   local playerIndex = playerIndexCameraAttachedTo
+   local player = players[playerIndex]
+
+   local playerIndex = player.index
+   local playerName = player.name
+
+   local playerConnected = player.connected
+   local playerState = player.state
+   local playerHidden = player.infoHidden
+   local playerReady = player.ready
+
+   local playerTeam = player.team
+   local playerScore = player.score
+
+   local playerLatency = player.latency
+   local playerPacketloss = player.packetLoss
+
+   local playerHealth = player.health
+   local playerArmor = player.armor
+   local playerArmorType = player.armorProtection
+   local playerDamageLimit = damageToKill(playerHealth, playerArmor, playerArmorType)
+
+   local playerIsDead = player.isDead
+   local playerSpeed = player.speed
+
+   local playerButtons = player.buttons
+   local playerButtonsAttack = playerButtons.attack
+   local playerButtonsJump = playerButtons.jump
+
+   local playerWeapons = player.weapons
+
+   local playerWeaponIndexA = player.weaponIndexSelected
+   local playerWeaponIndexB = player.weaponIndexweaponChangingTo
+
+   local playerWeaponA = playerWeapons[playerWeaponIndexB]
+   local playerWeaponDefinitionA =  weaponDefinitions[playerWeaponIndexA]
+
+   local playerWeaponB = playerWeapons[playerWeaponIndexB]
+   local playerWeaponDefinitionB = weaponDefinitions[playerWeaponIndexB]
+
+   local playerAmmo = playerWeaponB.ammo
+   local playerReloadTime = playerWeaponDefinitionB.reloadTime
+   local playerAmmoIsLow = playerWeaponDefinitionB.lowAmmoWarning
+   local playerAmmoIsMid = playerAmmoIsLow + ceil(1000 / playerReloadTime)
+
+   local localPlayerIndex = playerIndexLocalPlayer
+   local playerIsLocal = playerIndex == localPlayerIndex
+   local localPlayer = players[localPlayerIndex]
+   ]]
+
+   -- Parse events for: Cato_Chat Cato_GameEvents Cato_GameMessage Cato_FragMessage Cato_Toasty
+   -- for i, event in ipairs(log) do
+   --    consoleVarPrint('log[' .. i .. ']', event)
+   -- end
+
+   -- FIXME: Most genius of optimization ideas ever?
+   --        Maybe nah bro cos u still gotta do the bitwise checks albeit there might be less table lookups overall?
+   -- local connectedPlayers = 0
+   -- local inGamePlayers = 0
+   -- local teamAlphaPlayers = 0
+   -- local teamZetaPlayers = 0
+   -- for i, p in ipairs(players) do
+   --    if p.connected then connectedPlayers = connectedPlayers + (i - 1) ^ 2 end
+   --    if p.state == PLAYER_STATE_INGAME then inGamePlayers = inGamePlayers + (i - 1) ^ 2 end
+   --    if p.team == TEAM_ALPHA then teamAlphaPlayers = teamAlphaPlayers + (i - 1) ^ 2 end
+   --    if p.team == TEAM_ZETA then teamZetaPlayers = teamZetaPlayers + (i - 1) ^ 2 end
+   -- end
+   -- Now we can check if playerIndex & connectedPlayers then do smth.
+   -- We could also make a mapping for playerName.playerTeam -> playerIndex to use over getPlayerByName.
+   -- In fact we could just create getPlayerByName as a function here if that's faster than via a table mapping.
+
+   -- Parse players for: Cato_BurstAccuracy, Cato_Chat, Cato_FakeBeam, Cato_RespawnDelay
+   -- for i, p in ipairs(players) do
+   --    consoleVarPrint('players[' .. i .. ']', p)
+   -- end
 
    -- #1: widgetName -> widget -- NOTE: The order of widgetsCato would not be guaranteed!
    -- local widgetIndex = 0
@@ -1537,32 +1589,6 @@ function CatoHUD:draw()
    else
       warmupTimeElapsed = 0
    end
-
-   -- Parse events for: Cato_Chat Cato_GameEvents Cato_GameMessage Cato_FragMessage Cato_Toasty
-   -- for i, event in ipairs(log) do
-   --    consoleVarPrint('log[' .. i .. ']', event)
-   -- end
-
-   -- FIXME: Most genius of optimization ideas ever?
-   --        Maybe nah bro cos u still gotta do the bitwise checks albeit there might be less table lookups overall?
-   -- local connectedPlayers = 0
-   -- local inGamePlayers = 0
-   -- local teamAlphaPlayers = 0
-   -- local teamZetaPlayers = 0
-   -- for i, player in ipairs(players) do
-   --    if player.connected then connectedPlayers = connectedPlayers + (i - 1) ^ 2 end
-   --    if player.state == PLAYER_STATE_INGAME then inGamePlayers = inGamePlayers + (i - 1) ^ 2 end
-   --    if player.team == TEAM_ALPHA then teamAlphaPlayers = teamAlphaPlayers + (i - 1) ^ 2 end
-   --    if player.team == TEAM_ZETA then teamZetaPlayers = teamZetaPlayers + (i - 1) ^ 2 end
-   -- end
-   -- Now we can check if playerIndex & connectedPlayers then do smth.
-   -- We could also make a mapping for playerName.playerTeam -> playerIndex to use over getPlayerByName.
-   -- In fact we could just create getPlayerByName as a function here if that's faster than via a table mapping.
-
-   -- Parse players for: Cato_BurstAccuracy, Cato_Chat, Cato_FakeBeam, Cato_RespawnDelay
-   -- for i, player in ipairs(players) do
-   --    consoleVarPrint('players[' .. i .. ']', player)
-   -- end
 end
 
 -- function CatoHUD:final()
@@ -1728,18 +1754,76 @@ defaultUserData['Cato_FPS'] = {
    show = defaultShow('dead editor freecam gameOver mainMenu menu race'),
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
+defaultCvars['Cato_FPS'] = {
+   {'frequency', 'float', 1.0},
+   {'precision', 'int', 1},
+   {'samples', 'int', 250},
+}
 
+-- local deltaSamples = 100
+-- local deltas = {}
+-- function Cato_FPS:init()
+--    for deltaIndex = 1, deltaSamples do
+--       deltas[deltaIndex] = 0.0
+--    end
+-- end
+
+local function preAllocateDeltas(deltaSamples)
+   local deltas = {}
+   for deltaIndex = 1, deltaSamples do deltas[deltaIndex] = 0.0 end
+   return deltas
+end
+
+local deltaSamplesLast = nil
+local deltas = {0.0}
+local deltaIndex = 1
+local totalDelta = 0.0
+local measurementTimer = 0.0
+local avgFPS = 0.0
 function Cato_FPS:drawWidget()
-   -- NOTE: Doesn't work when using an external FPS limiter
-   -- local fps = min(round(1 / deltaTime), consoleGetVariable('com_maxfps'))
+   -- local deltaTimeRaw = deltaTimeRaw
+   local deltaSamples = widgetGetConsoleVariable('samples')
+   if deltaSamples ~= deltaSamplesLast then
+      deltas = preAllocateDeltas(deltaSamples)
+      deltaIndex = 1
+      totalDelta = 0.0
+      measurementTimer = 0.0
+      avgFPS = 0.0
+   end
+   deltaSamplesLast = deltaSamples
 
-   -- NOTE: Gives "inffps" during end game scoreboard
-   -- local fps = max(round(1 / deltaTime), 0)
+   local updateFrequency = widgetGetConsoleVariable('frequency')
 
-   -- TODO: Figure out if this is actually a good solution.
-   local fps = max(round(1 / (deltaTime ~= 0 and deltaTime or deltaTimeRaw)), 0)
+   -- consolePrint(deltaIndex)
+   if #deltas >= deltaSamples then
+      totalDelta = totalDelta - deltas[deltaIndex]
+   end
+   deltas[deltaIndex] = deltaTimeRaw
+   totalDelta = totalDelta + deltaTimeRaw
+   deltaIndex = deltaIndex < deltaSamples and deltaIndex + 1 or 1
 
-   fps = createTextElem(self, fps .. 'fps', self.userData.text)
+   measurementTimer = measurementTimer + deltaTimeRaw
+   -- consolePrint(measurementTimer .. ' ' .. totalDelta .. ' ' .. #deltas)
+   if measurementTimer >= updateFrequency then
+      measurementTimer = 0.0
+      -- avgFPS = 1 / (totalDelta / deltaSamples)
+      avgFPS = deltaSamples / totalDelta
+      -- avgFPS = (1 / totalDelta) / #deltas
+   end
+
+   -- avgFPS = 1 / deltaTimeRaw
+   local precision = widgetGetConsoleVariable('precision')
+   local fpsFormat = precision < 0 and '' or ('.' .. precision)
+   local fps = createTextElem(
+      self,
+      strf('%' .. fpsFormat .. 'ffps',
+            avgFPS
+            -- 1 / deltaTimeRaw
+         ),
+      self.userData.text
+   )
+   -- consolePrint(deltaTimeRaw)
+   -- fps = createTextElem(self, fps .. 'fps', self.userData.text)
    fps.draw(0, 0)
 end
 
