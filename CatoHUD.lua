@@ -2366,6 +2366,8 @@ function Cato_LowAmmo:drawWidget(userData)
    elseif ammo >= ammoMax and gameState ~= GAME_STATE_WARMUP then
       -- ammo = 'FULL AMMO'
       opts.color = Color(255, 255, 255, 127)
+   else
+      return
    end
 
    local ammoWarning = createTextElem(self, ammo, opts)
