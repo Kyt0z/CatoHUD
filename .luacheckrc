@@ -24,6 +24,7 @@ read_globals = {
    'deltaTime',
    'deltaTimeRaw',
    'epochTime',
+   'epochTimeLocal',
    'extendedColors',
    'gamemodes',
    'loading',
