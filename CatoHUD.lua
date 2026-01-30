@@ -1439,7 +1439,7 @@ function CatoHUD:draw()
    hudOff = consoleGetVariable('cl_show_hud') == 0
 
    fullscreenOn = consoleGetVariable('r_fullscreen') ~= 0
-   borderlessOn = consoleGetVariable('r_windowed_fullscreen') ~= 0
+   borderlessOn = consoleGetVariable('r_windowed_fullscreen') or 0 ~= 0
    if fullscreenOn or borderlessOn then
       local r_resolution_fullscreen = consoleGetVariable('r_resolution_fullscreen')
       resolutionWidth = r_resolution_fullscreen[1]
@@ -2298,7 +2298,7 @@ function Cato_DisplayMode:drawWidget(userData)
    elseif borderlessOn then modeDisplay = 'Borderless'
    else modeDisplay = 'Windowed' end
 
-   local monitorIndex = consoleGetVariable('r_monitor')
+   local monitorIndex = consoleGetVariable('r_monitor') or -1
    if monitorIndex < 0 then monitorIndex = ''
    else monitorIndex = ' #' .. monitorIndex end
 
