@@ -562,6 +562,8 @@ end
 -- UI/NVG
 ------------------------------------------------------------------------------------------------------------------------
 
+local viewportScale = nil
+
 -- TODO: Various relative offsets (such as between lines in 'FOLLOWING\nplayer') depend on the
 --       font, so maybe a function that calculates the proper offset for all the default fonts?
 -- local fonts = {
@@ -616,8 +618,9 @@ local function createTextElem(widget, text, opts)
    -- FIXME: Is this a better idea?
    -- opts.size = opts.size * viewportHeight / resolutionHeight
    -- Answer: Better? Yes. Good? Sorta. Scaling and positioning are fine. (Fixable by adjusting y?)
+   -- opts.size = opts.size * viewportScale
 
-   local height = opts.size
+   local height = opts.size * viewportScale
    nvgFontBlur(0)
    nvgFontFace(opts.font)
    nvgFontSize(height)
@@ -676,8 +679,8 @@ local function createSvgElem(widget, image, opts)
    -- local height = 2 * opts.size * viewportHeight / resolutionHeight
    -- Answer: Better? Yes. Good? Sorta. Scaling and positioning are fine. (Fixable by adjusting y?)
 
-   local width = 2 * opts.size
-   local height = 2 * opts.size
+   local width = 2 * opts.size * viewportScale
+   local height = 2 * opts.size * viewportScale
 
    local draw = function(x, y)
       x = widget.x + x
@@ -988,17 +991,19 @@ local fontSizeTiny = 24
 local fontSizeSmall = 32
 local fontSizeMedium = 40
 local fontSizeBig = 64
+local fontSizeHuge = 72
 local fontSizeTimer = 120
-local fontSizeHuge = 160
+local fontSizeHealthAndArmor = 160
 
 -- FIXME: Tests
 -- local fontSizeMult = 1.0
--- fontSizeTiny = 24 * fontSizeMult
--- fontSizeSmall = 32 * fontSizeMult
--- fontSizeMedium = 40 * fontSizeMult
--- fontSizeBig = 64 * fontSizeMult
--- fontSizeTimer = 120 * fontSizeMult
--- fontSizeHuge = 160 * fontSizeMult
+-- fontSizeTiny = fontSizeTiny * fontSizeMult
+-- fontSizeSmall = fontSizeSmall * fontSizeMult
+-- fontSizeMedium = fontSizeMedium * fontSizeMult
+-- fontSizeBig = fontSizeBig * fontSizeMult
+-- fontSizeHuge = fontSizeHuge * fontSizeMult
+-- fontSizeTimer = fontSizeTimer * fontSizeMult
+-- fontSizeHealthAndArmor = fontSizeHealthAndArmor * fontSizeMult
 
 -- FIXME: Get rid of this
 local function defaultShow(showStr)
@@ -1452,6 +1457,16 @@ function CatoHUD:draw()
    viewportWidth = viewport.width
    viewportHeight = viewport.height
 
+   viewportScale = 1
+   -- if viewportScale == nil then
+   --    viewportScale = (640 <= resolutionHeight and resolutionHeight <= 2160) and 1 or viewportHeight / resolutionHeight
+   --    consolePrint(strf('s = v / r = %f / %d = %f',
+   --       viewportHeight,
+   --       resolutionHeight,
+   --       viewportScale
+   --    ))
+   -- end
+
    -- FIXME: Track changes to cvars and change only when it changes. We only do this once for now.
    local newColorFriendHEX = consoleGetVariable('cl_color_friend')
    if newColorFriendHEX ~= colorFriendHEX then
@@ -1633,7 +1648,7 @@ defaultProperties['Cato_HealthNumber'] = {visible = true, offset = '-40 30', anc
 defaultUserData['Cato_HealthNumber'] = {
    anchorWidget = '',
    show = defaultShow('dead'),
-   text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHuge, anchor = {x = 1}},
+   text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHealthAndArmor, anchor = {x = 1}},
 }
 
 function Cato_HealthNumber:drawWidget(userData)
@@ -1671,7 +1686,7 @@ defaultProperties['Cato_ArmorNumber'] = {visible = true, offset = '40 30', ancho
 defaultUserData['Cato_ArmorNumber'] = {
    anchorWidget = '',
    show = defaultShow('dead'),
-   text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHuge, anchor = {x = -1}},
+   text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHealthAndArmor, anchor = {x = -1}},
 }
 
 function Cato_ArmorNumber:drawWidget(userData)
@@ -1890,6 +1905,52 @@ CatoRegisterWidget('Cato_FPS', Cato_FPS)
 
 ------------------------------------------------------------------------------------------------------------------------
 
+Cato_DisplayMode = {}
+defaultProperties['Cato_DisplayMode'] = {visible = true, offset = '-120 0', anchor = '1 -1', zIndex = '-999', scale = '1.25'}
+defaultUserData['Cato_DisplayMode'] = {
+   anchorWidget = 'Cato_FPS',
+   show = defaultShow('dead freecam gameOver race mainMenu menu'),
+   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTiny},
+}
+
+function Cato_DisplayMode:drawWidget(userData)
+   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+
+   if not localPov and not ((replayActive and replayName == 'menu') or (loading.loadScreenVisible or isInMenu())) then
+      return
+   end
+
+   local modeDisplay = nil
+   local modeFormat = nil
+   if fullscreenOn then
+      modeDisplay = 'Fullscreen'
+      modeFormat = '%s%s %dx%d @ %dhz'
+   elseif borderlessOn then
+      modeDisplay = 'Borderless'
+      modeFormat = '%s%s (Native)'
+   else
+      modeDisplay = 'Windowed'
+      modeFormat = '%s%s %dx%d @ %dhz'
+   end
+
+   local monitorIndex = consoleGetVariable('r_monitor') or -1
+   if monitorIndex < 0 then monitorIndex = ''
+   else monitorIndex = ' #' .. monitorIndex end
+
+   local refreshRate = consoleGetVariable('r_refreshrate')
+
+   local mode = createTextElem(
+      self,
+      strf(modeFormat, modeDisplay, monitorIndex, resolutionWidth, resolutionHeight, refreshRate),
+      userData.text
+   )
+   mode.draw(0, 0)
+end
+
+CatoRegisterWidget('Cato_DisplayMode', Cato_DisplayMode)
+
+------------------------------------------------------------------------------------------------------------------------
+
 Cato_Time = {}
 defaultProperties['Cato_Time'] = {visible = true, offset = '-3 18', anchor = '1 -1', zIndex = '-999', scale = '1'}
 defaultUserData['Cato_Time'] = {
@@ -2022,15 +2083,54 @@ CatoRegisterWidget('Cato_Time', Cato_Time)
 
 ------------------------------------------------------------------------------------------------------------------------
 
+Cato_MMStats = {}
+defaultProperties['Cato_MMStats'] = {visible = true, offset = '-120 0', anchor = '1 -1', zIndex = '-999', scale = '1'}
+defaultUserData['Cato_MMStats'] = {
+   anchorWidget = 'Cato_Time',
+   show = defaultShow('dead freecam gameOver mainMenu menu race'),
+   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+}
+
+function Cato_MMStats:drawWidget(userData)
+   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+
+   local matchmakingTimeSearching = matchmakingTimeSearching
+   local matchmakingPlayerCount = world.matchmakingPlayerCount
+   local mmr = povPlayer and povPlayer.mmr or 'N/A'
+   local mmrNew = povPlayer and povPlayer.mmrNew or 'N/A'
+   local mmrBest = povPlayer and povPlayer.mmrBest or 'N/A'
+
+   local searchTime = matchmakingTimeSearching * 1000
+   searchTime = formatTimeMs(searchTime)
+   if type(searchTime) == 'table' then
+      searchTime = strf('%d:%02d', searchTime.minutes, searchTime.seconds)
+   end
+
+   local mmStats = createTextElem(self, strf(
+      'MM: %s (%s players) MMR: %s %s (Best %s)',
+      searchTime,
+      matchmakingPlayerCount,
+      mmr,
+      mmrNew,
+      mmrBest
+   ), userData.text)
+   -- local mmStats = createTextElem(self, strf('training', gameMode), userData.text)
+   mmStats.draw(0, 0)
+end
+
+CatoRegisterWidget('Cato_MMStats', Cato_MMStats)
+
+------------------------------------------------------------------------------------------------------------------------
+
 Cato_Scores = {}
 defaultProperties['Cato_Scores'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_Scores'] = {
    anchorWidget = 'Cato_Time',
    show = defaultShow('dead freecam gameOver race'),
    text = {
-      delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeSmall, anchor = {x = 0}},
-      team = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = 1}},
-      enemy = {font = fontFace, color = Color(0, 255, 0), size = fontSizeSmall, anchor = {x = -1}},
+      delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeMedium, anchor = {x = 0}},
+      team = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium, anchor = {x = 1}},
+      enemy = {font = fontFace, color = Color(0, 255, 0), size = fontSizeMedium, anchor = {x = -1}},
    },
 }
 
@@ -2152,7 +2252,7 @@ CatoRegisterWidget('Cato_Scores', Cato_Scores)
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_RulesetName = {}
-defaultProperties['Cato_RulesetName'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
+defaultProperties['Cato_RulesetName'] = {visible = true, offset = '0 27', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_RulesetName'] = {
    anchorWidget = 'Cato_Scores',
    show = defaultShow('dead freecam gameOver race'),
@@ -2278,45 +2378,6 @@ CatoRegisterWidget('Cato_Mutators', Cato_Mutators)
 
 ------------------------------------------------------------------------------------------------------------------------
 
-Cato_DisplayMode = {}
-defaultProperties['Cato_DisplayMode'] = {visible = true, offset = '0 20', anchor = '1 -1', zIndex = '-999', scale = '1'}
-defaultUserData['Cato_DisplayMode'] = {
-   anchorWidget = 'Cato_Mutators',
-   show = defaultShow('dead freecam gameOver race mainMenu menu'),
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTiny},
-}
-
-function Cato_DisplayMode:drawWidget(userData)
-   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
-
-   if not localPov and not ((replayActive and replayName == 'menu') or (loading.loadScreenVisible or isInMenu())) then
-      return
-   end
-
-   local modeDisplay = nil
-   if fullscreenOn then modeDisplay = 'Fullscreen'
-   elseif borderlessOn then modeDisplay = 'Borderless'
-   else modeDisplay = 'Windowed' end
-
-   local monitorIndex = consoleGetVariable('r_monitor') or -1
-   if monitorIndex < 0 then monitorIndex = ''
-   else monitorIndex = ' #' .. monitorIndex end
-
-   local refreshRate = consoleGetVariable('r_refreshrate')
-
-   local modeFormat = borderlessOn and '%s%s' or '%s%s %dx%d @ %dhz'
-   local mode = createTextElem(
-      self,
-      strf(modeFormat, modeDisplay, monitorIndex, resolutionWidth, resolutionHeight, refreshRate),
-      userData.text
-   )
-   mode.draw(0, 0)
-end
-
-CatoRegisterWidget('Cato_DisplayMode', Cato_DisplayMode)
-
-------------------------------------------------------------------------------------------------------------------------
-
 Cato_LowAmmo = {}
 defaultProperties['Cato_LowAmmo'] = {visible = true, offset = '0 160', anchor = '0 0', zIndex = '0', scale = '1'}
 defaultUserData['Cato_LowAmmo'] = {
@@ -2354,18 +2415,25 @@ function Cato_LowAmmo:drawWidget(userData)
       else
          opts.color = Color(255, 0, 0)
       -- opts.color = Color(95, 95, 95)
+      opts.size = fontSizeHuge
       end
    -- TODO: optimize by precalculating midpoints between low ammo to no ammo
    elseif ammo <= ammoLow / 2 then
       -- opts.color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow)
       opts.color = Color(255, 0, 0)
+      opts.size = fontSizeBig
    elseif ammo <= ammoLow then
       opts.color = Color(255, 127, 0)
+      opts.size = fontSizeMedium
    elseif ammo <= ammoMed then
       opts.color = Color(255, 255, 0)
+      opts.size = fontSizeSmall
    elseif ammo >= ammoMax and gameState ~= GAME_STATE_WARMUP then
-      -- ammo = 'FULL AMMO'
-      opts.color = Color(255, 255, 255, 127)
+      -- -- ammo = 'FULL AMMO'
+      -- opts.color = Color(255, 255, 255, 127)
+      ammo = 'FULL AMMO'
+      opts.color = Color(255, 255, 255)
+      opts.size = fontSizeSmall
    else
       return
    end
