@@ -14,11 +14,16 @@ local min = math.min
 local pi = math.pi
 local pow = function(x, y) return x ^ y end -- math.pow is deprecated
 local rad2deg = math.deg -- function(x) return x * 180 / pi end
+local random = math.random
 local sin = math.sin
 local sqrt = math.sqrt
 local tan = math.tan
 local csc = function(x) return 1 / sin(x) end
 --
+
+-- local x = 343534
+-- local y = 235
+-- consolePrint(x & y)
 
 -- string
 --
@@ -35,6 +40,7 @@ local gmatch = string.gmatch -- NOTE: For performance prefer whatever gets the i
 -- local strrep = string.rep
 local strf = string.format -- NOTE: For performance prefer concatenation (..) over string.format
 local strlen = string.len
+local tolower = string.lower
 local toupper = string.upper
 local substr = string.sub
 --
@@ -75,9 +81,9 @@ local world = world
 --
 local consoleGetVariable = consoleGetVariable
 local consolePerformCommand = consolePerformCommand
-local consolePrint = consolePrint
+-- local consolePrint = consolePrint
 local isInMenu = isInMenu
-local loadUserData = loadUserData
+-- local loadUserData = loadUserData
 local mouseRegion = mouseRegion
 local nvgBeginPath = nvgBeginPath
 local nvgFill = nvgFill
@@ -96,24 +102,17 @@ local nvgStrokeColor = nvgStrokeColor
 local nvgSvg = nvgSvg
 local nvgText = nvgText
 local nvgTextAlign = nvgTextAlign
-local nvgTextBounds = nvgTextBounds
+-- local nvgTextBounds = nvgTextBounds
 local nvgTextWidth = nvgTextWidth
 local playSound = playSound
--- FIXME: registerWidget doesn't make that much sense. We aren't calling it outside of the initial file load.
---        Then again that's why it won't hurt either.
-local registerWidget = registerWidget
+-- local registerWidget = registerWidget
 local saveUserData = saveUserData
-local textRegion = textRegion
-local textRegionSetCursor = textRegionSetCursor
--- FIXME: I sure hope these aren't re-assigned based on caller. Although they probably are and it makes sense.
-local widgetCreateConsoleVariable = widgetCreateConsoleVariable
+-- local textRegion = textRegion
+-- local textRegionSetCursor = textRegionSetCursor
+-- local widgetCreateConsoleVariable = widgetCreateConsoleVariable
 local widgetGetConsoleVariable = widgetGetConsoleVariable
 local widgetSetConsoleVariable = widgetSetConsoleVariable
 --
-
--- FIXME: Lowkey we should still have these here for now, although reflexcore and gamestrings are basically always
---        loaded before any widgets.
---        Long term we should get rid of them and simply yoink any useful constants and functions.
 
 -- reflexcore.lua
 require 'base/internal/ui/reflexcore'
@@ -125,11 +124,11 @@ local GAME_STATE_ROUNDCOOLDOWN_DRAW = GAME_STATE_ROUNDCOOLDOWN_DRAW
 local GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON = GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON
 local GAME_STATE_ROUNDPREPARE = GAME_STATE_ROUNDPREPARE
 local GAME_STATE_WARMUP = GAME_STATE_WARMUP
-local LOG_TYPE_DEATHMESSAGE = LOG_TYPE_DEATHMESSAGE
+-- local LOG_TYPE_DEATHMESSAGE = LOG_TYPE_DEATHMESSAGE
 local PLAYER_STATE_EDITOR = PLAYER_STATE_EDITOR
 local PLAYER_STATE_INGAME = PLAYER_STATE_INGAME
 local PLAYER_STATE_SPECTATOR = PLAYER_STATE_SPECTATOR
-local WIDGET_PROPERTIES_COL_WIDTH = WIDGET_PROPERTIES_COL_WIDTH
+-- local WIDGET_PROPERTIES_COL_WIDTH = WIDGET_PROPERTIES_COL_WIDTH
 --
 
 -- gamestrings.lua
@@ -141,27 +140,31 @@ local mutatorDefinitions = mutatorDefinitions
 -- ConsoleVarPrint.lua (For debugging. See <github link> <workshop link>)
 require 'ConsoleVarPrint'
 --
-local ConsoleVarPrint = ConsoleVarPrint
+local _ConsoleVarPrint = ConsoleVarPrint
 --
 
 -- Doing this so we can more easily spot CatoHUD output
 local prefixCato = '  | '
+local consolePrint = consolePrint
 local _consolePrint = consolePrint
-consolePrint = function(str) _consolePrint(str ~= '' and prefixCato .. str or '') end
+consolePrint = function(str) _consolePrint(str ~= nil and prefixCato .. str or '') end
 
 -- FIXME: Currently requiring this for debug messages, because the ConsoleVarPrint code might change a bit in the near
 --        future. But once it gets settled/before release just copy the function here. Doesn't hurt to still see if
 --        ConsoleVarPrint global is present (maybe, it might be an older version).
 -- FIXME: Why are we doing this again? We're not gonna be printing all the time on each frame right. RIGHT?
 -- FIXME: We need the arg names for now
-local function consoleVarPrint(varName, var, prefix, showTypes, depth)
-   if type(ConsoleVarPrint) == 'function' then
-      ConsoleVarPrint(varName, var, prefix or prefixCato, showTypes, depth)
-      return
+local consoleVarPrint = function(varName, var, prefix, showTypes, depth)
+   if type(_ConsoleVarPrint) ~= 'function' then
+      if type(ConsoleVarPrint) ~= 'function' then
+         local varType = showTypes and strf(', -- (%s)', type(var)) or ''
+         consolePrint(strf('%s%s = %s', prefix or '', varName, tostring(var), varType))
+         return
+      else
+         _ConsoleVarPrint = ConsoleVarPrint
+      end
    end
-
-   local varType = showTypes and strf(', -- (%s)', type(var)) or ''
-   consolePrint(strf('%s%s = %s', prefix or '', varName, tostring(var), varType))
+   _ConsoleVarPrint(varName, var, prefix or prefixCato, showTypes, depth)
 end
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -252,13 +255,8 @@ local function getPlayerByName(players, name, team)
    local fallbackPlayer = nil
    for _, p in ipairs(players) do
       if p.name == name then
-         if team == nil or p.team == team then
-            return p
-         end
-
-         if fallbackPlayer == nil then
-            fallbackPlayer = p
-         end
+         if team == nil or p.team == team then return p end
+         fallbackPlayer = fallbackPlayer or p
       end
    end
 
@@ -528,7 +526,7 @@ end
 --       If the widget is not present, a widget cache update is triggered,
 --       which loops the entire widgets table (not smart to do every frame).
 -- FIXME: Move to CatoHUD:getProps?
-local function getProps(widgetName)
+local function getProps(widgets, widgetName)
    local widgetIndex = indexCache[widgetName]
    if not widgetIndex or not widgets[widgetIndex] or widgets[widgetIndex].name ~= widgetName then
       widgetIndex = updateIndexCache(widgets, widgetName)
@@ -566,6 +564,12 @@ local viewportScale = nil
 
 -- TODO: Various relative offsets (such as between lines in 'FOLLOWING\nplayer') depend on the
 --       font, so maybe a function that calculates the proper offset for all the default fonts?
+--       Also, check these:
+--       nvgTextLetterSpacing(spacing)
+--       -- nvgTextBounds() returns table { minx, miny, maxx, maxy }
+--       nvgTextBounds(text)
+--       nvgTextBoxBounds(breakRowWidth, text)
+--       nvgTextLineHeight(height)
 -- local fonts = {
 --    'oswald-regular',
 --    'oswald-bold',
@@ -664,6 +668,7 @@ local function createTextElem(widget, text, opts)
          nvgBeginPath()
          nvgRect(x + pos.x, y + pos.y, width, height)
          nvgFill()
+         -- TODO: Draw widget's name, anchor point, min-/max-x/y
       end
    end
 
@@ -976,6 +981,57 @@ local function optRowInput(inputFunc, pos, text, value, textOpts, inputOpts)
    return value
 end
 
+local function optionsOpts(intensity)
+   return {
+      small = {size = 24, font = 'roboto-regular', color = Color(191, 191, 191, 255 * intensity)},
+      medium = {size = 28, font = 'roboto-regular', color = Color(255, 255, 255, 255 * intensity)},
+      widgetName = {size = 30, font = 'roboto-bold', color = Color(255, 255, 255, 255 * intensity)},
+      warning = {size = 28, font = 'roboto-regular', color = Color(255, 0, 0, 255 * intensity)},
+      delimiter = {size = WIDGET_PROPERTIES_COL_WIDTH + 20, color = Color(0, 0, 0, 63 * intensity)},
+      checkBox = {
+         width = 35, height = 35,
+         bg = {base = Color(26, 26, 26, 255 * intensity), hover = Color(39, 39, 39, 255 * intensity)},
+         fg = {
+            base = Color(222, 222, 222, 255 * intensity), hover = Color(255, 255, 255, 255 * intensity),
+            pressed = Color(200, 200, 200, 255 * intensity), disabled = Color(100, 100, 100, 255 * intensity),
+         },
+      },
+      editBox = {
+         width = 300, height = 35,
+         bg = {base = Color(26, 26, 26, 255 * intensity), hover = Color(39, 39, 39, 255 * intensity)},
+         fg = {
+            base = Color(222, 222, 222, 255 * intensity), hover = Color(255, 255, 255, 255 * intensity),
+            pressed = Color(200, 200, 200, 255 * intensity), disabled = Color(100, 100, 100, 255 * intensity),
+         },
+      },
+   }
+end
+
+local function optPreview(pos, opts, previewMode)
+   optDelimiter(pos, opts.delimiter)
+   previewMode = optRowInput(
+      optInput.checkBox,
+      pos,
+      'Preview',
+      previewMode,
+      opts.medium,
+      opts.checkBox
+   )
+   consolePerformCommand('ui_CatoHUD_preview ' .. (previewMode and 1 or 0))
+end
+
+local function optDebug(pos, opts, widgets, widget)
+   optDelimiter(pos, opts.delimiter)
+   uiTextCato(pos, 'Debug', opts.medium)
+
+   local anchor = getProps(widgets, widget.name).anchor
+   uiTextCato(pos, 'anchor: ' .. anchor.x .. ' ' .. anchor.y, opts.small)
+   uiTextCato(pos, 'getOptionsHeight(): ' .. widget.getOptionsHeight(), opts.small)
+   for _, debugLine in ipairs(debugIndexCache(widgets)) do
+      uiTextCato(pos, debugLine, opts.small)
+   end
+end
+
 -- (:.*?:)|\^[0-9a-zA-Z]
 -- :arenafp: :reflexpicardia::skull:^w' .. player.name .. ' :rocket::boom:^7:beatoff:
 -- local function nvgEmojiText(props, pos, text, opts)
@@ -983,9 +1039,10 @@ end
 -- end
 
 ------------------------------------------------------------------------------------------------------------------------
--- Settings
+-- CatoHUD
 ------------------------------------------------------------------------------------------------------------------------
 
+-- FIXME: Remove these eventually
 local fontFace = 'TitilliumWeb-Bold'
 local fontSizeTiny = 24
 local fontSizeSmall = 32
@@ -1005,92 +1062,14 @@ local fontSizeHealthAndArmor = 160
 -- fontSizeTimer = fontSizeTimer * fontSizeMult
 -- fontSizeHealthAndArmor = fontSizeHealthAndArmor * fontSizeMult
 
--- FIXME: Get rid of this
-local function defaultShow(showStr)
-   local showTable = {}
-   for showVar in gmatch(showStr, '%w+') do
-      showTable[showVar] = true
-   end
-   return showTable
-end
-
--- TODO: This
--- local CW_SHOW_MAINMENU = 1 -- replayActive and replayName == 'menu' -> false
--- local CW_SHOW_MENU = 2 -- loading.loadScreenVisible or isInMenu() -> false
--- local CW_SHOW_DEAD = 4 -- not povPlayer or povPlayer.health <= 0 -> false
--- local CW_SHOW_RACE = 8 -- gameMode == 'race' or gameMode == 'training' -> false
--- local CW_SHOW_HUDOFF = 16 -- consoleGetVariable('cl_show_hud') == 0 -> false
--- local CW_SHOW_GAMEOVER = 32 -- gameState == GAME_STATE_GAMEOVER -> false
--- local CW_SHOW_FREECAM = 64 -- localPov and povPlayer and povPlayer.state ~= PLAYER_STATE_INGAME -> false
--- local CW_SHOW_EDITOR = 128 -- povPlayer and povPlayer.state == PLAYER_STATE_EDITOR -> false
-
--- local CW_HIDE_NOPLAYER = 1
--- local CW_HIDE_PLAYERHIDDEN = 2
--- local CW_HIDE_PLAYERDEAD = 4
-
--- local function defaultBits(mode, str)
---    mode = toupper(mode)
---    str = toupper(str)
-
---    if mode ~= 'SHOW' and mode ~= 'HIDE' then
---       consolePrint('ERROR: Invalid argument \'' .. mode .. '\' passed to defaultBits')
---       return
---    end
-
---    local flags = 0
---    for flagStr in gmatch(str, '%w+') do
---       flags = flags + (_G['CW_' .. mode .. '_' .. flagStr] or 0)
---    end
---    return flags
--- end
-
-------------------------------------------------------------------------------------------------------------------------
--- CatoHUD
-------------------------------------------------------------------------------------------------------------------------
-
-local TEAM_ALPHA = 1
-local TEAM_ZETA  = 2
-
-local previewMode = nil
-
-local povPlayer = nil
-local localPlayer = nil
-local localPov = nil
-
-local gameState = nil
-local gameMode = nil
-local hasTeams = nil
-local map = nil
-local mapTitle = nil
-local ruleset = nil
-local gameTimeElapsed = nil
-local gameTimeLimit = nil
-
-local timeLimit = nil
-local timeLimitRound = nil
-
-local inReplay = nil
-local previousMap = nil
-local warmupTimeElapsed = 0
-
-local hudOff = nil
-local fullscreenOn = nil
-local borderlessOn = nil
-local resolutionHeight = nil
-local resolutionWidth = nil
-local viewportWidth = nil
-local viewportHeight = nil
-
-local colorFriendHEX = nil
-local colorEnemyHEX = nil
-local colorFriend = nil
-local colorEnemy = nil
-
 local defaultUserData = {}
 local defaultProperties = {}
 local defaultCvars = {}
 
+local CatoWidgets = {}
+
 CatoHUD = {canHide = false, canPosition = false}
+
 defaultUserData['CatoHUD'] = {
    configBackup = nil,
    useLocalTime = true,
@@ -1109,69 +1088,130 @@ defaultCvars['CatoHUD'] = {
    {'backup_config', 'int', 1},
    {'box_debug', 'int', 0, 0},
    {'debug', 'int', 0},
-   {'display_mode', 'int', 0, 0},
    {'preview', 'int', 0, 0},
-   {'reset_widgets', 'int', 0, 0},
+   {'reset_widgets', 'string', '', ''},
    {'warmuptimer_reset', 'int', 0, 0},
    {'widget_cache', 'int', 0, 0},
 }
 
-local function setWidgetUserData(container, varName, defaultVal)
-   if type(container[varName]) ~= type(defaultVal) then
-      container[varName] = defaultVal
-   elseif type(defaultVal) == 'table' then
-      for var, val in pairs(defaultVal) do setWidgetUserData(container[varName], var, val) end
-   end
+local previewMode = nil
+
+local TEAM_ALPHA = 1
+local TEAM_ZETA  = 2
+
+local povPlayer = nil
+-- local localPlayer = nil
+local localPov = nil
+
+local gameState = nil
+local gameMode = nil
+local hasTeams = nil
+local map = nil
+local mapTitle = nil
+local ruleset = nil
+local mutators = nil
+local gameTimeElapsed = nil
+local gameTimeLimit = nil
+
+local timerActive = nil
+local timeLimit = nil
+-- local timeLimitRound = nil
+
+local previousMap = nil
+local warmupTimeElapsed = 0
+
+local fullscreenOn = nil
+local borderlessOn = nil
+local resolutionHeight = nil
+local resolutionWidth = nil
+local viewportWidth = nil
+local viewportHeight = nil
+
+local colorFriendHEX = nil
+local colorEnemyHEX = nil
+local colorFriend = nil
+local colorEnemy = nil
+
+local function fakePlayerInfo()
+   return {
+      connected = random(0, 1) == 1,
+      state = PLAYER_STATE_INGAME,
+      ready = random(0, 1) == 1,
+
+      health = random(-99, 200),
+      armor = random(0, 200),
+      armorProtection = random(0, 2),
+      isDead = random(0, 1) == 1,
+
+      buttons = {attack = random(0, 1) == 1, jump = random(0, 1) == 1},
+      speed = random(0, 999),
+
+      latency = random(0, 999),
+      packetLoss = random(0, 100),
+      mmr = random(0, 9999),
+      mmrBest = random(0, 9999),
+      mmrNew = random(0, 9999),
+
+      name = 'Fake Player',
+      score = random(0, 50),
+
+      infoHidden = random(0, 1) == 1,
+      team = random(0, 1),
+
+      weaponIndexSelected = random(1, 9),
+      weaponIndexweaponChangingTo = random(1, 9),
+      weapons = {
+         [1] = {ammo = random(0, 999)},
+         [2] = {ammo = random(0, 999)},
+         [3] = {ammo = random(0, 999)},
+         [4] = {ammo = random(0, 999)},
+         [5] = {ammo = random(0, 999)},
+         [6] = {ammo = random(0, 999)},
+         [7] = {ammo = random(0, 999)},
+         [8] = {ammo = random(0, 999)},
+         [9] = {ammo = random(0, 999)},
+      },
+   }
 end
 
-local function setWidgetProperties(widget, reset)
-   if not reset then return end
+-- TODO: Sort by most to least commonly true condition
+local state = {
+   mainMenu   = 1,
+   menu       = 2,
+   dead       = 3,
+   race       = 4,
+   replay     = 5,
+   hudOff     = 6,
+   gameActive = 7,
+   gameWarmup = 8,
+   gameOver   = 9,
+   freecam    = 10,
+   editor     = 11,
+}
 
-   local default = defaultProperties[widget.name] or {}
-   consolePerformCommand('ui_show_widget ' .. widget.name)
-   consolePerformCommand('ui_set_widget_offset ' .. widget.name .. ' ' .. (default.offset or '0 0'))
-   consolePerformCommand('ui_set_widget_anchor ' .. widget.name .. ' ' .. (default.anchor or '0 0'))
-   consolePerformCommand('ui_set_widget_zIndex ' .. widget.name .. ' ' .. (default.zIndex or '0'))
-   consolePerformCommand('ui_set_widget_scale ' .. widget.name .. ' ' .. (default.scale or '1'))
-   consolePerformCommand((default.visible ~= false and 'ui_show_widget' or 'ui_hide_widget') .. ' ' .. widget.name)
+-- FIXME: Debug
+local stateLabel = {}
+for k, v in pairs(state) do
+   stateLabel[v] = k
 end
 
-local function setWidgetConsoleVariables(widget, reset)
-   for _, cvar in ipairs(defaultCvars[widget.name] or {}) do
-      if not reset then
-         widgetCreateConsoleVariable(cvar[1], cvar[2], cvar[3])
-         if cvar[4] then
-            widgetSetConsoleVariable(cvar[1], cvar[4])
-         end
-      else
-         widgetSetConsoleVariable(cvar[1], cvar[4] or cvar[3])
+local states = {}
+for stateIndex, _ in ipairs(states) do states[stateIndex] = false end
+
+local function hideStates(hideStr)
+   if hideStr == nil then return nil end
+
+   local hideList = {}
+   for _, stateIndex in pairs(state) do hideList[stateIndex] = false end
+   for stateStr in gmatch(hideStr, '%S+') do
+      if state[stateStr] ~= nil then
+         hideList[state[stateStr]] = true
       end
    end
+   return hideList
 end
 
-local function setAnchorWidget(widget)
-   local anchorWidgetName = widget.userData and widget.userData.anchorWidget
-   if anchorWidgetName == nil then return end
-
-   local anchorWidget = _G[anchorWidgetName]
-   if anchorWidget == nil then return end
-
-   local anchorOffset = getProps(anchorWidgetName).offset
-   if anchorOffset == nil then return end
-
-   -- widget.anchorWidget = anchorWidget
-   widget.x = anchorWidget.x + anchorOffset.x
-   widget.y = anchorWidget.y + anchorOffset.y
-end
-
-local widgetsCato = {}
--- FIXME: Stop spamming c:f() when self isn't needed
---        (Practically the only benefit from this is the 6 characters saved in any line that'd have "self, " in args.)
-local function CatoRegisterWidget(widgetName, widget)
-   -- FIXME: Consider either
-   --           not calling registerWidget, or
-   --           not assigning widget:initialize/draw/drawOptions
-   --        until CatoHUD:initialize()
+local function RegisterCato(widgetName, widget)
    widget.name = widgetName
 
    widget.x = 0
@@ -1185,108 +1225,124 @@ local function CatoRegisterWidget(widgetName, widget)
    widget.width = 0
    widget.height = 0
 
-   widget.anchor = {x = 0, y = 0}
-
-   widget.optionsHeight = 0
-
    registerWidget(widgetName)
-   -- widgetsCato[widgetName] = widget -- NOTE: The order of widgetsCato would not be guaranteed!
-   tbli(widgetsCato, widget)
 
-   widget.reset = function(self, reset)
-      reset = reset ~= false -- reset is nil defaults to true
+   widget.initialize = function(self, reset)
       self.userData = reset and {} or loadUserData()
-      local resetProperties = self.userData == nil
-      setWidgetUserData(self, 'userData', defaultUserData[self.name])
-      setWidgetProperties(self, reset or resetProperties)
-      setWidgetConsoleVariables(self, reset)
-   end
 
-   widget.initialize = function(self)
-      self:reset(false)
-      local userData = self.userData -- FIXME: CHECK THAT THIS ACTUALLY CHANGES AFTER self:reset
-
-      if self.init then
-         self:init(userData)
+      -- properties
+      if reset or self.userData == nil then
+         local default = defaultProperties[widget.name] or {}
+         local offset  = default.offset  or '0 0'
+         local anchor  = default.anchor  or '0 0'
+         local zIndex  = default.zIndex  or '0'
+         local scale   = default.scale   or '1'
+         local visible = default.visible ~= false and 'show' or 'hide'
+         consolePerformCommand(strf('ui_show_widget %s',          widget.name))
+         consolePerformCommand(strf('ui_set_widget_offset %s %s', widget.name, offset))
+         consolePerformCommand(strf('ui_set_widget_anchor %s %s', widget.name, anchor))
+         consolePerformCommand(strf('ui_set_widget_zIndex %s %s', widget.name, zIndex))
+         consolePerformCommand(strf('ui_set_widget_scale %s %s',  widget.name, scale))
+         consolePerformCommand(strf('ui_%s_widget %s',            visible,     widget.name))
       end
+
+      -- cvars
+      for _, cvar in ipairs(defaultCvars[widget.name] or {}) do
+         if reset ~= true then
+            widgetCreateConsoleVariable(cvar[1], cvar[2], cvar[3])
+            if cvar[4] then
+               widgetSetConsoleVariable(cvar[1], cvar[4])
+            end
+         else
+            widgetSetConsoleVariable(cvar[1], cvar[4] or cvar[3])
+         end
+      end
+
+      -- userData
+      -- FIXME: Unrecurse?
+      local function setWidgetUserData(container, varName, defaultVal)
+         if type(container[varName]) ~= type(defaultVal) then
+            container[varName] = defaultVal
+         elseif type(defaultVal) == 'table' then
+            for var, val in pairs(defaultVal) do setWidgetUserData(container[varName], var, val) end
+         end
+      end
+      setWidgetUserData(self, 'userData', defaultUserData[self.name])
+
+      -- local widgets = widgets
+
+      -- consoleVarPrint(strf('%s.userData', self.name), self.userData)
+      -- consoleVarPrint(strf('%s.userData', self.name), type(self.userData))
+
+      -- hide states
+      self.hideWhen = hideStates(self.userData.hideWhen)
+      -- consoleVarPrint(strf('%s.hideWhen', self.name), self.hideWhen)
+
+      -- -- anchor
+      -- self.anchor = self.anchor or getProps(widgets, self.name).anchor
+      -- consoleVarPrint(strf('%s.anchor', self.name), self.anchor)
+
+      -- -- offset
+      -- self.offset = self.offset or getProps(widgets, self.name).offset
+      -- consoleVarPrint(strf('%s.offset', self.name), self.offset)
+
+      -- -- anchor widget
+      -- local anchorWidgetName = self.userData.anchorWidget
+      -- consoleVarPrint(strf('%s.userData.anchorWidget', self.name), anchorWidgetName)
+      -- if anchorWidgetName ~= nil then
+      --    -- FIXME: These are not indexed by name
+      --    -- anchorWidget = CatoWidgets[anchorWidgetName]
+      --    local anchorWidget = _G[anchorWidgetName]
+      --    consolePrint(strf('%s.anchorWidget = %s', self.name, anchorWidget and anchorWidget.name or 'nil'))
+      --    consoleVarPrint(strf('%s.anchorWidget.offset', self.name), anchorWidget and anchorWidget.offset)
+      --    if anchorWidget ~= nil and anchorWidget.offset ~= nil then
+      --       self.x = anchorWidget.x + anchorWidget.offset.x
+      --       self.y = anchorWidget.y + anchorWidget.offset.y
+      --       consolePrint(strf('%s.x = %s, %s.y = %s', self.name, self.x, self.name, self.y))
+      --    end
+      -- end
+
+      -- init
+      if self.init then self:init(self.userData) end
    end
 
+   -- draw
+   if widget.name ~= 'CatoHUD' then
+      tbli(CatoWidgets, widget)
+      widget.drawInitialized = false
+      widget.draw = function() end
+   end
+
+   -- finalize
    widget.finalize = function(self)
       local userData = self.userData
-      -- consolePrint(self.name .. ':finalize() called')
       if userData then saveUserData(userData) end
 
-      if widget.final then
-         widget:final(userData)
+      if self.final then
+         self:final(userData)
       end
    end
 
+   -- getOptionsHeight
+   widget.optionsHeight = 0
    widget.getOptionsHeight = function(self)
       return self.optionsHeight
    end
 
-   -- FIXME: You MUST check what happens if GoaHud is present
+   -- drawOptions
    widget.drawOptions = function(self, x, y, intensity)
       local userData = self.userData
-
-      local opts = {
-         small = {size = 24, font = 'roboto-regular', color = Color(191, 191, 191, 255 * intensity)},
-         medium = {size = 28, font = 'roboto-regular', color = Color(255, 255, 255, 255 * intensity)},
-         widgetName = {size = 30, font = 'roboto-bold', color = Color(255, 255, 255, 255 * intensity)},
-         warning = {size = 28, font = 'roboto-regular', color = Color(255, 0, 0, 255 * intensity)},
-         delimiter = {size = WIDGET_PROPERTIES_COL_WIDTH + 20, color = Color(0, 0, 0, 63 * intensity)},
-         checkBox = {
-            width = 35, height = 35,
-            bg = {base = Color(26, 26, 26, 255 * intensity), hover = Color(39, 39, 39, 255 * intensity)},
-            fg = {
-               base = Color(222, 222, 222, 255 * intensity), hover = Color(255, 255, 255, 255 * intensity),
-               pressed = Color(200, 200, 200, 255 * intensity), disabled = Color(100, 100, 100, 255 * intensity),
-            },
-         },
-         editBox = {
-            width = 300, height = 35,
-            bg = {base = Color(26, 26, 26, 255 * intensity), hover = Color(39, 39, 39, 255 * intensity)},
-            fg = {
-               base = Color(222, 222, 222, 255 * intensity), hover = Color(255, 255, 255, 255 * intensity),
-               pressed = Color(200, 200, 200, 255 * intensity), disabled = Color(100, 100, 100, 255 * intensity),
-            },
-         },
-      }
       local pos = {x = x, y = y}
+      local opts = optionsOpts(intensity)
 
+      -- title/widget
       uiTextCato(pos, self.name, opts.widgetName)
 
-      -- Default options
-      -- NOTE: Replacing these requires canHide, canPosition to be false
-      --       Must use custom variables: canVisible, canAnchor, canOffset, canScale, canZIndex?
+      -- preview
+      optPreview(pos, opts, previewMode)
 
-      -- Visible
-
-      -- Anchor/Anchor self/Anchor self Alignment
-      -- NOTE: If attached, disabled self's own anchor and copy it from parent
-
-      -- Offset
-
-      -- Scale
-
-      -- Z-Index
-      -- NOTE: If previewMode, disable Z-Index (show previous value?)
-
-      -- self.canPreview is nil defaults to true
-      -- if self.canPreview ~= false then
-      optDelimiter(pos, opts.delimiter)
-      previewMode = optRowInput(
-         optInput.checkBox,
-         pos,
-         'Preview',
-         previewMode,
-         opts.medium,
-         opts.checkBox
-      )
-      consolePerformCommand('ui_CatoHUD_preview ' .. (previewMode and 1 or 0))
-      -- end
-
-      if userData.anchorWidget then
+      -- anchor
+      if self.name ~= 'CatoHUD' then
          -- consolePrint(self.name)
          -- consolePrint(userData.anchorWidget)
          -- TODO: Make text red if invalid anchorWidget is set
@@ -1299,68 +1355,29 @@ local function CatoRegisterWidget(widgetName, widget)
             opts.medium,
             opts.editBox
          )
-         -- setAnchorWidget(self)
       end
 
+      -- options
       if self.drawOpts then
          optDelimiter(pos, opts.delimiter)
          uiTextCato(pos, self.name .. ' Options', opts.medium)
          self:drawOpts(pos)
       end
 
-      optDelimiter(pos, opts.delimiter)
-      uiTextCato(pos, 'Debug', opts.medium)
+      -- debug
+      optDebug(pos, opts, widgets, self)
 
-      local anchor = getProps(self.name).anchor
-      uiTextCato(pos, 'anchor: ' .. anchor.x .. ' ' .. anchor.y, opts.small)
-      uiTextCato(pos, 'getOptionsHeight(): ' .. self.optionsHeight, opts.small)
-      for _, debugLine in ipairs(debugIndexCache(widgets)) do
-         uiTextCato(pos, debugLine, opts.small)
-      end
-
-      self.optionsHeight = pos.y - y
-
+      -- set & save widget data
       saveUserData(userData)
+      self.hideWhen = hideStates(userData.hideWhen) -- FIXME: We can do this dynamically with the selector
+      self.optionsHeight = pos.y - y
    end
-
-   if widget.name == 'CatoHUD' then return end
-
-   -- widget._draw = widget.draw -- TODO: See if renaming drawWidget to draw and doing this works (hides drawWidget)
-   widget.draw = function(self)
-      -- FIXME: We can move this outside of widget class and pass widget.userData in.
-      --        Define widget.showCondition and widget.hideCondition
-      --        Compute       showState     and        hideState     in CatoHUD.drawWidget
-      --        Then showState & widget.showCondition -> show
-      --             hideState & widget.hideCondition -> hide
-      --        This way we do the heavy lifting in CatoHUD:drawWidget and only do bitwise checks in widget:draw()
-      local userData = self.userData
-      local show = userData and userData.show
-      if not previewMode and show
-      and (not show.mainMenu and (replayActive and replayName == 'menu'))
-       or (not show.menu and (loading.loadScreenVisible or isInMenu()))
-       or (not show.dead and (not povPlayer or povPlayer.health <= 0))
-       or (not show.race and (gameMode == 'race' or gameMode == 'training'))
-       or (not show.hudOff and hudOff)
-       or (not show.gameOver and (gameState == GAME_STATE_GAMEOVER))
-       or (not show.freecam and (localPov and povPlayer and povPlayer.state ~= PLAYER_STATE_INGAME))
-       or (not show.editor and (povPlayer and povPlayer.state == PLAYER_STATE_EDITOR)) then
-         return
-      end
-
-      -- disable preview when menu is closed?
-      -- if not isInMenu() then
-      --    previewMode = false
-      -- end
-
-      self:drawWidget(userData)
-   end
-   -- widget._draw = nil -- TODO: See if renaming drawWidget to draw and doing this works (hides drawWidget)
 end
 
 ------------------------------------------------------------------------------------------------------------------------
 
 function CatoHUD:init(userData)
-   consolePrint(' ')
+   consolePrint('')
    consolePrint('CatoHUD loaded')
 
    local useLocalEpochTime = userData.useLocalTime and epochTimeLocal ~= nil
@@ -1368,21 +1385,21 @@ function CatoHUD:init(userData)
    local offsetUTC = useLocalEpochTime and (epochTimeLocal - epochTime) or userData.offsetUTC
    local time = formatEpochTime(useLocalEpochTime and epochTimeLocal or (epochTime + offsetUTC))
    local offsetHours = offsetUTC / S_IN_H
-   consolePrint(strf('%d-%02d-%02d %02d:%02d:%02d (UTC%s)%s',
+   offsetHours = offsetHours ~= 0 and (offsetHours > 0 and '+' .. offsetHours or offsetHours) or ''
+   consolePrint(strf('%d-%02d-%02d %02d:%02d:%02d %s',
       time.year,
       time.month,
       time.day,
       time.hour,
       time.minute,
       time.second,
-      offsetHours ~= 0 and (offsetHours > 0 and '+' .. offsetHours or offsetHours) or '',
-      useLocalEpochTime and ' [Local]' or ' [User]'
+      useLocalEpochTime and '(Local)' or '(UTC' .. offsetHours .. ')'
    ))
 
    -- local finalEpochTime = tonumber(userData.finalEpochTime)
    -- if finalEpochTime then
    --    local fTime = formatEpochTime(finalEpochTime, offsetUTC)
-   --    consolePrint(' ')
+   --    consolePrint('')
    --    consolePrint('Previous Reflex session ended on')
    --    consolePrint(strf('%d-%02d-%02d %02d:%02d:%02d (UTC%s)',
    --       fTime.year,
@@ -1396,7 +1413,7 @@ function CatoHUD:init(userData)
    -- end
 
    if widgetGetConsoleVariable('backup_config') ~= 0 then
-      consolePrint(' ')
+      consolePrint('')
       local configBackup = widgetGetConsoleVariable('backup_config') < 0 and '_%02d%02d%02d' or ''
       configBackup = strf('configs/%s-%d%02d%02d' .. configBackup,
          'game', -- consoleGetVariable('name'),
@@ -1410,6 +1427,7 @@ function CatoHUD:init(userData)
 
       if userData.configBackup ~= configBackup then
          userData.configBackup = configBackup
+         -- saveUserData(userData) -- FIXME: Need?
          consolePrint('Creating backup config \'' .. configBackup .. '.cfg\'')
          consolePerformCommand('saveconfig ' .. configBackup)
          playSound('CatoHUD/toasty')
@@ -1418,33 +1436,33 @@ function CatoHUD:init(userData)
       end
    end
 
-   consolePrint(' ')
+   consolePrint('')
 end
 
 function CatoHUD:draw()
+   -- consolePrint(self.name .. ':draw called')
    previewMode = widgetGetConsoleVariable('preview') ~= 0
 
    povPlayer = players[playerIndexCameraAttachedTo]
-   localPlayer = players[playerIndexLocalPlayer]
+   -- localPlayer = players[playerIndexLocalPlayer]
    localPov = playerIndexCameraAttachedTo == playerIndexLocalPlayer
 
+   local world = world
    gameState = world.gameState
    gameMode = gamemodes[world.gameModeIndex].shortName
    hasTeams = gamemodes[world.gameModeIndex].hasTeams
    map = world.mapName
    mapTitle = world.mapTitle
    ruleset = world.ruleset
+   mutators = world.mutators
    gameTimeElapsed = world.gameTime
    gameTimeLimit = world.gameTimeLimit
    timeLimit = world.timeLimit
-   timeLimitRound = world.timeLimitRound
-
-   inReplay = replayActive and replayName ~= 'menu'
-
-   hudOff = consoleGetVariable('cl_show_hud') == 0
+   -- timeLimitRound = world.timeLimitRound
+   timerActive = world.timerActive
 
    fullscreenOn = consoleGetVariable('r_fullscreen') ~= 0
-   borderlessOn = consoleGetVariable('r_windowed_fullscreen') or 0 ~= 0
+   borderlessOn = (consoleGetVariable('r_windowed_fullscreen') or 0) ~= 0
    if fullscreenOn or borderlessOn then
       local r_resolution_fullscreen = consoleGetVariable('r_resolution_fullscreen')
       resolutionWidth = r_resolution_fullscreen[1]
@@ -1580,38 +1598,93 @@ function CatoHUD:draw()
    --    consoleVarPrint('players[' .. i .. ']', p)
    -- end
 
-   -- #1: widgetName -> widget -- NOTE: The order of widgetsCato would not be guaranteed!
-   -- local widgetIndex = 0
-   -- for widgetName, widget in pairs(widgetsCato) do
-   --    widgetIndex = widgetIndex + 1
-   -- #2: widgetIndex -> widget
-   -- for widgetIndex = 1, #widgetsCato do
-   --    local widget = widgetsCato[widgetIndex]
-   --    local widgetName = widget.name
-   -- #3: widgetIndex -> widget
-   -- for widgetIndex, widget in ipairs(widgetsCato) do
-   --    local widgetName = widget.name
-
-   -- TODO: Resetting a specific widget should be doable as well
-   local resetWidgets = widgetGetConsoleVariable('reset_widgets') ~= 0
-   if resetWidgets then
-      widgetSetConsoleVariable('reset_widgets', 0)
-      -- FIXME: FUCK OFF REFLEX ARENA
-      for _, w in ipairs(widgetsCato) do
-         if true or w.name ~= 'CatoHUD' then
-            -- consolePrint(w.name .. ':reset()')
-            w:reset()
+   local resetWidgets = widgetGetConsoleVariable('reset_widgets')
+   if resetWidgets ~= '' then
+      widgetSetConsoleVariable('reset_widgets', '')
+      -- consolePrint(strf('reset_widgets %s', resetWidgets))
+      if tonumber(resetWidgets) == nil then
+         for widgetName in gmatch(resetWidgets, '%S+') do
+            -- consolePrint(strf('reset_widgets %s', widgetName))
+            local widget = _G[widgetName]
+            if tolower(substr(widgetName, 1, 4)) == 'cato'
+               and type(widget) == 'table'
+               and type(widget.initialize) == 'function' then
+               consolePrint('Reset: ' .. widgetName)
+               widget:initialize(true)
+            end
          end
+         playSound('CatoHUD/toasty')
+      elseif tonumber(resetWidgets) ~= 0 then
+         local widgetsCatoStr = 'CatoHUD'
+         for _, widget in ipairs(CatoWidgets) do widgetsCatoStr = strf('%s %s', widgetsCatoStr, widget.name) end
+         widgetSetConsoleVariable('reset_widgets', widgetsCatoStr)
       end
-      self:reset()
-      consolePrint('CatoHUD widgets have been reset')
-      playSound('CatoHUD/toasty')
    end
 
-   -- FIXME: Can we reset here?
-   for _, w in ipairs(widgetsCato) do
-      w.anchor = getProps(w.name).anchor
-      setAnchorWidget(w)
+   local replayActive, menuReplay = replayActive, replayName == 'menu'
+   local gameWarmup, gameOver = gameState == GAME_STATE_WARMUP, gameState == GAME_STATE_GAMEOVER
+   states[state.hudOff] = consoleGetVariable('cl_show_hud') == 0
+   states[state.mainMenu] = replayActive and menuReplay
+   states[state.menu] = loading.loadScreenVisible or isInMenu()
+   states[state.race] = gameMode == 'race' or gameMode == 'training'
+   states[state.replay] = replayActive and not menuReplay
+   states[state.gameWarmup] = gameWarmup
+   states[state.gameOver] = gameOver
+   states[state.gameActive] = not gameWarmup and not gameOver
+   if povPlayer then
+      states[state.dead] = povPlayer.isDead
+      states[state.freecam] = localPov and povPlayer.state ~= PLAYER_STATE_INGAME
+      states[state.editor] = povPlayer.state == PLAYER_STATE_EDITOR
+   else
+      states[state.dead] = true
+      states[state.freecam] = false
+      states[state.editor] = false
+      -- povPlayer = fakePlayerInfo()
+   end
+
+   for _, widget in ipairs(CatoWidgets) do
+      local userData = widget.userData
+      if userData == nil then goto drawNext end
+
+      widget.anchor = widget.anchor or getProps(widgets, widget.name).anchor
+      widget.offset = widget.offset or getProps(widgets, widget.name).offset
+
+      local anchorWidget = userData.anchorWidget
+      -- consoleVarPrint(strf('%s.userData', widget.name), userData)
+      if anchorWidget ~= nil then
+         -- anchorWidget = CatoWidgets[anchorWidget] -- FIXME: These are not indexed by name
+         anchorWidget = _G[anchorWidget]
+         if anchorWidget ~= nil and anchorWidget.offset ~= nil then
+            -- consolePrint(strf('%s.anchorWidget is %s', widget.name, anchorWidget.name))
+            widget.x = anchorWidget.x + anchorWidget.offset.x
+            widget.y = anchorWidget.y + anchorWidget.offset.y
+         end
+      end
+
+      if not previewMode then
+         local hideWhen = widget.hideWhen
+         -- FIXME: Debug
+         if hideWhen == nil then
+            consoleVarPrint('states', states)
+            consoleVarPrint(widget.name .. '.hideWhen', hideWhen)
+         end
+         for stateIndex, stateActive in ipairs(states) do
+            if stateActive and hideWhen[stateIndex] then
+               if widget.drawInitialized then
+                  widget.drawInitialized = false
+                  widget.draw = function() end
+               end
+               goto drawNext
+            end
+         end
+      end
+
+      if not widget.drawInitialized then
+         widget.drawInitialized = true
+         widget.draw = function() widget:drawWidget(userData) end
+      end
+
+      ::drawNext::
    end
 
    if widgetGetConsoleVariable('widget_cache') ~= 0 then
@@ -1634,12 +1707,12 @@ function CatoHUD:draw()
    end
 end
 
-function CatoHUD:final(userData)
-   userData.finalEpochTime = epochTime
-   saveUserData(userData)
-end
+-- function CatoHUD:final()
+--    userData.finalEpochTime = epochTime
+--    saveUserData(userData)
+-- end
 
-CatoRegisterWidget('CatoHUD', CatoHUD)
+RegisterCato('CatoHUD', CatoHUD)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -1647,7 +1720,8 @@ Cato_HealthNumber = {}
 defaultProperties['Cato_HealthNumber'] = {visible = true, offset = '-40 30', anchor = '0 1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_HealthNumber'] = {
    anchorWidget = '',
-   show = defaultShow('dead'),
+   -- show = 'dead',
+   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
    text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHealthAndArmor, anchor = {x = 1}},
 }
 
@@ -1677,7 +1751,7 @@ function Cato_HealthNumber:drawWidget(userData)
    health.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_HealthNumber', Cato_HealthNumber)
+RegisterCato('Cato_HealthNumber', Cato_HealthNumber)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -1685,7 +1759,8 @@ Cato_ArmorNumber = {}
 defaultProperties['Cato_ArmorNumber'] = {visible = true, offset = '40 30', anchor = '0 1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_ArmorNumber'] = {
    anchorWidget = '',
-   show = defaultShow('dead'),
+   -- show = 'dead',
+   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
    text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHealthAndArmor, anchor = {x = -1}},
 }
 
@@ -1762,7 +1837,7 @@ function Cato_ArmorNumber:drawWidget(userData)
    armor.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_ArmorNumber', Cato_ArmorNumber)
+RegisterCato('Cato_ArmorNumber', Cato_ArmorNumber)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -1770,7 +1845,8 @@ Cato_ArmorIcon = {}
 defaultProperties['Cato_ArmorIcon'] = {visible = true, offset = '0 -20', anchor = '0 1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_ArmorIcon'] = {
    anchorWidget = '',
-   show = defaultShow('dead'),
+   -- show = 'dead',
+   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
    icon = {color = Color(191, 191, 191), size = 24},
 }
 
@@ -1787,7 +1863,7 @@ function Cato_ArmorIcon:drawWidget(userData)
    armor.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_ArmorIcon', Cato_ArmorIcon)
+RegisterCato('Cato_ArmorIcon', Cato_ArmorIcon)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -1795,14 +1871,15 @@ Cato_FPS = {}
 defaultProperties['Cato_FPS'] = {visible = true, offset = '-3 -5', anchor = '1 -1', zIndex = '-999', scale = '1'}
 defaultUserData['Cato_FPS'] = {
    anchorWidget = '',
-   show = defaultShow('dead editor freecam gameOver mainMenu menu race'),
+   -- show = 'dead editor freecam gameOver mainMenu menu race',
+   hideWhen = 'hudOff',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 defaultCvars['Cato_FPS'] = {
    {'debug', 'int', 0, 0},
    {'frequency', 'float', 1.0},
    {'precision', 'int', 1},
-   {'samples', 'int', 250},
+   {'samples', 'int', 1000},
 }
 
 -- local function preAllocateDeltas(deltas, sampleCount)
@@ -1901,16 +1978,21 @@ function Cato_FPS:drawWidget(userData)
    fps.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_FPS', Cato_FPS)
+RegisterCato('Cato_FPS', Cato_FPS)
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_DisplayMode = {}
-defaultProperties['Cato_DisplayMode'] = {visible = true, offset = '-120 0', anchor = '1 -1', zIndex = '-999', scale = '1.25'}
+defaultProperties['Cato_DisplayMode'] = {visible = true, offset = '-100 0', anchor = '1 -1', zIndex = '-999', scale = '1'}
 defaultUserData['Cato_DisplayMode'] = {
    anchorWidget = 'Cato_FPS',
-   show = defaultShow('dead freecam gameOver race mainMenu menu'),
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTiny},
+   -- show = 'dead freecam gameOver race mainMenu menu',
+   hideWhen = 'hudOff gameActive',
+   text = {
+      fullscreen = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+      borderless = {font = fontFace, color = Color(255, 127, 127), size = fontSizeSmall},
+      windowed = {font = fontFace, color = Color(255, 63, 63), size = fontSizeSmall},
+   },
 }
 
 function Cato_DisplayMode:drawWidget(userData)
@@ -1922,15 +2004,19 @@ function Cato_DisplayMode:drawWidget(userData)
 
    local modeDisplay = nil
    local modeFormat = nil
+   local opts = nil
    if fullscreenOn then
       modeDisplay = 'Fullscreen'
       modeFormat = '%s%s %dx%d @ %dhz'
+      opts = userData.text.fullscreen
    elseif borderlessOn then
       modeDisplay = 'Borderless'
       modeFormat = '%s%s (Native)'
+      opts = userData.text.borderless
    else
       modeDisplay = 'Windowed'
       modeFormat = '%s%s %dx%d @ %dhz'
+      opts = userData.text.windowed
    end
 
    local monitorIndex = consoleGetVariable('r_monitor') or -1
@@ -1942,12 +2028,12 @@ function Cato_DisplayMode:drawWidget(userData)
    local mode = createTextElem(
       self,
       strf(modeFormat, modeDisplay, monitorIndex, resolutionWidth, resolutionHeight, refreshRate),
-      userData.text
+      opts
    )
    mode.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_DisplayMode', Cato_DisplayMode)
+RegisterCato('Cato_DisplayMode', Cato_DisplayMode)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -1955,7 +2041,8 @@ Cato_Time = {}
 defaultProperties['Cato_Time'] = {visible = true, offset = '-3 18', anchor = '1 -1', zIndex = '-999', scale = '1'}
 defaultUserData['Cato_Time'] = {
    anchorWidget = '',
-   show = defaultShow('dead editor freecam gameOver mainMenu menu race'),
+   -- show = 'dead editor freecam gameOver mainMenu menu race',
+   hideWhen = 'hudOff',
    text = {
       delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeSmall, anchor = {x = 0}},
       -- year = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
@@ -2079,46 +2166,93 @@ function Cato_Time:drawWidget(userData)
    minute.draw(x + spacing, 0)
 end
 
-CatoRegisterWidget('Cato_Time', Cato_Time)
+RegisterCato('Cato_Time', Cato_Time)
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_MMStats = {}
-defaultProperties['Cato_MMStats'] = {visible = true, offset = '-120 0', anchor = '1 -1', zIndex = '-999', scale = '1'}
+defaultProperties['Cato_MMStats'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '-999', scale = '1'}
 defaultUserData['Cato_MMStats'] = {
-   anchorWidget = 'Cato_Time',
-   show = defaultShow('dead freecam gameOver mainMenu menu race'),
+   anchorWidget = 'Cato_MapName',
+   -- show = 'dead freecam gameOver mainMenu menu race',
+   hideWhen = 'hudOff',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
 function Cato_MMStats:drawWidget(userData)
    if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
 
-   local matchmakingTimeSearching = matchmakingTimeSearching
-   local matchmakingPlayerCount = world.matchmakingPlayerCount
-   local mmr = povPlayer and povPlayer.mmr or 'N/A'
-   local mmrNew = povPlayer and povPlayer.mmrNew or 'N/A'
-   local mmrBest = povPlayer and povPlayer.mmrBest or 'N/A'
+   local matchmaking = matchmaking
+   local matchmakingState = matchmaking.state
+   -- consoleVarPrint('matchmaking', matchmaking)
 
-   local searchTime = matchmakingTimeSearching * 1000
-   searchTime = formatTimeMs(searchTime)
-   if type(searchTime) == 'table' then
-      searchTime = strf('%d:%02d', searchTime.minutes, searchTime.seconds)
+   local mmState = ''
+   if matchmakingState == MATCHMAKING_DISABLED then
+      return
+   elseif not connectedToSteam then
+      mmState = 'No Steam connection'
+   elseif matchmakingState == MATCHMAKING_PINGINGREGIONS then
+      mmState = 'Pinging'
+   elseif matchmakingState == MATCHMAKING_REQUESTINGLOBBYSERVER then
+      mmState = 'Requesting lobby'
+   elseif matchmakingState == MATCHMAKING_ENABLED_BUT_IDLE then
+      mmState = 'Idle'
+   elseif matchmakingState == MATCHMAKING_SEARCHINGFOROPPONENTS then
+      local searchTime = formatTimeMs((matchmakingTimeSearching or 0) * 1000)
+      mmState = strf('Searching %02d:%02d:%02d', searchTime.hours, searchTime.minutes, searchTime.seconds)
+   elseif matchmakingState == MATCHMAKING_FOUNDOPPONENTS then
+      local ready = matchmaking.clientSideReady
+      mmState = strf('Match found (%sready)', ready or 'not')
+   elseif matchmakingState == MATCHMAKING_VOTINGMAP then
+      mmState = 'Voting'
+   elseif matchmakingState == MATCHMAKING_VOTEFINISHED then
+      mmState = 'Vote finished'
+   elseif matchmakingState == MATCHMAKING_FINDINGSERVER then
+      mmState = 'Finding server'
+   elseif matchmakingState == MATCHMAKING_LOSTCONNECTIONATTEMPTINGRECONNECT then
+      mmState = 'Reconnecting'
+   elseif matchmakingState == MATCHMAKING_BANNED then
+      mmState = 'BANNED'
+   end
+
+   local mmPlaylistKey = world.matchmakingPlaylistKey
+   if mmPlaylistKey == '' then mmPlaylistKey = '1v1' end
+
+   local mmPlaylist = {}
+   for _, playlist in ipairs(matchmaking.playlists or {}) do
+      if playlist.key == mmPlaylistKey then
+         mmPlaylist = playlist
+         goto mmPlaylistFound
+      end
+   end
+   ::mmPlaylistFound::
+   -- consoleVarPrint(mmPlaylistKey, mmPlaylist)
+
+   local mmLobby = world.isMatchmakingLobby
+
+   local mmr = mmPlaylist.mmr or 0
+   local mmrBest = mmPlaylist.mmrBest or 0
+   local mmrNew = 0
+   local mmrDiff = ''
+   if mmLobby and povPlayer then
+      mmr = povPlayer.mmr
+      mmrNew = povPlayer.mmrNew
+      mmrBest = povPlayer.mmrBest
+      mmrDiff = mmrNew - mmr
+      mmrDiff = mmrDiff ~= 0 and (mmrDiff > 0 and ' [+' .. mmrDiff .. ']' or ' [' .. mmrDiff .. ']') or ''
    end
 
    local mmStats = createTextElem(self, strf(
-      'MM: %s (%s players) MMR: %s %s (Best %s)',
-      searchTime,
-      matchmakingPlayerCount,
+      '%s [MMR: %s%s Best: %s]',
+      mmState,
       mmr,
-      mmrNew,
+      mmrDiff,
       mmrBest
    ), userData.text)
-   -- local mmStats = createTextElem(self, strf('training', gameMode), userData.text)
    mmStats.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_MMStats', Cato_MMStats)
+RegisterCato('Cato_MMStats', Cato_MMStats)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2126,7 +2260,8 @@ Cato_Scores = {}
 defaultProperties['Cato_Scores'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_Scores'] = {
    anchorWidget = 'Cato_Time',
-   show = defaultShow('dead freecam gameOver race'),
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu menu hudOff editor',
    text = {
       delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeMedium, anchor = {x = 0}},
       team = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium, anchor = {x = 1}},
@@ -2247,7 +2382,7 @@ function Cato_Scores:drawWidget(userData)
    scoreEnemy.draw(x + spacing, 0)
 end
 
-CatoRegisterWidget('Cato_Scores', Cato_Scores)
+RegisterCato('Cato_Scores', Cato_Scores)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2255,7 +2390,8 @@ Cato_RulesetName = {}
 defaultProperties['Cato_RulesetName'] = {visible = true, offset = '0 27', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_RulesetName'] = {
    anchorWidget = 'Cato_Scores',
-   show = defaultShow('dead freecam gameOver race'),
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu menu hudOff editor',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
@@ -2266,7 +2402,7 @@ function Cato_RulesetName:drawWidget(userData)
    rulesetName.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_RulesetName', Cato_RulesetName)
+RegisterCato('Cato_RulesetName', Cato_RulesetName)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2274,7 +2410,8 @@ Cato_GameModeName = {}
 defaultProperties['Cato_GameModeName'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_GameModeName'] = {
    anchorWidget = 'Cato_RulesetName',
-   show = defaultShow('dead freecam gameOver race'),
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu menu hudOff editor gameActive',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
@@ -2286,7 +2423,7 @@ function Cato_GameModeName:drawWidget(userData)
    gameModeName.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_GameModeName', Cato_GameModeName)
+RegisterCato('Cato_GameModeName', Cato_GameModeName)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2294,7 +2431,8 @@ Cato_Timelimit = {}
 defaultProperties['Cato_Timelimit'] = {visible = true, offset = '-75 0', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_Timelimit'] = {
    anchorWidget = 'Cato_GameModeName',
-   show = defaultShow('dead freecam gameOver race'),
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu menu hudOff editor gameActive',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
@@ -2306,7 +2444,7 @@ function Cato_Timelimit:drawWidget(userData)
    gameModeName.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_Timelimit', Cato_Timelimit)
+RegisterCato('Cato_Timelimit', Cato_Timelimit)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2314,7 +2452,8 @@ Cato_MapName = {}
 defaultProperties['Cato_MapName'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_MapName'] = {
    anchorWidget = 'Cato_GameModeName',
-   show = defaultShow('dead freecam gameOver race'),
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu menu hudOff editor gameActive',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
@@ -2325,7 +2464,7 @@ function Cato_MapName:drawWidget(userData)
    mapName.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_MapName', Cato_MapName)
+RegisterCato('Cato_MapName', Cato_MapName)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2333,8 +2472,9 @@ Cato_Mutators = {}
 defaultProperties['Cato_Mutators'] = {visible = true, offset = '0 33', anchor = '1 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_Mutators'] = {
    anchorWidget = 'Cato_MapName',
-   show = defaultShow('dead freecam gameOver race'),
-   icon = {size = 8},
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu menu hudOff editor',
+   icon = {size = 12},
 }
 
 function Cato_Mutators:drawWidget(userData)
@@ -2345,7 +2485,7 @@ function Cato_Mutators:drawWidget(userData)
 
    local gameMutators = {}
    -- TODO: Should this be ipairs and then use "gameMutators[i]" over "tbli(gameMutators, mutator)"?
-   for mutator in gmatch(world.mutators, '%w+') do
+   for mutator in gmatch(mutators, '%S+') do
       mutator = mutatorDefinitions[toupper(mutator)]
 
       mutator = createSvgElem(self, mutator.icon, {color = mutator.col, size = userData.icon.size})
@@ -2370,11 +2510,11 @@ function Cato_Mutators:drawWidget(userData)
 
    -- local opts = copyOpts(userData.text)
 
-   -- local gameMutators = createTextElem(self, world.mutators, opts)
+   -- local gameMutators = createTextElem(self, mutators, opts)
    -- gameMutators.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_Mutators', Cato_Mutators)
+RegisterCato('Cato_Mutators', Cato_Mutators)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2382,18 +2522,33 @@ Cato_LowAmmo = {}
 defaultProperties['Cato_LowAmmo'] = {visible = true, offset = '0 160', anchor = '0 0', zIndex = '0', scale = '1'}
 defaultUserData['Cato_LowAmmo'] = {
    anchorWidget = '',
-   show = defaultShow('race'),
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium}, -- fontSizeSmall
+   -- show = 'race',
+   hideWhen = 'mainMenu menu dead hudOff gameWarmup gameOver freecam editor',
+   text = {
+      click = {label = '*CLICK*', font = fontFace, color = Color(255, 255, 255), size = fontSizeHuge},
+      empty = {label = 'NO AMMO', font = fontFace, color = Color(255, 0, 0), size = fontSizeBig},
+      halfLow = {label = nil, font = fontFace, color = Color(255, 0, 0), size = fontSizeHuge},
+      low = {label = nil, font = fontFace, color = Color(255, 0, 0), size = fontSizeBig},
+      halfMed = {label = nil, font = fontFace, color = Color(255, 127, 0), size = fontSizeMedium},
+      med = {label = nil, font = fontFace, color = Color(255, 255, 0), size = fontSizeMedium},
+      full = {label = 'FULL AMMO', font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   },
 }
 
+local clickDelay = 0.0
 function Cato_LowAmmo:drawWidget(userData)
+   if clickDelay > 0.0 then clickDelay = clickDelay - deltaTime end
+
    if previewMode then
-      local textPreview = createTextElem(self, '(Low Ammo)', userData.text)
+      local textPreview = createTextElem(self, '(Low Ammo)', userData.text.low)
       textPreview.draw(0, 0)
       return
    end
 
-   if not povPlayer or povPlayer.infoHidden or povPlayer.health <= 0 then return end
+   if not povPlayer or povPlayer.infoHidden or povPlayer.isDead then
+      clickDelay = 0.0
+      return
+   end
 
    local weaponIndex = povPlayer.weaponIndexweaponChangingTo -- povPlayer.weaponIndexSelected
    local weaponDefinition = weaponDefinitions[weaponIndex]
@@ -2403,46 +2558,40 @@ function Cato_LowAmmo:drawWidget(userData)
    local ammoMed = ammoLow + ceil(1000 / weaponDefinition.reloadTime)
    local ammoMax = weaponDefinition.maxAmmo
    local ammo = povPlayer.weapons[weaponIndex].ammo
-   -- if ammo > ammoMed then return end
-   if gameState == GAME_STATE_WARMUP then return end
 
-   local opts = copyOpts(userData.text)
+   local buttonAttack = povPlayer.buttons.attack
 
+   local opts = nil
    if ammo <= 0 then
-      ammo = 'NO AMMO'
-      if povPlayer.buttons.attack then
-         opts.color = Color(255, 255, 255)
+      if clickDelay > 0.0 then
+         opts = userData.text.click
       else
-         opts.color = Color(255, 0, 0)
-      -- opts.color = Color(95, 95, 95)
-      opts.size = fontSizeHuge
+         if buttonAttack then
+            clickDelay = 0.150
+            opts = userData.text.click
+         else
+            opts = userData.text.empty
+         end
       end
-   -- TODO: optimize by precalculating midpoints between low ammo to no ammo
    elseif ammo <= ammoLow / 2 then
-      -- opts.color = lerpColor(Color(255, 0, 0), Color(255, 255, 0), (ammo - 1) / ammoLow)
-      opts.color = Color(255, 0, 0)
-      opts.size = fontSizeBig
+      opts = userData.text.halfLow
    elseif ammo <= ammoLow then
-      opts.color = Color(255, 127, 0)
-      opts.size = fontSizeMedium
+      opts = userData.text.low
+   elseif ammo <= ammoLow + (ammoMed - ammoLow) / 2 then
+      opts = userData.text.halfMed
    elseif ammo <= ammoMed then
-      opts.color = Color(255, 255, 0)
-      opts.size = fontSizeSmall
-   elseif ammo >= ammoMax and gameState ~= GAME_STATE_WARMUP then
-      -- -- ammo = 'FULL AMMO'
-      -- opts.color = Color(255, 255, 255, 127)
-      ammo = 'FULL AMMO'
-      opts.color = Color(255, 255, 255)
-      opts.size = fontSizeSmall
+      opts = userData.text.med
+   elseif ammo >= ammoMax then
+      opts = userData.text.full
    else
       return
    end
 
-   local ammoWarning = createTextElem(self, ammo, opts)
+   local ammoWarning = createTextElem(self, opts.label or ammo, opts)
    ammoWarning.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_LowAmmo', Cato_LowAmmo)
+RegisterCato('Cato_LowAmmo', Cato_LowAmmo)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2450,7 +2599,8 @@ Cato_Ping = {}
 defaultProperties['Cato_Ping'] = {visible = true, offset = '-3 4', anchor = '1 1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_Ping'] = {
    anchorWidget = '',
-   show = defaultShow('dead freecam gameOver race'),
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu hudOff editor',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
@@ -2473,7 +2623,7 @@ function Cato_Ping:drawWidget(userData)
    ping.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_Ping', Cato_Ping)
+RegisterCato('Cato_Ping', Cato_Ping)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2481,7 +2631,8 @@ Cato_PacketLoss = {}
 defaultProperties['Cato_PacketLoss'] = {visible = true, offset = '-3 -16', anchor = '1 1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_PacketLoss'] = {
    anchorWidget = '',
-   show = defaultShow('dead freecam gameOver race'),
+   -- show = 'dead freecam gameOver race',
+   hideWhen = 'mainMenu hudOff editor',
    text = {font = fontFace, color = Color(255, 0, 0), size = fontSizeSmall},
 }
 
@@ -2504,7 +2655,7 @@ function Cato_PacketLoss:drawWidget(userData)
    packetloss.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_PacketLoss', Cato_PacketLoss)
+RegisterCato('Cato_PacketLoss', Cato_PacketLoss)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2512,7 +2663,8 @@ Cato_GameTime = {}
 defaultProperties['Cato_GameTime'] = {visible = true, offset = '0 -135', anchor = '0 1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_GameTime'] = {
    anchorWidget = '',
-   show = defaultShow('dead'),
+   -- show = 'dead',
+   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
    countDown = false,
    hideSeconds = false,
    text = {
@@ -2555,7 +2707,7 @@ function Cato_GameTime:drawWidget(userData)
    seconds.draw(x + spacing, 0)
 end
 
-CatoRegisterWidget('Cato_GameTime', Cato_GameTime)
+RegisterCato('Cato_GameTime', Cato_GameTime)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2567,7 +2719,8 @@ Cato_RespawnDelay = {}
 defaultProperties['Cato_RespawnDelay'] = {visible = true, offset = '80 -90', anchor = '0 1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_RespawnDelay'] = {
    anchorWidget = 'Cato_GameTime',
-   show = defaultShow('dead race'),
+   -- show = 'dead race',
+   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium},
 }
 
@@ -2611,7 +2764,7 @@ function Cato_RespawnDelay:drawWidget(userData)
    delay.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_RespawnDelay', Cato_RespawnDelay)
+RegisterCato('Cato_RespawnDelay', Cato_RespawnDelay)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2619,7 +2772,8 @@ Cato_FollowingPlayer = {}
 defaultProperties['Cato_FollowingPlayer'] = {visible = true, offset = '0 0', anchor = '0 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_FollowingPlayer'] = {
    anchorWidget = '',
-   show = defaultShow('dead race'),
+   -- show = 'dead race',
+   hideWhen = 'mainMenu menu hudOff freecam editor',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeBig, anchor = {x = 0}},
 }
 
@@ -2655,7 +2809,7 @@ function Cato_FollowingPlayer:drawWidget(userData)
    name.draw(x, y + label.height - offset)
 end
 
-CatoRegisterWidget('Cato_FollowingPlayer', Cato_FollowingPlayer)
+RegisterCato('Cato_FollowingPlayer', Cato_FollowingPlayer)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2663,7 +2817,8 @@ Cato_ReadyStatus = {}
 defaultProperties['Cato_ReadyStatus'] = {visible = true, offset = '0 145', anchor = '0 -1', zIndex = '0', scale = '1'}
 defaultUserData['Cato_ReadyStatus'] = {
    anchorWidget = '',
-   show = defaultShow('dead freecam race'),
+   -- show = 'dead freecam race',
+   hideWhen = 'mainMenu hudOff gameOver editor',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
@@ -2690,7 +2845,7 @@ function Cato_ReadyStatus:drawWidget(userData)
    ready.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_ReadyStatus', Cato_ReadyStatus)
+RegisterCato('Cato_ReadyStatus', Cato_ReadyStatus)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2698,14 +2853,15 @@ Cato_GameMessage = {}
 defaultProperties['Cato_GameMessage'] = {visible = true, offset = '0 -80', anchor = '0 0', zIndex = '0', scale = '1'}
 defaultUserData['Cato_GameMessage'] = {
    anchorWidget = '',
-   show = defaultShow('dead freecam menu race'),
+   -- show = 'dead freecam menu race',
+   hideWhen = 'mainMenu hudOff gameOver editor',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium},
 }
 
 local lastTickSeconds = -1
 function Cato_GameMessage:drawWidget(userData)
    local gameMessage = nil
-   if world.timerActive then
+   if timerActive then
       if gameState == GAME_STATE_WARMUP or gameState == GAME_STATE_ROUNDPREPARE then
          local timer = formatTimeMs(gameTimeElapsed, gameTimeLimit, true)
          if lastTickSeconds ~= timer.seconds then
@@ -2747,7 +2903,7 @@ function Cato_GameMessage:drawWidget(userData)
    gameMessage.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_GameMessage', Cato_GameMessage)
+RegisterCato('Cato_GameMessage', Cato_GameMessage)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2755,7 +2911,8 @@ Cato_Speed = {}
 defaultProperties['Cato_Speed'] = {visible = false, offset = '0 60', anchor = '0 0', zIndex = '0', scale = '1'}
 defaultUserData['Cato_Speed'] = {
    anchorWidget = '',
-   show = defaultShow('race'),
+   -- show = 'race',
+   hideWhen = 'mainMenu menu dead hudOff gameOver freecam editor',
    text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
 }
 
@@ -2766,7 +2923,7 @@ function Cato_Speed:drawWidget(userData)
    ups.draw(0, 0)
 end
 
-CatoRegisterWidget('Cato_Speed', Cato_Speed)
+RegisterCato('Cato_Speed', Cato_Speed)
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2774,7 +2931,8 @@ Cato_Crosshair = {}
 defaultProperties['Cato_Crosshair'] = {visible = true, offset = '0 0', anchor = '0 0', zIndex = '0', scale = '1'}
 defaultUserData['Cato_Crosshair'] = {
    anchorWidget = '',
-   show = defaultShow('race'),
+   -- show = 'race',
+   hideWhen = 'mainMenu menu dead hudOff gameOver freecam',
    crosshairWidth = 2,
    crosshairHeight = 2,
    crosshairStroke = 1,
@@ -2951,6 +3109,6 @@ function Cato_Crosshair:drawWidget(userData)
    end
 end
 
-CatoRegisterWidget('Cato_Crosshair', Cato_Crosshair)
+RegisterCato('Cato_Crosshair', Cato_Crosshair)
 
 ------------------------------------------------------------------------------------------------------------------------
