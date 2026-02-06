@@ -560,8 +560,6 @@ end
 -- UI/NVG
 ------------------------------------------------------------------------------------------------------------------------
 
-local viewportScale = nil
-
 -- TODO: Various relative offsets (such as between lines in 'FOLLOWING\nplayer') depend on the
 --       font, so maybe a function that calculates the proper offset for all the default fonts?
 --       Also, check these:
@@ -624,7 +622,7 @@ local function createTextElem(widget, text, opts)
    -- Answer: Better? Yes. Good? Sorta. Scaling and positioning are fine. (Fixable by adjusting y?)
    -- opts.size = opts.size * viewportScale
 
-   local height = opts.size * viewportScale
+   local height = opts.size
    nvgFontBlur(0)
    nvgFontFace(opts.font)
    nvgFontSize(height)
@@ -683,9 +681,11 @@ local function createSvgElem(widget, image, opts)
    -- local width = 2 * opts.size * viewportWidth / resolutionWidth
    -- local height = 2 * opts.size * viewportHeight / resolutionHeight
    -- Answer: Better? Yes. Good? Sorta. Scaling and positioning are fine. (Fixable by adjusting y?)
+   -- local width = 2 * opts.size * viewportScale
+   -- local height = 2 * opts.size * viewportScale
 
-   local width = 2 * opts.size * viewportScale
-   local height = 2 * opts.size * viewportScale
+   local width = 2 * opts.size
+   local height = 2 * opts.size
 
    local draw = function(x, y)
       x = widget.x + x
@@ -805,7 +805,7 @@ local optInput = {
       local enabled = opts.enabled == nil and true or opts.enabled
       local giveFocus = (opts.giveFocus ~= nil) and opts.giveFocus or false
 
-      local t = nil
+      local t
       if enabled then
          t = textRegion(pos.x, pos.y, opts.width, opts.height, value, opts.id or 0, giveFocus)
       else
@@ -1042,26 +1042,6 @@ end
 -- CatoHUD
 ------------------------------------------------------------------------------------------------------------------------
 
--- FIXME: Remove these eventually
-local fontFace = 'TitilliumWeb-Bold'
-local fontSizeTiny = 24
-local fontSizeSmall = 32
-local fontSizeMedium = 40
-local fontSizeBig = 64
-local fontSizeHuge = 72
-local fontSizeTimer = 120
-local fontSizeHealthAndArmor = 160
-
--- FIXME: Tests
--- local fontSizeMult = 1.0
--- fontSizeTiny = fontSizeTiny * fontSizeMult
--- fontSizeSmall = fontSizeSmall * fontSizeMult
--- fontSizeMedium = fontSizeMedium * fontSizeMult
--- fontSizeBig = fontSizeBig * fontSizeMult
--- fontSizeHuge = fontSizeHuge * fontSizeMult
--- fontSizeTimer = fontSizeTimer * fontSizeMult
--- fontSizeHealthAndArmor = fontSizeHealthAndArmor * fontSizeMult
-
 local defaultUserData = {}
 local defaultProperties = {}
 local defaultCvars = {}
@@ -1102,6 +1082,7 @@ local TEAM_ZETA  = 2
 local povPlayer = nil
 -- local localPlayer = nil
 local localPov = nil
+local inReplay = nil
 
 local gameState = nil
 local gameMode = nil
@@ -1475,7 +1456,7 @@ function CatoHUD:draw()
    viewportWidth = viewport.width
    viewportHeight = viewport.height
 
-   viewportScale = 1
+   -- local viewportScale = 1
    -- if viewportScale == nil then
    --    viewportScale = (640 <= resolutionHeight and resolutionHeight <= 2160) and 1 or viewportHeight / resolutionHeight
    --    consolePrint(strf('s = v / r = %f / %d = %f',
@@ -1622,12 +1603,13 @@ function CatoHUD:draw()
    end
 
    local replayActive, menuReplay = replayActive, replayName == 'menu'
+   inReplay = replayActive and not menuReplay
    local gameWarmup, gameOver = gameState == GAME_STATE_WARMUP, gameState == GAME_STATE_GAMEOVER
    states[state.hudOff] = consoleGetVariable('cl_show_hud') == 0
    states[state.mainMenu] = replayActive and menuReplay
    states[state.menu] = loading.loadScreenVisible or isInMenu()
    states[state.race] = gameMode == 'race' or gameMode == 'training'
-   states[state.replay] = replayActive and not menuReplay
+   states[state.replay] = inReplay
    states[state.gameWarmup] = gameWarmup
    states[state.gameOver] = gameOver
    states[state.gameActive] = not gameWarmup and not gameOver
@@ -1722,7 +1704,7 @@ defaultUserData['Cato_HealthNumber'] = {
    anchorWidget = '',
    -- show = 'dead',
    hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHealthAndArmor, anchor = {x = 1}},
+   text = {font = 'TitilliumWeb-Bold', color = Color(191, 191, 191), size = 160, anchor = {x = 1}},
 }
 
 function Cato_HealthNumber:drawWidget(userData)
@@ -1761,7 +1743,7 @@ defaultUserData['Cato_ArmorNumber'] = {
    anchorWidget = '',
    -- show = 'dead',
    hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   text = {font = fontFace, color = Color(191, 191, 191), size = fontSizeHealthAndArmor, anchor = {x = -1}},
+   text = {font = 'TitilliumWeb-Bold', color = Color(191, 191, 191), size = 160, anchor = {x = -1}},
 }
 
 function Cato_ArmorNumber:drawWidget(userData)
@@ -1873,7 +1855,7 @@ defaultUserData['Cato_FPS'] = {
    anchorWidget = '',
    -- show = 'dead editor freecam gameOver mainMenu menu race',
    hideWhen = 'hudOff',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 defaultCvars['Cato_FPS'] = {
    {'debug', 'int', 0, 0},
@@ -1989,9 +1971,9 @@ defaultUserData['Cato_DisplayMode'] = {
    -- show = 'dead freecam gameOver race mainMenu menu',
    hideWhen = 'hudOff gameActive',
    text = {
-      fullscreen = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
-      borderless = {font = fontFace, color = Color(255, 127, 127), size = fontSizeSmall},
-      windowed = {font = fontFace, color = Color(255, 63, 63), size = fontSizeSmall},
+      fullscreen = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+      borderless = {font = 'TitilliumWeb-Bold', color = Color(255, 127, 127), size = 32},
+      windowed = {font = 'TitilliumWeb-Bold', color = Color(255, 63, 63), size = 32},
    },
 }
 
@@ -2002,9 +1984,9 @@ function Cato_DisplayMode:drawWidget(userData)
       return
    end
 
-   local modeDisplay = nil
-   local modeFormat = nil
-   local opts = nil
+   local modeDisplay
+   local modeFormat
+   local opts
    if fullscreenOn then
       modeDisplay = 'Fullscreen'
       modeFormat = '%s%s %dx%d @ %dhz'
@@ -2044,13 +2026,13 @@ defaultUserData['Cato_Time'] = {
    -- show = 'dead editor freecam gameOver mainMenu menu race',
    hideWhen = 'hudOff',
    text = {
-      delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeSmall, anchor = {x = 0}},
-      -- year = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
-      -- month = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
-      -- day = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
-      hour = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = 1}},
-      minute = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
-      -- second = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall, anchor = {x = -1}},
+      delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 32, anchor = {x = 0}},
+      -- year = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+      -- month = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+      -- day = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+      hour = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = 1}},
+      minute = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+      -- second = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
    },
 }
 
@@ -2132,7 +2114,7 @@ function Cato_Time:drawWidget(userData)
    -- end
 
 
-   local epochSeconds = nil
+   local epochSeconds
    if CatoHUD.userData.useLocalTime and epochTimeLocal ~= nil then epochSeconds = epochTimeLocal
    else epochSeconds = epochTime + CatoHUD.userData.offsetUTC end
 
@@ -2176,7 +2158,7 @@ defaultUserData['Cato_MMStats'] = {
    anchorWidget = 'Cato_MapName',
    -- show = 'dead freecam gameOver mainMenu menu race',
    hideWhen = 'hudOff',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_MMStats:drawWidget(userData)
@@ -2232,13 +2214,11 @@ function Cato_MMStats:drawWidget(userData)
 
    local mmr = mmPlaylist.mmr or 0
    local mmrBest = mmPlaylist.mmrBest or 0
-   local mmrNew = 0
    local mmrDiff = ''
    if mmLobby and povPlayer then
       mmr = povPlayer.mmr
-      mmrNew = povPlayer.mmrNew
       mmrBest = povPlayer.mmrBest
-      mmrDiff = mmrNew - mmr
+      mmrDiff = povPlayer.mmrNew - mmr
       mmrDiff = mmrDiff ~= 0 and (mmrDiff > 0 and ' [+' .. mmrDiff .. ']' or ' [' .. mmrDiff .. ']') or ''
    end
 
@@ -2263,9 +2243,9 @@ defaultUserData['Cato_Scores'] = {
    -- show = 'dead freecam gameOver race',
    hideWhen = 'mainMenu menu hudOff editor',
    text = {
-      delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeMedium, anchor = {x = 0}},
-      team = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium, anchor = {x = 1}},
-      enemy = {font = fontFace, color = Color(0, 255, 0), size = fontSizeMedium, anchor = {x = -1}},
+      delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 40, anchor = {x = 0}},
+      team = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40, anchor = {x = 1}},
+      enemy = {font = 'TitilliumWeb-Bold', color = Color(0, 255, 0), size = 40, anchor = {x = -1}},
    },
 }
 
@@ -2278,10 +2258,10 @@ function Cato_Scores:drawWidget(userData)
    opts.team.color = colorFriend
    opts.enemy.color = colorEnemy
 
-   local scoreTeam = nil
-   local indexTeam = nil
-   local scoreEnemy = nil
-   local indexEnemy = nil
+   local scoreTeam
+   local indexTeam
+   local scoreEnemy
+   local indexEnemy
    local relativeColors = consoleGetVariable('cl_colors_relative') == 1
    if hasTeams then
       if povPlayer and povPlayer.state == PLAYER_STATE_INGAME then
@@ -2392,7 +2372,7 @@ defaultUserData['Cato_RulesetName'] = {
    anchorWidget = 'Cato_Scores',
    -- show = 'dead freecam gameOver race',
    hideWhen = 'mainMenu menu hudOff editor',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_RulesetName:drawWidget(userData)
@@ -2412,7 +2392,7 @@ defaultUserData['Cato_GameModeName'] = {
    anchorWidget = 'Cato_RulesetName',
    -- show = 'dead freecam gameOver race',
    hideWhen = 'mainMenu menu hudOff editor gameActive',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_GameModeName:drawWidget(userData)
@@ -2433,7 +2413,7 @@ defaultUserData['Cato_Timelimit'] = {
    anchorWidget = 'Cato_GameModeName',
    -- show = 'dead freecam gameOver race',
    hideWhen = 'mainMenu menu hudOff editor gameActive',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_Timelimit:drawWidget(userData)
@@ -2454,7 +2434,7 @@ defaultUserData['Cato_MapName'] = {
    anchorWidget = 'Cato_GameModeName',
    -- show = 'dead freecam gameOver race',
    hideWhen = 'mainMenu menu hudOff editor gameActive',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_MapName:drawWidget(userData)
@@ -2525,13 +2505,13 @@ defaultUserData['Cato_LowAmmo'] = {
    -- show = 'race',
    hideWhen = 'mainMenu menu dead hudOff gameWarmup gameOver freecam editor',
    text = {
-      click = {label = '*CLICK*', font = fontFace, color = Color(255, 255, 255), size = fontSizeHuge},
-      empty = {label = 'NO AMMO', font = fontFace, color = Color(255, 0, 0), size = fontSizeBig},
-      halfLow = {label = nil, font = fontFace, color = Color(255, 0, 0), size = fontSizeHuge},
-      low = {label = nil, font = fontFace, color = Color(255, 0, 0), size = fontSizeBig},
-      halfMed = {label = nil, font = fontFace, color = Color(255, 127, 0), size = fontSizeMedium},
-      med = {label = nil, font = fontFace, color = Color(255, 255, 0), size = fontSizeMedium},
-      full = {label = 'FULL AMMO', font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+      click = {label = '*CLICK*', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 72},
+      empty = {label = 'NO AMMO', font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 64},
+      halfLow = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 72},
+      low = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 64},
+      halfMed = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 127, 0), size = 40},
+      med = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 255, 0), size = 40},
+      full = {label = 'FULL AMMO', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
    },
 }
 
@@ -2561,7 +2541,7 @@ function Cato_LowAmmo:drawWidget(userData)
 
    local buttonAttack = povPlayer.buttons.attack
 
-   local opts = nil
+   local opts
    if ammo <= 0 then
       if clickDelay > 0.0 then
          opts = userData.text.click
@@ -2601,7 +2581,7 @@ defaultUserData['Cato_Ping'] = {
    anchorWidget = '',
    -- show = 'dead freecam gameOver race',
    hideWhen = 'mainMenu hudOff editor',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_Ping:drawWidget(userData)
@@ -2633,7 +2613,7 @@ defaultUserData['Cato_PacketLoss'] = {
    anchorWidget = '',
    -- show = 'dead freecam gameOver race',
    hideWhen = 'mainMenu hudOff editor',
-   text = {font = fontFace, color = Color(255, 0, 0), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 32},
 }
 
 function Cato_PacketLoss:drawWidget(userData)
@@ -2668,9 +2648,9 @@ defaultUserData['Cato_GameTime'] = {
    countDown = false,
    hideSeconds = false,
    text = {
-      delimiter = {font = fontFace, color = Color(127, 127, 127), size = fontSizeTimer, anchor = {x = 0}},
-      minutes = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTimer, anchor = {x = 1}},
-      seconds = {font = fontFace, color = Color(255, 255, 255), size = fontSizeTimer, anchor = {x = -1}},
+      delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 120, anchor = {x = 0}},
+      minutes = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 120, anchor = {x = 1}},
+      seconds = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 120, anchor = {x = -1}},
    },
 }
 
@@ -2721,7 +2701,7 @@ defaultUserData['Cato_RespawnDelay'] = {
    anchorWidget = 'Cato_GameTime',
    -- show = 'dead race',
    hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40},
 }
 
 local deadTime = nil
@@ -2774,7 +2754,7 @@ defaultUserData['Cato_FollowingPlayer'] = {
    anchorWidget = '',
    -- show = 'dead race',
    hideWhen = 'mainMenu menu hudOff freecam editor',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeBig, anchor = {x = 0}},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 64, anchor = {x = 0}},
 }
 
 function Cato_FollowingPlayer:drawWidget(userData)
@@ -2819,7 +2799,7 @@ defaultUserData['Cato_ReadyStatus'] = {
    anchorWidget = '',
    -- show = 'dead freecam race',
    hideWhen = 'mainMenu hudOff gameOver editor',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_ReadyStatus:drawWidget(userData)
@@ -2855,7 +2835,7 @@ defaultUserData['Cato_GameMessage'] = {
    anchorWidget = '',
    -- show = 'dead freecam menu race',
    hideWhen = 'mainMenu hudOff gameOver editor',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeMedium},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40},
 }
 
 local lastTickSeconds = -1
@@ -2913,7 +2893,7 @@ defaultUserData['Cato_Speed'] = {
    anchorWidget = '',
    -- show = 'race',
    hideWhen = 'mainMenu menu dead hudOff gameOver freecam editor',
-   text = {font = fontFace, color = Color(255, 255, 255), size = fontSizeSmall},
+   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
 }
 
 function Cato_Speed:drawWidget(userData)
