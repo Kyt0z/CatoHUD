@@ -1,29 +1,108 @@
 -- math
 --
 local abs = math.abs
-local atan = math.atan
+-- local atan = math.atan
 -- FIXME: atan2 is WRONG! Learn2trig or compare output to math.atan2
 -- local atan2 = function(y, x) return math.atan(y, x) end -- math.atan2 is deprecated
-local atan2 = math.atan2  -- math.atan2 is deprecated
+-- local atan2 = math.atan2  -- math.atan2 is deprecated
+-- local bitand = bit.band
+-- local bitor = bit.bor
 local ceil = math.ceil
-local deg2rad = math.rad -- function(x) return x * pi / 180 end
+-- local deg2rad = math.rad -- function(x) return x * pi / 180 end
 local floor = math.floor
-local huge = math.huge
+-- local huge = math.huge
+local log = math.log
 local max = math.max
 local min = math.min
-local pi = math.pi
-local pow = function(x, y) return x ^ y end -- math.pow is deprecated
-local rad2deg = math.deg -- function(x) return x * 180 / pi end
-local random = math.random
-local sin = math.sin
-local sqrt = math.sqrt
-local tan = math.tan
-local csc = function(x) return 1 / sin(x) end
+-- local pi = math.pi
+-- local pow = function(x, y) return x ^ y end -- math.pow is deprecated
+-- local rad2deg = math.deg -- function(x) return x * 180 / pi end
+-- local random = math.random; math.randomseed()
+-- local sin = math.sin
+-- local sqrt = math.sqrt
+-- local tan = math.tan
+-- local csc = function(x) return 1 / sin(x) end
 --
 
--- local x = 343534
--- local y = 235
--- consolePrint(x & y)
+-- bit
+--
+local bitmsb = function(x) return floor(log(x, 2)) end
+-- local bitnot = bit and bit.bnot or function(x)
+--    local z, len = 0, bitmsb(x)
+--    for i = 1, len do
+--       local b = 2^(i - 1)
+--       local bSetX = x % (b + b) >= b
+--       if not bSetX then z = z + b end
+--    end
+--    return z
+-- end
+-- local bitand = bit and bit.band or function(x, y)
+--    local z, len = 0, max(bitmsb(x), bitmsb(y))
+--    for i = 1, len do
+--       local b = 2^(i - 1)
+--       local bSetX, bSetY = x % (b + b) >= b, y % (b + b) >= b
+--       if bSetX and bSetY then z = z + b end
+--    end
+--    return z
+-- end
+-- local bitor = bit and bit.bor or function(x, y)
+--    local z, len = 0, max(bitmsb(x), bitmsb(y))
+--    for i = 1, len do
+--       local b = 2^(i - 1)
+--       local bSetX, bSetY = x % (b + b) >= b, y % (b + b) >= b
+--       if bSetX or bSetY then z = z + b end
+--    end
+--    return z
+-- end
+-- local bitxor = bit and bit.bxor or function(x, y)
+--    local z, len = 0, max(bitmsb(x), bitmsb(y))
+--    for i = 1, len do
+--       local b = 2^(i - 1)
+--       local bSetX, bSetY = x % (b + b) >= b, y % (b + b) >= b
+--       if (bSetX and not bSetY) or (not bSetX and bSetY) then z = z + b end
+--    end
+--    return z
+-- end
+-- local bitlshift = bit and bit.lshift or function(x, y) return x * 2^y end
+-- local bitrshift = bit and bit.rshift or function(x, y) return floor(x / 2^y) end
+local bitnot, bitlshift, bitrshift = bit.bnot, bit.lshift, bit.rshift
+local bitand, bitor, bitxor = bit.band, bit.bor, bit.bxor
+local function binrep(x, len)
+   if x == nil then return '' end
+   len = max(bitmsb(x), len or 0)
+   local rep = ''
+   for i = 1, len do
+      rep = rep .. (bitand(x, bitlshift(1, i - 1)) ~= 0 and '1' or '0')
+   end
+   return rep
+end
+-- FIXME: Debug
+-- do
+--    local n = 12
+--    local x, y = random(0, bitlshift(1, n) - 1), random(0, bitlshift(1, n) - 1)
+--    local z
+--    consolePrint(string.format('x = %s = %d', binrep(x, n), x))
+--    consolePrint(string.format('y = %s = %d', binrep(y, n), y))
+--    consolePrint('')
+--    local msbX = bitlshift(1, bitmsb(x))
+--    local msbY = bitlshift(1, bitmsb(y))
+--    consolePrint(string.format('msb(x) = %s = %d', binrep(msbX, n), msbX))
+--    consolePrint(string.format('msb(y) = %s = %d', binrep(msbY, n), msbY))
+--    consolePrint('')
+--    consolePrint(string.format('~x = %s = %d', binrep(bitnot(x), n), bitnot(x)))
+--    consolePrint(string.format('~y = %s = %d', binrep(bitnot(y), n), bitnot(y)))
+--    consolePrint('')
+--    z = bitand(x, y)
+--    consolePrint(string.format('x & y = %s = %d', binrep(z, n), z))
+--    consolePrint('')
+--    z = bitor(x, y)
+--    consolePrint(string.format('x | y = %s = %d', binrep(z, n), z))
+--    consolePrint('')
+--    z = bitxor(x, y)
+--    consolePrint(string.format('x ^ y = %s = %d', binrep(z, n), z))
+--    consolePrint('')
+-- end
+--
 
 -- string
 --
@@ -48,7 +127,8 @@ local substr = string.sub
 
 -- table
 --
-local tbli = table.insert
+local concat = table.concat
+local insert = table.insert
 --
 
 -- NOTE: We store the variables and functions the game sets as local upvalues for performance.
@@ -117,6 +197,9 @@ local widgetSetConsoleVariable = widgetSetConsoleVariable
 -- reflexcore.lua
 require 'base/internal/ui/reflexcore'
 --
+local STATE_DISCONNECTED = STATE_DISCONNECTED
+local STATE_CONNECTING = STATE_CONNECTING
+local STATE_CONNECTED = STATE_CONNECTED
 local GAME_STATE_ACTIVE = GAME_STATE_ACTIVE
 local GAME_STATE_GAMEOVER = GAME_STATE_GAMEOVER
 local GAME_STATE_ROUNDACTIVE = GAME_STATE_ROUNDACTIVE
@@ -128,6 +211,7 @@ local GAME_STATE_WARMUP = GAME_STATE_WARMUP
 local PLAYER_STATE_EDITOR = PLAYER_STATE_EDITOR
 local PLAYER_STATE_INGAME = PLAYER_STATE_INGAME
 local PLAYER_STATE_SPECTATOR = PLAYER_STATE_SPECTATOR
+local PLAYER_STATE_QUEUED = PLAYER_STATE_QUEUED
 -- local WIDGET_PROPERTIES_COL_WIDTH = WIDGET_PROPERTIES_COL_WIDTH
 --
 
@@ -175,8 +259,9 @@ local function clamp(x, minVal, maxVal)
    return max(min(x, maxVal), minVal)
 end
 
-local function round(x)
-   return x >= 0 and floor(x + 0.5) or ceil(x - 0.5)
+local function round(x, precision)
+   if precision == nil or precision < 0 then precision = 0 end
+   return (x >= 0 and floor(x * (10 ^ precision) + 0.5) or ceil(x * (10 ^ precision) - 0.5)) / (10 ^ precision)
 end
 
 -- FIXME: Tf u mean "normal"_round? This is only used in armorColorLerp right? Is it "turbopixelstudios"_round?
@@ -192,10 +277,10 @@ local function lerp(x, y, k)
 end
 
 -- local function armorMax(armorProtection)
---    return floor(200 * (armorProtection + 2) / 4)
+--    return floor(200 * (armorProtection + 2) * 0.25)
 -- end
 -- local function armorQuality(armorProtection)
---    return floor(100 * (armorProtection + 1) / (armorProtection + 2)) / 100
+--    return floor(100 * (armorProtection + 1) / (armorProtection + 2)) * 0.01
 -- end
 -- local function armorLimit(pArmorProt, iArmorProt)
 --    return floor(armorMax(iArmorProt) * armorQuality(iArmorProt) / armorQuality(pArmorProt))
@@ -217,8 +302,8 @@ end
 -- local armorMax = {}
 -- local armorQuality = {}
 -- for i = 1, 3 do
---    armorMax[i] = floor(200 * (i + 1) / 4)
---    armorQuality[i] = floor(100 * i / (i + 1)) / 100
+--    armorMax[i] = floor(200 * (i + 1) * 0.25)
+--    armorQuality[i] = floor(100 * i / (i + 1)) * 0.01
 -- end
 -- local armorLimit = {}
 -- for i = 1, 3 do
@@ -233,7 +318,7 @@ end
 -- consolePrint('---')
 -- NOTE: "Why not simply? What if they change in a future update?"
 --       The previous calculations are constant as well anyways, since nothing is tied to ruleset.
-local armorMax = {100, 150, 200}
+-- local armorMax = {100, 150, 200}
 local armorQuality = {0.5, 0.66, 0.75}
 local armorLimit = {
    {100, 198, 300},
@@ -245,7 +330,18 @@ local armorLimit = {
 -- consoleVarPrint('armorLimit', armorLimit)
 -- consolePrint('---')
 
+local function stackAfterDamage(health, armor, armorProtection, damage)
+   local damageScale = armorQuality[armorProtection + 1]
+   -- consolePrint(strf('%d, %d - %f, %f (%f dmg)', health, armor, floor(damage * (1 - damageScale)), ceil(damage * damageScale), damage))
+   health, armor = health - floor(damage * (1 - damageScale)), armor - ceil(damage * damageScale)
+   -- consolePrint(strf('%d %d', health, armor))
+   -- consolePrint(strf('%d %d', health + min(0, armor), max(0, armor)))
+   -- consolePrint()
+   return health + min(0, armor), max(0, armor)
+end
+
 local function damageToKill(health, armor, armorProtection)
+   -- NOTE: Fails on e.g. 80 damage to 27 hp, 61 ya
    return min(armor, health * (armorProtection + 1)) + health
 end
 
@@ -267,23 +363,11 @@ end
 -- Time
 ------------------------------------------------------------------------------------------------------------------------
 
-local MS_IN_S = 1000
-local S_IN_M = 60
-local M_IN_H = 60
-local H_IN_D = 24
-local D_IN_Y = 365
-local D_IN_LY = 366
-
-local S_IN_H = M_IN_H * S_IN_M
-local S_IN_D = H_IN_D * S_IN_H
-local S_IN_Y = D_IN_Y * S_IN_D
-local S_IN_LY = D_IN_LY * S_IN_D
-
-local MS_IN_M = MS_IN_S * S_IN_M
-local MS_IN_H = MS_IN_S * S_IN_H
-local MS_IN_D = MS_IN_S * S_IN_D
-local MS_IN_Y = MS_IN_S * S_IN_Y
-local MS_IN_LY = MS_IN_S * S_IN_LY
+local MS_IN_S, S_IN_M, M_IN_H, H_IN_D, D_IN_Y, D_IN_LY = 1000, 60, 60, 24, 365, 366
+local S_IN_H = M_IN_H * S_IN_M; local S_IN_D = H_IN_D * S_IN_H
+local S_IN_Y = D_IN_Y * S_IN_D; local S_IN_LY = D_IN_LY * S_IN_D
+local MS_IN_M, MS_IN_H, MS_IN_D = MS_IN_S * S_IN_M, MS_IN_S * S_IN_H, MS_IN_S * S_IN_D
+local MS_IN_Y, MS_IN_LY = MS_IN_S * S_IN_Y, MS_IN_S * S_IN_LY
 
 local function formatTimeMs(elapsed, limit, countDown)
    if countDown then
@@ -301,41 +385,25 @@ local function formatTimeMs(elapsed, limit, countDown)
    }
 end
 
-local function formatDay(day)
-   local ext = {'th', 'st', 'nd', 'rd'}
-   local lastDigit = day % 10
-   return day .. ext[(lastDigit >= 4 or (day >= 11 and day <= 13)) and 1 or lastDigit + 1]
-end
-
+local DAYEXT = {'th', 'st', 'nd', 'rd'}
 local MONTHS = {
    'January', 'February', 'March', 'April', 'May', 'June',
    'July', 'August', 'September', 'October', 'November', 'December'
 }
-local function formatMonth(month)
-   return MONTHS[month]
+local function formatDay(day)
+   local lastDigit = day % 10
+   return day .. DAYEXT[(lastDigit >= 4 or (day >= 11 and day <= 13)) and 1 or lastDigit + 1]
 end
+local function formatMonth(month) return MONTHS[month] end
 
-local function isLeapYear(year)
-   return (year % 4 == 0 and year % 100 ~= 0) or (year % 400 == 0)
-end
+local function isLeapYear(year) return (year % 4 == 0 and year % 100 ~= 0) or (year % 400 == 0) end
 
-local function secondsInYear(year)
-   return isLeapYear(year) and S_IN_LY or S_IN_Y
-end
+local function secondsInYear(year) return isLeapYear(year) and S_IN_LY or S_IN_Y end
+local function daysInMonth(month, year) return month == 2 and (isLeapYear(year) and 29 or 28) or 30 + month % 2 end
+local function secondsInMonth(month, year) return S_IN_D * daysInMonth(month, year) end
 
-local function daysInMonth(month, year)
-   if month == 2 then
-      return isLeapYear(year) and 29 or 28
-   end
-   return 30 + month % 2
-end
-
-local function secondsInMonth(month, year)
-   return S_IN_D * daysInMonth(month, year)
-end
-
+-- FIXME: Changing yearTo - 1 to yearTo is more optimal?
 local function yearsModSince(yearFrom, yearTo, modulo)
-   -- FIXME: Changing yearTo - 1 to yearTo is more optimal?
    return floor((yearTo - 1) / modulo) - floor((yearFrom - 1) / modulo)
 end
 
@@ -431,9 +499,7 @@ end
 ------------------------------------------------------------------------------------------------------------------------
 
 -- FIXME: Rename to newColor?
-local function Color(r, g, b, a, intensity)
-   return {r = r, g = g, b = b, a = (a or 255) * (intensity or 1)}
-end
+local function Color(r, g, b, a, intensity) return {r = r, g = g, b = b, a = (a or 255) * (intensity or 1)} end
 
 local function ColorHEX(hex, intensity)
    return {
@@ -445,9 +511,7 @@ local function ColorHEX(hex, intensity)
 end
 
 -- FIXME: Rename to newColor?
-local function copyColor(color, intensity)
-   return Color(color.r, color.g, color.b, color.a, intensity)
-end
+local function copyColor(color, intensity) return Color(color.r, color.g, color.b, color.a, intensity) end
 
 -- FIXME: We should probably not make a new table every time?
 --        Consider setColorLerp, newColorLerp?
@@ -460,11 +524,9 @@ local function lerpColor(color1, color2, k, intensity)
    }
 end
 
-local function consoleColorPrint(color)
-   consolePrint(strf('(%s, %s, %s, %s)', color.r, color.g, color.b, color.a))
-end
+local function consoleColorPrint(color) consolePrint(strf('(%s, %s, %s, %s)', color.r, color.g, color.b, color.a)) end
 
-local function armorColorLerp(armor, armorProtection, colorArmor)
+local function armorColorLerp(armor, armorProtection, opts)
    -- pretty good
    -- local lerpAmount = 1
    -- for itemArmorProtection = 0, 2 do
@@ -476,47 +538,41 @@ local function armorColorLerp(armor, armorProtection, colorArmor)
 
 
    -- faster but slightly off (inaccurate for low GA/high RA)
-   -- local lerpAmount = armor - (3 * armorLimit[armorProtection + 1][1] - armorLimit[armorProtection + 1][2]) / 2
+   -- local lerpAmount = armor - (3 * armorLimit[armorProtection + 1][1] - armorLimit[armorProtection + 1][2]) * 0.5
 
    -- local armorLowRange = armorLimit[armorProtection + 1][1]
    -- local armorMidRange = armorLimit[armorProtection + 1][2] - armorLimit[armorProtection + 1][1]
-   -- local lerpAmount = armor - armorLowRange - armorMidRange / 2
+   -- local lerpAmount = armor - armorLowRange - armorMidRange * 0.5
    -- lerpAmount = lerpAmount / armorMidRange
    -- lerpAmount = lerpAmount + 1 - armorProtection
    -- lerpAmount = normal_round(lerpAmount)
    -- lerpAmount = lerpAmount * 0.33
    local a = armorLimit[armorProtection + 1][1]
    local b = armorLimit[armorProtection + 1][2] - a
-   local lerpAmount = normal_round(((armor - a - b / 2) / b) + 1 - armorProtection) * 0.33
+   local lerpAmount = normal_round(((armor - a - b * 0.5) / b) + 1 - armorProtection) * 0.33
 
    -- consolePrint(lerpAmount)
 
    local colorToLerp = lerpAmount < 0 and Color(0, 0, 0) or Color(255, 255, 255)
-   return lerpColor(colorArmor, colorToLerp, abs(lerpAmount))
+   opts.color = lerpColor(opts.color, colorToLerp, abs(lerpAmount))
+   -- return lerpColor(opts.color, colorToLerp, abs(lerpAmount))
 end
 
 ------------------------------------------------------------------------------------------------------------------------
 -- Widget cache
 ------------------------------------------------------------------------------------------------------------------------
 
-local indexCache = {}
-local indexCacheSize = 0
-local indexCacheUpdates = 0
+local indexCache, indexCacheSize, indexCacheUpdates = {}, 0, 0
 
 -- Note: Calling this before initialize will fail
 local function updateIndexCache(widgets, widgetName)
-   -- We count every call since the entire widgets table is looped each time
+   -- We count every call since the widgets table gets looped each time
    indexCacheUpdates = indexCacheUpdates + 1
 
-   if not indexCache[widgetName] then
-      indexCacheSize = indexCacheSize + 1
-   end
+   if not indexCache[widgetName] then indexCacheSize = indexCacheSize + 1 end
 
    for widgetIndex, widget in ipairs(widgets) do
-      if widget.name == widgetName then
-         indexCache[widgetName] = widgetIndex
-         break
-      end
+      if widget.name == widgetName then indexCache[widgetName] = widgetIndex; break end
    end
 
    return indexCache[widgetName]
@@ -537,21 +593,16 @@ end
 
 local function debugIndexCache(widgets)
    local debugLines = {}
-   tbli(debugLines, 'indexCacheSize: ' .. indexCacheSize)
-   tbli(debugLines, 'indexCacheUpdates: ' .. indexCacheUpdates)
-   tbli(debugLines, 'indexCache:')
+   insert(debugLines, 'indexCacheSize: ' .. indexCacheSize)
+   insert(debugLines, 'indexCacheUpdates: ' .. indexCacheUpdates)
+   insert(debugLines, 'indexCache:')
    for widgetName, widgetIndex in pairs(indexCache) do
-      local mismatch = ''
-      if widgets[widgetIndex].name ~= widgetName then
-         mismatch = '*'
-      end
-      tbli(debugLines, '  ' .. widgetName .. ': ' .. widgetIndex .. mismatch)
+      local mismatch = widgets[widgetIndex].name ~= widgetName and '*' or ''
+      insert(debugLines, '  ' .. widgetName .. ': ' .. widgetIndex .. mismatch)
    end
-   tbli(debugLines, 'widgets:')
+   insert(debugLines, 'widgets:')
    for widgetIndex, widget in ipairs(widgets) do
-      if indexCache[widget.name] then
-         tbli(debugLines, '  ' .. widgetIndex .. ': ' .. widget.name)
-      end
+      if indexCache[widget.name] then insert(debugLines, '  ' .. widgetIndex .. ': ' .. widget.name) end
    end
    return debugLines
 end
@@ -587,6 +638,7 @@ end
 
 local function copyOpts(opts, intensity)
    return {
+      label = opts.label,
       font = opts.font,
       color = copyColor(opts.color, intensity),
       size = opts.size,
@@ -595,25 +647,18 @@ local function copyOpts(opts, intensity)
 end
 
 local function getOffset(anchor, width, height)
-   return {
-      x = -(anchor.x + 1) * width / 2,
-      y = -(anchor.y + 1) * height / 2,
-   }
+   return {x = -(anchor.x + 1) * width * 0.5, y = -(anchor.y + 1) * height * 0.5}
 end
 
-local function hAlignToAnchor(x)
-   --    ANCHOR_LEFT = -1,    ANCHOR_CENTER = 0,    ANCHOR_RIGHT = 1
-   -- NVG_ALIGN_LEFT =  0, NVG_ALIGN_CENTER = 1, NVG_ALIGN_RIGHT = 2
-   return x + 1
-end
+--    ANCHOR_LEFT = -1,    ANCHOR_CENTER = 0,    ANCHOR_RIGHT = 1
+-- NVG_ALIGN_LEFT =  0, NVG_ALIGN_CENTER = 1, NVG_ALIGN_RIGHT = 2
+local function hAlignToAnchor(x) return x + 1 end
 
-local function vAlignToAnchor(y)
-   --    ANCHOR_TOP = -1,    ANCHOR_MIDDLE = 0,    ANCHOR_BOTTOM = 1
-   -- NVG_ALIGN_TOP =  1, NVG_ALIGN_MIDDLE = 2, NVG_ALIGN_BOTTOM = 3 (NVG_ALIGN_BASELINE = 0)
-   return y + 2
-end
+--    ANCHOR_TOP = -1,    ANCHOR_MIDDLE = 0,    ANCHOR_BOTTOM = 1
+-- NVG_ALIGN_TOP =  1, NVG_ALIGN_MIDDLE = 2, NVG_ALIGN_BOTTOM = 3 (NVG_ALIGN_BASELINE = 0)
+local function vAlignToAnchor(y) return y + 2 end
 
-local function createTextElem(widget, text, opts)
+local function textCatoHUD(widget, text, opts)
    -- FIXME: Is this a good idea?
    -- opts.size = opts.size * viewportHeight / 1080
    -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
@@ -622,50 +667,29 @@ local function createTextElem(widget, text, opts)
    -- Answer: Better? Yes. Good? Sorta. Scaling and positioning are fine. (Fixable by adjusting y?)
    -- opts.size = opts.size * viewportScale
 
-   local height = opts.size
-   nvgFontBlur(0)
-   nvgFontFace(opts.font)
-   nvgFontSize(height)
-   local width = nvgTextWidth(text)
+   local color, font, height = opts.color, opts.font, opts.size
+   nvgFontBlur(0); nvgFontFace(font); nvgFontSize(height)
+   local shadow, width = Color(0, 0, 0, color.a * 3), nvgTextWidth(text)
+
+   local anchor, widgetAnchor = opts.anchor or {}, widget.anchor
+   local anchorX, anchorY = anchor.x or widgetAnchor.x, anchor.y or widgetAnchor.y
 
    local draw = function(x, y)
-      x = widget.x + x
-      y = widget.y + y
+      x, y = widget.x + x, widget.y + y
 
-      local anchorX = widget.anchor.x
-      local anchorY = widget.anchor.y
-      if opts.anchor then
-         if opts.anchor.x then anchorX = opts.anchor.x end
-         if opts.anchor.y then anchorY = opts.anchor.y end
-      end
+      nvgFontBlur(0); nvgFontFace(font); nvgFontSize(height)
       nvgTextAlign(hAlignToAnchor(anchorX), vAlignToAnchor(anchorY))
 
-      nvgFillColor(Color(0, 0, 0, opts.color.a * 3))
-      nvgFontBlur(2)
-      nvgText(x, y, text)
+      nvgFillColor(shadow); nvgFontBlur(2); nvgText(x, y, text)
+      nvgFillColor(color); nvgFontBlur(0); nvgText(x, y, text)
 
-      nvgFillColor(opts.color)
-      nvgFontBlur(0)
-      nvgText(x, y, text)
-
-      widget.xMin = min(widget.xMin, x)
-      widget.xMax = max(widget.xMax, x + width)
-      widget.width = widget.xMax - widget.xMin
-
-      widget.yMin = min(widget.yMin, y)
-      widget.yMax = max(widget.yMax, y + height)
-      widget.height = widget.yMax - widget.yMin
+      widget.xMin, widget.xMax = min(widget.xMin, x), max(widget.xMax, x + width)
+      widget.yMin, widget.yMax = min(widget.yMin, y), max(widget.yMax, y + height)
+      widget.width, widget.height = widget.xMax - widget.xMin, widget.yMax - widget.yMin
 
       if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
-         -- local bounds = nvgTextBounds(text)
-         -- -- consoleVarPrint('bounds', bounds)
-         -- consolePrint('')
-         -- nvgRect(bounds.minx, bounds.miny, bounds.maxx - bounds.minx, bounds.maxy - bounds.miny)
          local pos = getOffset({x = anchorX, y = anchorY}, width, height)
-         nvgFillColor(Color(0, 255, 0, 63))
-         nvgBeginPath()
-         nvgRect(x + pos.x, y + pos.y, width, height)
-         nvgFill()
+         nvgFillColor(Color(127, 255, 127, 63)); nvgBeginPath(); nvgRect(x + pos.x, y + pos.y, width, height); nvgFill()
          -- TODO: Draw widget's name, anchor point, min-/max-x/y
       end
    end
@@ -673,7 +697,7 @@ local function createTextElem(widget, text, opts)
    return {width = width, height = height, draw = draw}
 end
 
-local function createSvgElem(widget, image, opts)
+local function svgCatoHUD(widget, svg, opts)
    -- FIXME: Is this a good idea?
    -- opts.size = opts.size * viewportHeight / 1080
    -- Answer: NO. Scaling is fine but positioning gets fucked up. (Fixable by adjusting y?)
@@ -684,40 +708,25 @@ local function createSvgElem(widget, image, opts)
    -- local width = 2 * opts.size * viewportScale
    -- local height = 2 * opts.size * viewportScale
 
-   local width = 2 * opts.size
-   local height = 2 * opts.size
+   local color, size, widgetAnchor = opts.color, opts.size, widget.anchor
+   local height, width, shadow = size + size, size + size, Color(0, 0, 0, color.a)
 
    local draw = function(x, y)
-      x = widget.x + x
-      y = widget.y + y
+      x, y = widget.x + x, widget.y + y
 
-      local nvgX = x - widget.anchor.x * opts.size
-      local nvgY = y - widget.anchor.y * opts.size
+      local nvgX, nvgY = x - widgetAnchor.x * size, y - widgetAnchor.y * size
+      nvgFillColor(shadow); nvgSvg(svg, nvgX, nvgY, size + 1.25)
+      -- nvgSvg(svg, x - 1.5, y - 1.5, size); nvgSvg(svg, x + 1.5, y - 1.5, size)
+      -- nvgSvg(svg, x + 1.5, y + 1.5, size); nvgSvg(svg, x - 1.5, y + 1.5, size)
+      nvgFillColor(color); nvgSvg(svg, nvgX, nvgY, size)
 
-      nvgFillColor(Color(0, 0, 0, opts.color.a))
-      nvgSvg(image, nvgX, nvgY, opts.size + 1.25)
-      -- nvgSvg(image, x - 1.5, y - 1.5, opts.size)
-      -- nvgSvg(image, x + 1.5, y - 1.5, opts.size)
-      -- nvgSvg(image, x + 1.5, y + 1.5, opts.size)
-      -- nvgSvg(image, x - 1.5, y + 1.5, opts.size)
-
-      nvgFillColor(opts.color)
-      nvgSvg(image, nvgX, nvgY, opts.size)
-
-      widget.xMin = min(widget.xMin, x)
-      widget.xMax = max(widget.xMax, x + width)
-      widget.width = widget.xMax - widget.xMin
-
-      widget.yMin = min(widget.yMin, y)
-      widget.yMax = max(widget.yMax, y + height)
-      widget.height = widget.yMax - widget.yMin
+      widget.xMin, widget.xMax = min(widget.xMin, x), max(widget.xMax, x + width)
+      widget.yMin, widget.yMax = min(widget.yMin, y), max(widget.yMax, y + height)
+      widget.width, widget.height = widget.xMax - widget.xMin, widget.yMax - widget.yMin
 
       if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
-         local pos = getOffset(widget.anchor, width, height)
-         nvgFillColor(Color(0, 255, 0, 63))
-         nvgBeginPath()
-         nvgRect(x + pos.x, y + pos.y, width, height)
-         nvgFill()
+         local pos = getOffset(widgetAnchor, width, height)
+         nvgFillColor(Color(255, 255, 127, 63)); nvgBeginPath(); nvgRect(x + pos.x, y + pos.y, width, height); nvgFill()
       end
    end
 
@@ -725,11 +734,11 @@ local function createSvgElem(widget, image, opts)
 end
 
 local function uiTextCato(pos, text, opts)
-   -- FIXME: WTF BRO
+   -- FIXME: WTF BRO (It's options bro... Relax...)
    local widget = {
       anchor = {x = -1, y = -1}, x = 0, y = 0, xMin = 0, xMax = 0, width = 0, yMin = 0, yMax = 0, height = 0
    }
-   local elem = createTextElem(widget, text, opts)
+   local elem = textCatoHUD(widget, text, opts)
    elem.draw(pos.x, pos.y)
    pos.y = pos.y + opts.size -- padding
    return {width = elem.width, height = elem.height}
@@ -748,17 +757,11 @@ end
 
 local function optDelimiter(pos, opts)
    pos.y = pos.y + 8 -- padding
-   nvgFillColor(opts.color)
-   nvgBeginPath()
-   nvgRect(pos.x, pos.y, opts.size, 2)
-   nvgFill()
+   nvgFillColor(opts.color); nvgBeginPath(); nvgRect(pos.x, pos.y, opts.size, 2); nvgFill()
    pos.y = pos.y + 10 -- padding
 
    if consoleGetVariable('ui_CatoHUD_box_debug') ~= 0 then
-      nvgFillColor(Color(0, 255, 0, 63))
-      nvgBeginPath()
-      nvgRect(pos.x, pos.y - 18, opts.size, 18)
-      nvgFill()
+      nvgFillColor(Color(0, 255, 0, 63)); nvgBeginPath(); nvgRect(pos.x, pos.y - 18, opts.size, 18); nvgFill()
    end
 end
 
@@ -842,7 +845,7 @@ local optInput = {
       end
       local padX = opts.height * 0.3
       local textX = pos.x + padX + offsetX
-      local textY = pos.y + opts.height * 0.5
+      local textY = pos.y + opts.height / 2
 
       -- handle clicking inside region to change cursor location / drag select multiple characters
       -- (note: this can update the cursor inside t)
@@ -968,16 +971,14 @@ local optInput = {
 }
 
 local function optRowInput(inputFunc, pos, text, value, textOpts, inputOpts)
-   local diffHalf = (inputOpts.height - textOpts.size) / 2
+   local diffHalf = (inputOpts.height - textOpts.size) * 0.5
    pos.y = pos.y + max(0, diffHalf)
    local label = uiTextCato(pos, text, textOpts)
 
    local padding = label.width + 8
-   pos.x = pos.x + padding
-   pos.y = pos.y - label.height - diffHalf
+   pos.x, pos.y = pos.x + padding, pos.y - label.height - diffHalf
    value = inputFunc(pos, value, inputOpts)
-   pos.y = pos.y + max(label.height, inputOpts.height) -- padding
-   pos.x = pos.x - padding
+   pos.x, pos.y = pos.x - padding, pos.y + max(label.height, inputOpts.height)
    return value
 end
 
@@ -1007,13 +1008,13 @@ local function optionsOpts(intensity)
    }
 end
 
-local function optPreview(pos, opts, previewMode)
+local function optPreview(pos, opts)
    optDelimiter(pos, opts.delimiter)
-   previewMode = optRowInput(
+   local previewMode = optRowInput(
       optInput.checkBox,
       pos,
       'Preview',
-      previewMode,
+      consoleGetVariable('ui_CatoHUD_preview') ~= 0,
       opts.medium,
       opts.checkBox
    )
@@ -1026,9 +1027,36 @@ local function optDebug(pos, opts, widgets, widget)
 
    local anchor = getProps(widgets, widget.name).anchor
    uiTextCato(pos, 'anchor: ' .. anchor.x .. ' ' .. anchor.y, opts.small)
-   uiTextCato(pos, 'getOptionsHeight(): ' .. widget.getOptionsHeight(), opts.small)
+   uiTextCato(pos, 'getOptionsHeight(): ' .. widget:getOptionsHeight(), opts.small)
    for _, debugLine in ipairs(debugIndexCache(widgets)) do
       uiTextCato(pos, debugLine, opts.small)
+   end
+end
+
+local function updateWidgetPosition(widgets, widget, anchorWidgetName)
+-- local function updateWidgetPosition(widgets, widget)
+   if widget.anchor == nil or widget.offset == nil then
+      local props = getProps(widgets, widget.name)
+      widget.anchor, widget.offset = props.anchor, props.offset
+   end
+
+   -- local anchorWidgetName = widget.userData and widget.userData.anchorWidget
+   if anchorWidgetName and widget.anchorWidget == nil then
+      widget.anchorWidget = _G[anchorWidgetName]
+   end
+
+   -- consoleVarPrint(strf('%s.anchorWidget', widget.name), anchorWidgetName)
+
+   -- local anchorWidget = widget.anchorWidget or {name = 'nil', x = 0, y = 0, offset = {x = 0, y = 0}}
+   -- local anchorWidgetOffset = anchorWidget.offset or {x = 0, y = 0}
+   local anchorWidget = widget.anchorWidget
+   if anchorWidget ~= nil then
+      local anchorWidgetOffset = anchorWidget and anchorWidget.offset
+      if anchorWidgetOffset ~= nil then
+         widget.x, widget.y = anchorWidget.x + anchorWidgetOffset.x, anchorWidget.y + anchorWidgetOffset.y
+      else -- anchor widget exists but its offset is not initialized
+         widget.anchorWidget = nil
+      end
    end
 end
 
@@ -1042,246 +1070,174 @@ end
 -- CatoHUD
 ------------------------------------------------------------------------------------------------------------------------
 
-local defaultUserData = {}
-local defaultProperties = {}
-local defaultCvars = {}
-
-local CatoWidgets = {}
+local defaultSettings, CatoWidgets, luaWidgets, CatoState = {}, {}, nil, 0
 
 CatoHUD = {canHide = false, canPosition = false}
-
-defaultUserData['CatoHUD'] = {
-   configBackup = nil,
-   useLocalTime = true,
-   offsetUTC = 2 * S_IN_H,
-   armorColor = {Color(0, 255, 0), Color(255, 255, 0), Color(255, 0, 0)},
-   megaColor = Color(60, 80, 255),
-   carnageColor = Color(255, 0, 188),
-   resistColor = Color(124, 32, 255),
-   weaponColor = {
-      Color(255, 255, 255), Color(0, 255, 255), Color(255, 150, 0),
-      Color(99, 221, 74), Color(255, 0, 255), Color(250, 0, 0),
-      Color(0, 128, 255), Color(255, 255, 0), Color(128, 0, 0),
+defaultSettings['CatoHUD'] = {
+   userData = {
+      configBackup = nil,
+      useLocalTime = true,
+      offsetUTC = 2 * S_IN_H,
+      armorColor = {Color(0, 255, 0), Color(255, 255, 0), Color(255, 0, 0)},
+      megaColor = Color(60, 80, 255),
+      carnageColor = Color(255, 0, 188),
+      resistColor = Color(124, 32, 255),
+      weaponColor = {
+         Color(255, 255, 255), Color(0, 255, 255), Color(255, 150, 0),
+         Color(99, 221, 74), Color(255, 0, 255), Color(250, 0, 0),
+         Color(0, 128, 255), Color(255, 255, 0), Color(128, 0, 0),
+      },
+   },
+   cvars = {
+      {'backup_config', 'int', 1},
+      {'box_debug', 'int', 0, 0},
+      {'debug', 'int', 0},
+      {'preview', 'int', 0, 0},
+      {'reset_widgets', 'string', '', ''},
+      {'warmuptimer_reset', 'int', 0, 0},
+      {'widget_cache', 'int', 0, 0},
    },
 }
-defaultCvars['CatoHUD'] = {
-   {'backup_config', 'int', 1},
-   {'box_debug', 'int', 0, 0},
-   {'debug', 'int', 0},
-   {'preview', 'int', 0, 0},
-   {'reset_widgets', 'string', '', ''},
-   {'warmuptimer_reset', 'int', 0, 0},
-   {'widget_cache', 'int', 0, 0},
-}
 
-local previewMode = nil
+local TEAM_ALPHA, TEAM_ZETA = 1, 2
 
-local TEAM_ALPHA = 1
-local TEAM_ZETA  = 2
+local povPlayer, mapTitle, ruleset, mutators
+local gameModeShortName, gameModeHasTeams, timerActive, gameTimeElapsed, gameTimeLimit, timeLimit --, timeLimitRound
 
-local povPlayer = nil
--- local localPlayer = nil
-local localPov = nil
-local inReplay = nil
+local fullscreen, borderless, resolutionHeight, resolutionWidth, viewportWidth, viewportHeight, viewportScale
+local colorFriendHEX, colorEnemyHEX, colorFriend, colorEnemy
 
-local gameState = nil
-local gameMode = nil
-local hasTeams = nil
-local map = nil
-local mapTitle = nil
-local ruleset = nil
-local mutators = nil
-local gameTimeElapsed = nil
-local gameTimeLimit = nil
-
-local timerActive = nil
-local timeLimit = nil
--- local timeLimitRound = nil
-
-local previousMap = nil
 local warmupTimeElapsed = 0
 
-local fullscreenOn = nil
-local borderlessOn = nil
-local resolutionHeight = nil
-local resolutionWidth = nil
-local viewportWidth = nil
-local viewportHeight = nil
+-- local function fakePlayerInfo()
+--    return {
+--       connected = random(0, 1) == 1,
+--       state = PLAYER_STATE_INGAME,
+--       ready = random(0, 1) == 1,
 
-local colorFriendHEX = nil
-local colorEnemyHEX = nil
-local colorFriend = nil
-local colorEnemy = nil
+--       health = random(-99, 200),
+--       armor = random(0, 200),
+--       armorProtection = random(0, 2),
+--       isDead = random(0, 1) == 1,
 
-local function fakePlayerInfo()
-   return {
-      connected = random(0, 1) == 1,
-      state = PLAYER_STATE_INGAME,
-      ready = random(0, 1) == 1,
+--       buttons = {attack = random(0, 1) == 1, jump = random(0, 1) == 1},
+--       speed = random(0, 999),
 
-      health = random(-99, 200),
-      armor = random(0, 200),
-      armorProtection = random(0, 2),
-      isDead = random(0, 1) == 1,
+--       latency = random(0, 999),
+--       packetLoss = random(0, 100),
+--       mmr = random(0, 9999),
+--       mmrBest = random(0, 9999),
+--       mmrNew = random(0, 9999),
 
-      buttons = {attack = random(0, 1) == 1, jump = random(0, 1) == 1},
-      speed = random(0, 999),
+--       name = 'Fake Player',
+--       score = random(0, 50),
 
-      latency = random(0, 999),
-      packetLoss = random(0, 100),
-      mmr = random(0, 9999),
-      mmrBest = random(0, 9999),
-      mmrNew = random(0, 9999),
+--       infoHidden = random(0, 1) == 1,
+--       team = random(0, 1),
 
-      name = 'Fake Player',
-      score = random(0, 50),
+--       weaponIndexSelected = random(1, 9),
+--       weaponIndexweaponChangingTo = random(1, 9),
+--       weapons = {
+--          [1] = {ammo = random(0, 999)},
+--          [2] = {ammo = random(0, 999)},
+--          [3] = {ammo = random(0, 999)},
+--          [4] = {ammo = random(0, 999)},
+--          [5] = {ammo = random(0, 999)},
+--          [6] = {ammo = random(0, 999)},
+--          [7] = {ammo = random(0, 999)},
+--          [8] = {ammo = random(0, 999)},
+--          [9] = {ammo = random(0, 999)},
+--       },
+--    }
+-- end
 
-      infoHidden = random(0, 1) == 1,
-      team = random(0, 1),
+-- TODO: Format this so that:
+--       binrep(CatoState) = CCCGGGGGGGAAAABBBB...,
+--                           ^  ^      ^   ^
+--                           |  |      |   |-> players[playerIndexCameraAttachedTo].state
+--                           |  |      |-> players[playerIndexLocalPlayer].state
+--                           |  |-> world.gameState
+--                           |-> clientGameState
+--       ... or have separate variables: CatoClientGameState, CatoWorldGameState, CatoLocalPlayerState, CatoPlayerState
+--       (Also gamemodes[world.gameModeIndex].shortName and gamemodes[world.gameModeIndex].hasTeams?)
+local state = {}
+state.localplayer = bitlshift(1, 0)
+state.playercam   = bitlshift(1, 1)
+state.gameactive  = bitlshift(1, 2)
+state.warmup      = bitlshift(1, 3)
+state.gameover    = bitlshift(1, 4)
+state.dead        = bitlshift(1, 5)
+state.race        = bitlshift(1, 6)
+state.replay      = bitlshift(1, 7)
+state.freecam     = bitlshift(1, 8)
+state.spectator   = bitlshift(1, 9)
+state.editor      = bitlshift(1, 10)
+state.menu        = bitlshift(1, 11)
+state.mainmenu    = bitlshift(1, 12)
+state.hudoff      = bitlshift(1, 13)
+state.preview     = bitlshift(1, 30)
+local maxState = 0
+for _, _ in pairs(state) do maxState = maxState + 1 end
+consolePrint(maxState)
 
-      weaponIndexSelected = random(1, 9),
-      weaponIndexweaponChangingTo = random(1, 9),
-      weapons = {
-         [1] = {ammo = random(0, 999)},
-         [2] = {ammo = random(0, 999)},
-         [3] = {ammo = random(0, 999)},
-         [4] = {ammo = random(0, 999)},
-         [5] = {ammo = random(0, 999)},
-         [6] = {ammo = random(0, 999)},
-         [7] = {ammo = random(0, 999)},
-         [8] = {ammo = random(0, 999)},
-         [9] = {ammo = random(0, 999)},
-      },
-   }
-end
-
--- TODO: Sort by most to least commonly true condition
-local state = {
-   mainMenu   = 1,
-   menu       = 2,
-   dead       = 3,
-   race       = 4,
-   replay     = 5,
-   hudOff     = 6,
-   gameActive = 7,
-   gameWarmup = 8,
-   gameOver   = 9,
-   freecam    = 10,
-   editor     = 11,
-}
-
--- FIXME: Debug
-local stateLabel = {}
-for k, v in pairs(state) do
-   stateLabel[v] = k
-end
-
-local states = {}
-for stateIndex, _ in ipairs(states) do states[stateIndex] = false end
-
-local function hideStates(hideStr)
-   if hideStr == nil then return nil end
-
-   local hideList = {}
-   for _, stateIndex in pairs(state) do hideList[stateIndex] = false end
-   for stateStr in gmatch(hideStr, '%S+') do
-      if state[stateStr] ~= nil then
-         hideList[state[stateStr]] = true
+local function hideFlags(widget)
+   if widget.userData == nil or widget.userData.hideWhen == nil then return 0 end
+   local flags = 0
+   for stateName in gmatch(widget.userData.hideWhen or '', '%S+') do
+      local hideFlag = state[tolower(stateName)]
+      if hideFlag == nil then
+         consolePrint(strf('Unknown flag "%s" in %s.hideWhen', stateName, widget.name))
+      else
+         flags = bitor(flags, hideFlag)
       end
    end
-   return hideList
+   return flags
 end
 
-local function RegisterCato(widgetName, widget)
-   widget.name = widgetName
+local function registerCatoWidget(widgetName)
+   local widget = _G[widgetName]; widget.name = widgetName; registerWidget(widgetName)
 
-   widget.x = 0
-   widget.xMin = widget.x
-   widget.xMax = widget.x
-
-   widget.y = 0
-   widget.yMin = widget.y
-   widget.yMax = widget.y
-
-   widget.width = 0
-   widget.height = 0
-
-   registerWidget(widgetName)
+   widget.x, widget.xMin, widget.xMax, widget.width = 0, 0, 0, 0
+   widget.y, widget.yMin, widget.yMax, widget.height = 0, 0, 0, 0
 
    widget.initialize = function(self, reset)
+      if reset then consolePrint('Reset: ' .. widgetName) end
       self.userData = reset and {} or loadUserData()
 
       -- properties
       if reset or self.userData == nil then
-         local default = defaultProperties[widget.name] or {}
-         local offset  = default.offset  or '0 0'
-         local anchor  = default.anchor  or '0 0'
-         local zIndex  = default.zIndex  or '0'
-         local scale   = default.scale   or '1'
-         local visible = default.visible ~= false and 'show' or 'hide'
-         consolePerformCommand(strf('ui_show_widget %s',          widget.name))
-         consolePerformCommand(strf('ui_set_widget_offset %s %s', widget.name, offset))
-         consolePerformCommand(strf('ui_set_widget_anchor %s %s', widget.name, anchor))
-         consolePerformCommand(strf('ui_set_widget_zIndex %s %s', widget.name, zIndex))
-         consolePerformCommand(strf('ui_set_widget_scale %s %s',  widget.name, scale))
-         consolePerformCommand(strf('ui_%s_widget %s',            visible,     widget.name))
+         local default = (defaultSettings[self.name] or {}).properties or {}
+         consolePerformCommand(strf('ui_show_widget %s', self.name))
+         consolePerformCommand(strf('ui_set_widget_offset %s %s', self.name, default.offset or '0 0'))
+         consolePerformCommand(strf('ui_set_widget_anchor %s %s', self.name, default.anchor or '0 0'))
+         consolePerformCommand(strf('ui_set_widget_zIndex %s %s', self.name, default.zIndex or '0 0'))
+         consolePerformCommand(strf('ui_set_widget_scale %s %s',  self.name, default.scale  or '0 0'))
+         consolePerformCommand(strf('ui_%s_widget %s', default.visible ~= false and 'show' or 'hide', self.name))
       end
 
       -- cvars
-      for _, cvar in ipairs(defaultCvars[widget.name] or {}) do
+      for _, cvar in ipairs((defaultSettings[self.name] or {}).cvars or {}) do
          if reset ~= true then
             widgetCreateConsoleVariable(cvar[1], cvar[2], cvar[3])
-            if cvar[4] then
-               widgetSetConsoleVariable(cvar[1], cvar[4])
-            end
+            if cvar[4] then widgetSetConsoleVariable(cvar[1], cvar[4]) end
          else
-            widgetSetConsoleVariable(cvar[1], cvar[4] or cvar[3])
+            -- widgetSetConsoleVariable(cvar[1], cvar[4] or cvar[3]) -- FIXME: It not work when called from CatoHUD:draw
+            consolePerformCommand(strf('ui_%s_%s %s', self.name, cvar[1], cvar[4] or cvar[3]))
          end
       end
 
       -- userData
-      -- FIXME: Unrecurse?
-      local function setWidgetUserData(container, varName, defaultVal)
+      local function setWidgetUserData(container, varName, defaultVal) -- FIXME: Unrecurse?
          if type(container[varName]) ~= type(defaultVal) then
             container[varName] = defaultVal
          elseif type(defaultVal) == 'table' then
             for var, val in pairs(defaultVal) do setWidgetUserData(container[varName], var, val) end
          end
       end
-      setWidgetUserData(self, 'userData', defaultUserData[self.name])
-
-      -- local widgets = widgets
-
-      -- consoleVarPrint(strf('%s.userData', self.name), self.userData)
-      -- consoleVarPrint(strf('%s.userData', self.name), type(self.userData))
+      setWidgetUserData(self, 'userData', (defaultSettings[self.name] or {}).userData or {})
 
       -- hide states
-      self.hideWhen = hideStates(self.userData.hideWhen)
-      -- consoleVarPrint(strf('%s.hideWhen', self.name), self.hideWhen)
-
-      -- -- anchor
-      -- self.anchor = self.anchor or getProps(widgets, self.name).anchor
-      -- consoleVarPrint(strf('%s.anchor', self.name), self.anchor)
-
-      -- -- offset
-      -- self.offset = self.offset or getProps(widgets, self.name).offset
-      -- consoleVarPrint(strf('%s.offset', self.name), self.offset)
-
-      -- -- anchor widget
-      -- local anchorWidgetName = self.userData.anchorWidget
-      -- consoleVarPrint(strf('%s.userData.anchorWidget', self.name), anchorWidgetName)
-      -- if anchorWidgetName ~= nil then
-      --    -- FIXME: These are not indexed by name
-      --    -- anchorWidget = CatoWidgets[anchorWidgetName]
-      --    local anchorWidget = _G[anchorWidgetName]
-      --    consolePrint(strf('%s.anchorWidget = %s', self.name, anchorWidget and anchorWidget.name or 'nil'))
-      --    consoleVarPrint(strf('%s.anchorWidget.offset', self.name), anchorWidget and anchorWidget.offset)
-      --    if anchorWidget ~= nil and anchorWidget.offset ~= nil then
-      --       self.x = anchorWidget.x + anchorWidget.offset.x
-      --       self.y = anchorWidget.y + anchorWidget.offset.y
-      --       consolePrint(strf('%s.x = %s, %s.y = %s', self.name, self.x, self.name, self.y))
-      --    end
-      -- end
+      self.hideFlags = hideFlags(self)
 
       -- init
       if self.init then self:init(self.userData) end
@@ -1289,38 +1245,65 @@ local function RegisterCato(widgetName, widget)
 
    -- draw
    if widget.name ~= 'CatoHUD' then
-      tbli(CatoWidgets, widget)
-      widget.drawInitialized = false
-      widget.draw = function() end
+      insert(CatoWidgets, widget)
+      -- widget.hidden = true
+      widget.draw = function(self)
+         local userData = self.userData
+         -- if userData == nil then return end
+
+         updateWidgetPosition(luaWidgets, self, userData.anchorWidget)
+
+         -- consoleVarPrint(
+         --    strf('CatoState', self.name),
+         --    binrep(CatoState, maxState)
+         -- )
+         -- consoleVarPrint(
+         --    strf('%s.hideFlags', self.name),
+         --    binrep(self.hideFlags, maxState)
+         -- )
+         -- consoleVarPrint(
+         --    strf('CatoState & %s.hideFlags', self.name),
+         --    binrep(bitand(CatoState, self.hideFlags), maxState)
+         -- )
+         -- consolePrint()
+
+         if bitand(CatoState, state.preview) == 0 and bitand(CatoState, self.hideFlags) ~= 0 then return end
+         self:drawWidget(userData)
+
+         -- if bitand(CatoState, state.preview) == 0 and bitand(CatoState, self.hideFlags) ~= 0 then
+         --    self.hidden = true
+         --    return
+         -- end
+
+         -- if self.hidden then
+         --    -- setDraw(self, false, function() self:drawWidget(userData) end)
+         --    self.hidden = false
+         --    -- self.draw = function() self:drawWidget(userData) end
+         -- end
+
+         -- if self.hidden then return end
+         -- self.hidden = self:drawWidget(userData) == false
+      end
    end
 
    -- finalize
    widget.finalize = function(self)
-      local userData = self.userData
-      if userData then saveUserData(userData) end
-
-      if self.final then
-         self:final(userData)
-      end
+      if self.final then self:final(self.userData) end
+      if self.userData then saveUserData(self.userData) end
    end
 
    -- getOptionsHeight
-   widget.optionsHeight = 0
-   widget.getOptionsHeight = function(self)
-      return self.optionsHeight
-   end
+   widget.optionsHeight = 0; widget.getOptionsHeight = function(self) return self.optionsHeight end
 
    -- drawOptions
    widget.drawOptions = function(self, x, y, intensity)
-      local userData = self.userData
-      local pos = {x = x, y = y}
-      local opts = optionsOpts(intensity)
+      local userData, pos, opts = self.userData, {x = x, y = y}, optionsOpts(intensity)
 
       -- title/widget
       uiTextCato(pos, self.name, opts.widgetName)
 
       -- preview
-      optPreview(pos, opts, previewMode)
+      optPreview(pos, opts)
 
       -- anchor
       if self.name ~= 'CatoHUD' then
@@ -1346,11 +1329,11 @@ local function RegisterCato(widgetName, widget)
       end
 
       -- debug
-      optDebug(pos, opts, widgets, self)
+      optDebug(pos, opts, luaWidgets, self)
 
       -- set & save widget data
       saveUserData(userData)
-      self.hideWhen = hideStates(userData.hideWhen) -- FIXME: We can do this dynamically with the selector
+      self.hideFlags = hideFlags(self)
       self.optionsHeight = pos.y - y
    end
 end
@@ -1361,6 +1344,7 @@ function CatoHUD:init(userData)
    consolePrint('')
    consolePrint('CatoHUD loaded')
 
+   -- FIXME: 1.2.0+backcompat
    local useLocalEpochTime = userData.useLocalTime and epochTimeLocal ~= nil
 
    local offsetUTC = useLocalEpochTime and (epochTimeLocal - epochTime) or userData.offsetUTC
@@ -1368,13 +1352,8 @@ function CatoHUD:init(userData)
    local offsetHours = offsetUTC / S_IN_H
    offsetHours = offsetHours ~= 0 and (offsetHours > 0 and '+' .. offsetHours or offsetHours) or ''
    consolePrint(strf('%d-%02d-%02d %02d:%02d:%02d %s',
-      time.year,
-      time.month,
-      time.day,
-      time.hour,
-      time.minute,
-      time.second,
-      useLocalEpochTime and '(Local)' or '(UTC' .. offsetHours .. ')'
+      time.year, time.month, time.day, time.hour, time.minute, time.second,
+      '(UTC' .. offsetHours .. ')' .. (useLocalEpochTime and ' [Local]' or ' [User]')
    ))
 
    -- local finalEpochTime = tonumber(userData.finalEpochTime)
@@ -1397,18 +1376,13 @@ function CatoHUD:init(userData)
       consolePrint('')
       local configBackup = widgetGetConsoleVariable('backup_config') < 0 and '_%02d%02d%02d' or ''
       configBackup = strf('configs/%s-%d%02d%02d' .. configBackup,
-         'game', -- consoleGetVariable('name'),
-         time.year,
-         time.month,
-         time.day,
-         time.hour,
-         time.minute,
-         time.second
+         'game', time.year, time.month, time.day, time.hour, time.minute, time.second
+         -- consoleGetVariable('name'), time.year, time.month, time.day, time.hour, time.minute, time.second
       )
 
       if userData.configBackup ~= configBackup then
          userData.configBackup = configBackup
-         -- saveUserData(userData) -- FIXME: Need?
+         -- saveUserData(userData) -- FIXME: Need? (Probably not.)
          consolePrint('Creating backup config \'' .. configBackup .. '.cfg\'')
          consolePerformCommand('saveconfig ' .. configBackup)
          playSound('CatoHUD/toasty')
@@ -1422,17 +1396,18 @@ end
 
 function CatoHUD:draw()
    -- consolePrint(self.name .. ':draw called')
-   previewMode = widgetGetConsoleVariable('preview') ~= 0
 
+   luaWidgets = widgets
+
+   local clientGameState = clientGameState
+   local replayActive, replayName, deltaTime = replayActive, replayName, deltaTime
+
+   local playerIndexCameraAttachedTo = playerIndexCameraAttachedTo
    povPlayer = players[playerIndexCameraAttachedTo]
    -- localPlayer = players[playerIndexLocalPlayer]
-   localPov = playerIndexCameraAttachedTo == playerIndexLocalPlayer
+   local playerIsLocal = playerIndexCameraAttachedTo == playerIndexLocalPlayer
 
-   local world = world
-   gameState = world.gameState
-   gameMode = gamemodes[world.gameModeIndex].shortName
-   hasTeams = gamemodes[world.gameModeIndex].hasTeams
-   map = world.mapName
+   local world = world; local gameState, gameMode = world.gameState, gamemodes[world.gameModeIndex]
    mapTitle = world.mapTitle
    ruleset = world.ruleset
    mutators = world.mutators
@@ -1440,118 +1415,59 @@ function CatoHUD:draw()
    gameTimeLimit = world.gameTimeLimit
    timeLimit = world.timeLimit
    -- timeLimitRound = world.timeLimitRound
-   timerActive = world.timerActive
+   timerActive = world.timerActive -- FIXME: Put in CatoState
+   gameModeShortName = gameMode.shortName
+   gameModeHasTeams = gameMode.hasTeams -- FIXME: Put in CatoState
 
-   fullscreenOn = consoleGetVariable('r_fullscreen') ~= 0
-   borderlessOn = (consoleGetVariable('r_windowed_fullscreen') or 0) ~= 0
-   if fullscreenOn or borderlessOn then
+   fullscreen = consoleGetVariable('r_fullscreen') ~= 0
+   -- FIXME: 1.2.0+backcompat
+   borderless = (consoleGetVariable('r_windowed_fullscreen') or 0) ~= 0
+   if fullscreen or borderless then
       local r_resolution_fullscreen = consoleGetVariable('r_resolution_fullscreen')
-      resolutionWidth = r_resolution_fullscreen[1]
-      resolutionHeight = r_resolution_fullscreen[2]
+      resolutionWidth, resolutionHeight = r_resolution_fullscreen[1], r_resolution_fullscreen[2]
    else
       local r_resolution_windowed = consoleGetVariable('r_resolution_windowed')
-      resolutionWidth = r_resolution_windowed[1]
-      resolutionHeight = r_resolution_windowed[2]
+      resolutionWidth, resolutionHeight = r_resolution_windowed[1], r_resolution_windowed[2]
    end
-   viewportWidth = viewport.width
-   viewportHeight = viewport.height
+   local viewport = viewport; viewportWidth, viewportHeight = viewport.width, viewport.height
 
-   -- local viewportScale = 1
-   -- if viewportScale == nil then
-   --    viewportScale = (640 <= resolutionHeight and resolutionHeight <= 2160) and 1 or viewportHeight / resolutionHeight
-   --    consolePrint(strf('s = v / r = %f / %d = %f',
-   --       viewportHeight,
-   --       resolutionHeight,
-   --       viewportScale
-   --    ))
-   -- end
+   local newViewportScale = 1
+   if 640 <= resolutionHeight and resolutionHeight <= 2160 then newViewportScale = viewportHeight / resolutionHeight end
+   if viewportScale ~= newViewportScale then
+      viewportScale = newViewportScale
+      consolePrint(strf('viewportScale = %f / %d = %f (viewportHeight / resolutionHeight)',
+         viewportHeight,
+         resolutionHeight,
+         viewportScale
+      ))
+   end
 
    -- FIXME: Track changes to cvars and change only when it changes. We only do this once for now.
-   local newColorFriendHEX = consoleGetVariable('cl_color_friend')
-   if newColorFriendHEX ~= colorFriendHEX then
-      colorFriendHEX = newColorFriendHEX
-      colorFriend = ColorHEX(colorFriendHEX)
+   local newColorFriend, newColorEnemy = consoleGetVariable('cl_color_friend'), consoleGetVariable('cl_color_enemy')
+   if colorFriendHEX ~= newColorFriend then colorFriendHEX = newColorFriend; colorFriend = ColorHEX(colorFriendHEX) end
+   if colorEnemyHEX ~= newColorEnemy then colorEnemyHEX = newColorEnemy; colorEnemy = ColorHEX(colorEnemyHEX) end
+
+   local resetWidgets = widgetGetConsoleVariable('reset_widgets')
+   if resetWidgets ~= '' then
+      widgetSetConsoleVariable('reset_widgets', '')
+      -- consolePrint(strf('reset_widgets %s', resetWidgets))
+      if tonumber(resetWidgets) == nil then
+         for widgetName in gmatch(resetWidgets, '%S+') do
+            -- consolePrint(strf('reset_widgets %s', widgetName))
+            local widget = _G[widgetName]
+            if tolower(substr(widgetName, 1, 4)) == 'cato'
+               and type(widget) == 'table'
+               and type(widget.initialize) == 'function' then
+               widget:initialize(true)
+            end
+         end
+         playSound('CatoHUD/toasty')
+      elseif tonumber(resetWidgets) ~= 0 then
+         local widgetNames = {'CatoHUD'}
+         for _, widget in ipairs(CatoWidgets) do insert(widgetNames, widget.name) end
+         widgetSetConsoleVariable('reset_widgets', concat(widgetNames, ' '))
+      end
    end
-
-   local newColorEnemyHEX = consoleGetVariable('cl_color_enemy')
-   if newColorEnemyHEX ~= colorEnemyHEX then
-      colorEnemyHEX = newColorEnemyHEX
-      colorEnemy = ColorHEX(colorEnemyHEX)
-   end
-
-   -- FIXME: Get all the requisite povPlayer/localPlayer fields here and pass on to widgets
-   --[[
-   -- world variables
-   local gameModes = gamemodes
-   local world = world
-
-   local worldGameState = world.gameState
-   local worldMapName = world.mapName
-   local worldMapTitle = world.mapTitle
-   local worldRuleset = world.ruleset
-
-   local worldGameTimeElapsed = world.gameTime
-   local worldGameTimeLimit = world.gameTimeLimit
-   local worldTimeLimit = world.timeLimit
-   local worldTimeLimitRound = world.timeLimitRound
-
-   local worldGameModeIndex = world.gameModeIndex
-   local worldGameMode = gameModes[worldGameModeIndex]
-   local worldGameModeHasTeams = worldGameMode.hasTeams
-   local worldGameModeShortName = worldGameMode.shortName
-
-   -- player variables
-   local players = players
-
-   local playerIndex = playerIndexCameraAttachedTo
-   local player = players[playerIndex]
-
-   local playerIndex = player.index
-   local playerName = player.name
-
-   local playerConnected = player.connected
-   local playerState = player.state
-   local playerHidden = player.infoHidden
-   local playerReady = player.ready
-
-   local playerTeam = player.team
-   local playerScore = player.score
-
-   local playerLatency = player.latency
-   local playerPacketloss = player.packetLoss
-
-   local playerHealth = player.health
-   local playerArmor = player.armor
-   local playerArmorType = player.armorProtection
-   local playerDamageLimit = damageToKill(playerHealth, playerArmor, playerArmorType)
-
-   local playerIsDead = player.isDead
-   local playerSpeed = player.speed
-
-   local playerButtons = player.buttons
-   local playerButtonsAttack = playerButtons.attack
-   local playerButtonsJump = playerButtons.jump
-
-   local playerWeapons = player.weapons
-
-   local playerWeaponIndexA = player.weaponIndexSelected
-   local playerWeaponIndexB = player.weaponIndexweaponChangingTo
-
-   local playerWeaponA = playerWeapons[playerWeaponIndexB]
-   local playerWeaponDefinitionA =  weaponDefinitions[playerWeaponIndexA]
-
-   local playerWeaponB = playerWeapons[playerWeaponIndexB]
-   local playerWeaponDefinitionB = weaponDefinitions[playerWeaponIndexB]
-
-   local playerAmmo = playerWeaponB.ammo
-   local playerReloadTime = playerWeaponDefinitionB.reloadTime
-   local playerAmmoIsLow = playerWeaponDefinitionB.lowAmmoWarning
-   local playerAmmoIsMid = playerAmmoIsLow + ceil(1000 / playerReloadTime)
-
-   local localPlayerIndex = playerIndexLocalPlayer
-   local playerIsLocal = playerIndex == localPlayerIndex
-   local localPlayer = players[localPlayerIndex]
-   ]]
 
    -- Parse events for: Cato_Chat Cato_GameEvents Cato_GameMessage Cato_FragMessage Cato_Toasty
    -- for i, event in ipairs(log) do
@@ -1579,190 +1495,220 @@ function CatoHUD:draw()
    --    consoleVarPrint('players[' .. i .. ']', p)
    -- end
 
-   local resetWidgets = widgetGetConsoleVariable('reset_widgets')
-   if resetWidgets ~= '' then
-      widgetSetConsoleVariable('reset_widgets', '')
-      -- consolePrint(strf('reset_widgets %s', resetWidgets))
-      if tonumber(resetWidgets) == nil then
-         for widgetName in gmatch(resetWidgets, '%S+') do
-            -- consolePrint(strf('reset_widgets %s', widgetName))
-            local widget = _G[widgetName]
-            if tolower(substr(widgetName, 1, 4)) == 'cato'
-               and type(widget) == 'table'
-               and type(widget.initialize) == 'function' then
-               consolePrint('Reset: ' .. widgetName)
-               widget:initialize(true)
-            end
-         end
-         playSound('CatoHUD/toasty')
-      elseif tonumber(resetWidgets) ~= 0 then
-         local widgetsCatoStr = 'CatoHUD'
-         for _, widget in ipairs(CatoWidgets) do widgetsCatoStr = strf('%s %s', widgetsCatoStr, widget.name) end
-         widgetSetConsoleVariable('reset_widgets', widgetsCatoStr)
-      end
+   local clientGameStateDisconnected, clientGameStateConnecting, clientGameStateConnected
+   if clientGameState == STATE_DISCONNECTED then
+      clientGameStateDisconnected, clientGameStateConnecting, clientGameStateConnected = true, false, false
+   elseif clientGameState == STATE_CONNECTING then
+      clientGameStateDisconnected, clientGameStateConnecting, clientGameStateConnected = false, true, false
+   elseif clientGameState == STATE_CONNECTED then
+      clientGameStateDisconnected, clientGameStateConnecting, clientGameStateConnected = false, false, true
    end
 
-   local replayActive, menuReplay = replayActive, replayName == 'menu'
-   inReplay = replayActive and not menuReplay
-   local gameWarmup, gameOver = gameState == GAME_STATE_WARMUP, gameState == GAME_STATE_GAMEOVER
-   states[state.hudOff] = consoleGetVariable('cl_show_hud') == 0
-   states[state.mainMenu] = replayActive and menuReplay
-   states[state.menu] = loading.loadScreenVisible or isInMenu()
-   states[state.race] = gameMode == 'race' or gameMode == 'training'
-   states[state.replay] = inReplay
-   states[state.gameWarmup] = gameWarmup
-   states[state.gameOver] = gameOver
-   states[state.gameActive] = not gameWarmup and not gameOver
-   if povPlayer then
-      states[state.dead] = povPlayer.isDead
-      states[state.freecam] = localPov and povPlayer.state ~= PLAYER_STATE_INGAME
-      states[state.editor] = povPlayer.state == PLAYER_STATE_EDITOR
+   local gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive
+   local gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver
+   if gameState == GAME_STATE_WARMUP then
+      gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive = true, false ,false, false
+      gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver = false, false, false
+   elseif gameState == GAME_STATE_ACTIVE then
+      gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive = false, true ,false, false
+      gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver = false, false, false
+   elseif gameState == GAME_STATE_ROUNDPREPARE then
+      gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive = false, false ,true, false
+      gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver = false, false, false
+   elseif gameState == GAME_STATE_ROUNDACTIVE then
+      gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive = false, false ,false, true
+      gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver = false, false, false
+   elseif gameState == GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON then
+      gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive = false, false ,false, false
+      gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver = true, false, false
+   elseif gameState == GAME_STATE_ROUNDCOOLDOWN_DRAW then
+      gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive = false, false ,false, false
+      gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver = false, true, false
+   elseif gameState == GAME_STATE_GAMEOVER then
+      gameStateWarmup, gameStateActive, gameStateRoundPrepare, gameStateRoundActive = false, false ,false, false
+      gameStateRoundCooldownSomeoneWon, gameStateRoundCooldownDraw, gameStateGameOver = false, false, true
+   end
+
+   local playerState, playerIsDead
+   local playerStateInGame, playerStateSpectator, playerStateEditor, playerStateQueued
+   if povPlayer ~= nil then
+      playerState, playerIsDead = povPlayer.state, povPlayer.isDead
+      if playerState == PLAYER_STATE_INGAME then
+         playerStateInGame, playerStateSpectator, playerStateEditor, playerStateQueued = true, false, false, false
+      elseif playerState == PLAYER_STATE_SPECTATOR then
+         playerStateInGame, playerStateSpectator, playerStateEditor, playerStateQueued = false, true, false, false
+      elseif playerState == PLAYER_STATE_EDITOR then
+         playerStateInGame, playerStateSpectator, playerStateEditor, playerStateQueued = false, false, true, false
+      elseif playerState == PLAYER_STATE_QUEUED then
+         playerStateInGame, playerStateSpectator, playerStateEditor, playerStateQueued = false, false, false, true
+      end
    else
-      states[state.dead] = true
-      states[state.freecam] = false
-      states[state.editor] = false
-      -- povPlayer = fakePlayerInfo()
+      playerState, playerIsDead = false, false
+      playerStateInGame, playerStateSpectator, playerStateEditor, playerStateQueued = false, false, false, false
    end
 
-   for _, widget in ipairs(CatoWidgets) do
-      local userData = widget.userData
-      if userData == nil then goto drawNext end
+   CatoState = 0
+   if playerIsLocal then CatoState = bitor(CatoState, state.localplayer) end
+   if povPlayer ~= nil then CatoState = bitor(CatoState, state.playercam) end
+   if not gameStateWarmup and not gameStateGameOver then CatoState = bitor(CatoState, state.gameactive) end
+   if gameStateWarmup then CatoState = bitor(CatoState, state.warmup) end
+   if gameStateGameOver then CatoState = bitor(CatoState, state.gameover) end
+   if playerIsDead then CatoState = bitor(CatoState, state.dead) end
+   if gameModeShortName == 'race' or gameModeShortName == 'training' then CatoState = bitor(CatoState, state.race) end
+   if replayActive and replayName ~= 'menu' then CatoState = bitor(CatoState, state.replay) end
+   if playerIsLocal and not playerStateInGame then CatoState = bitor(CatoState, state.freecam) end
+   if playerStateSpectator then CatoState = bitor(CatoState, state.spectator) end
+   if playerStateEditor then CatoState = bitor(CatoState, state.editor) end
+   if loading.loadScreenVisible or isInMenu() then CatoState = bitor(CatoState, state.menu) end
+   if replayActive and replayName == 'menu' then CatoState = bitor(CatoState, state.mainmenu) end
+   if consoleGetVariable('cl_show_hud') == 0 then CatoState = bitor(CatoState, state.hudoff) end
+   if widgetGetConsoleVariable('preview') ~= 0 then CatoState = bitor(CatoState, state.preview) end
 
-      widget.anchor = widget.anchor or getProps(widgets, widget.name).anchor
-      widget.offset = widget.offset or getProps(widgets, widget.name).offset
+   -- for _, widget in ipairs(CatoWidgets) do
+   --    local userData = widget.userData
+   --    if userData == nil then goto drawNext end
 
-      local anchorWidget = userData.anchorWidget
-      -- consoleVarPrint(strf('%s.userData', widget.name), userData)
-      if anchorWidget ~= nil then
-         -- anchorWidget = CatoWidgets[anchorWidget] -- FIXME: These are not indexed by name
-         anchorWidget = _G[anchorWidget]
-         if anchorWidget ~= nil and anchorWidget.offset ~= nil then
-            -- consolePrint(strf('%s.anchorWidget is %s', widget.name, anchorWidget.name))
-            widget.x = anchorWidget.x + anchorWidget.offset.x
-            widget.y = anchorWidget.y + anchorWidget.offset.y
-         end
-      end
+   --    updateWidgetPosition(luaWidgets, widget)
 
-      if not previewMode then
-         local hideWhen = widget.hideWhen
-         -- FIXME: Debug
-         if hideWhen == nil then
-            consoleVarPrint('states', states)
-            consoleVarPrint(widget.name .. '.hideWhen', hideWhen)
-         end
-         for stateIndex, stateActive in ipairs(states) do
-            if stateActive and hideWhen[stateIndex] then
-               if widget.drawInitialized then
-                  widget.drawInitialized = false
-                  widget.draw = function() end
-               end
-               goto drawNext
-            end
-         end
-      end
+   --    -- consoleVarPrint(strf('CatoState', widget.name), binrep(CatoState, maxState))
+   --    -- consoleVarPrint(strf('%s.hideFlags', widget.name), binrep(widget.hideFlags, maxState))
+   --    -- consoleVarPrint(strf('CatoState & %s.hideFlags', widget.name), binrep(bitand(CatoState, widget.hideFlags), maxState))
+   --    -- consolePrint()
+   --    if bitand(CatoState, state.preview) == 0 and bitand(CatoState, widget.hideFlags) ~= 0 then
+   --       if not widget.hidden then
+   --          -- setDraw(widget, true, function() end)
+   --          widget.hidden = true
+   --          -- widget.draw = function() end
+   --       end
+   --       goto drawNext
+   --    end
 
-      if not widget.drawInitialized then
-         widget.drawInitialized = true
-         widget.draw = function() widget:drawWidget(userData) end
-      end
+   --    if widget.hidden then
+   --       -- setDraw(widget, false, function() widget:drawWidget(userData) end)
+   --       widget.hidden = false
+   --       -- widget.draw = function() widget:drawWidget(userData) end
+   --    end
 
-      ::drawNext::
-   end
+   --    ::drawNext::
+   -- end
 
    if widgetGetConsoleVariable('widget_cache') ~= 0 then
       widgetSetConsoleVariable('widget_cache', 0)
-      for _, debugLine in ipairs(debugIndexCache(widgets)) do
-         consolePrint(debugLine)
-      end
+      for _, debugLine in ipairs(debugIndexCache(luaWidgets)) do consolePrint(debugLine) end
    end
 
-   if map ~= previousMap then
-      warmupTimeElapsed = 0
-      previousMap = map
-   elseif gameState == GAME_STATE_WARMUP then
-      warmupTimeElapsed = warmupTimeElapsed + deltaTime * MS_IN_S
-   elseif widgetGetConsoleVariable('warmuptimer_reset') ~= 0 then
+   if widgetGetConsoleVariable('warmuptimer_reset') ~= 0 then
       widgetSetConsoleVariable('warmuptimer_reset', 0)
       warmupTimeElapsed = 0
-   else
+   end
+
+   if clientGameStateConnected and gameStateWarmup then
+      warmupTimeElapsed = warmupTimeElapsed + deltaTime * MS_IN_S
+   elseif warmupTimeElapsed ~= 0 then
       warmupTimeElapsed = 0
    end
 end
 
--- function CatoHUD:final()
+-- function CatoHUD:final(userData)
 --    userData.finalEpochTime = epochTime
---    saveUserData(userData)
 -- end
 
-RegisterCato('CatoHUD', CatoHUD)
+registerCatoWidget('CatoHUD')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_HealthNumber = {}
-defaultProperties['Cato_HealthNumber'] = {visible = true, offset = '-40 30', anchor = '0 1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_HealthNumber'] = {
-   anchorWidget = '',
-   -- show = 'dead',
-   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(191, 191, 191), size = 160, anchor = {x = 1}},
+defaultSettings['Cato_HealthNumber'] = {
+   properties = {visible = true, offset = '-40 30', anchor = '0 1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
+      text = {
+         unknown = {font = 'TitilliumWeb-Bold', color = Color(191, 191, 191), size = 160, anchor = {x = 1}},
+         diesFromBolt = {font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 160, anchor = {x = 1}},
+         diesFromMelee = {font = 'TitilliumWeb-Bold', color = Color(255, 127, 0), size = 160, anchor = {x = 1}},
+         diesFromRocket = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 0), size = 160, anchor = {x = 1}},
+         safe = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 160, anchor = {x = 1}},
+      },
+   },
 }
 
 function Cato_HealthNumber:drawWidget(userData)
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+   if bitand(CatoState, state.playercam) == 0 then return end
+   if bitand(CatoState, state.spectator) ~= 0 then return end -- FIXME: Technically not correct state check
 
-   local opts = copyOpts(userData.text)
-
-   local playerHealth = 'N/A'
+   local health, armor, protection
+   local opts
    if not povPlayer.infoHidden then
-      playerHealth = povPlayer.health
+      health, armor, protection = povPlayer.health, povPlayer.armor, povPlayer.armorProtection
 
       -- TODO: Colors for single burst/plasma shot death, maybe some self-damage related?
-      local damage = damageToKill(playerHealth, povPlayer.armor, povPlayer.armorProtection)
-      if damage <= 80 then
-         opts.color = Color(255, 0, 0)
-      elseif damage <= 90 then
-         opts.color = Color(255, 127, 0)
-      elseif damage <= 100 then
-         opts.color = Color(255, 255, 0)
+      if stackAfterDamage(health, armor, protection, 80) <= 0 then
+         opts = userData.text.diesFromBolt
+      elseif stackAfterDamage(health, armor, protection, 90) <= 0 then
+         opts = userData.text.diesFromMelee
+      elseif stackAfterDamage(health, armor, protection, 100) <= 0 then
+         opts = userData.text.diesFromRocket
       else
-         opts.color = Color(255, 255, 255)
+         opts = userData.text.safe
       end
+      -- local h, a = stackAfterDamage(health, armor, protection, 80)
+      -- local damage = damageToKill(health, armor, protection)
+      -- if damage <= 80 then
+      --    opts = userData.text.diesFromBolt
+      -- elseif damage <= 90 then -- FIXME: Not always accurate?
+      --    opts = userData.text.diesFromMelee
+      -- elseif damage <= 100 then
+      --    opts = userData.text.diesFromRocket
+      -- else
+      --    opts = userData.text.safe
+      -- end
+   else
+      health = 'N/A'
+      opts = userData.text.unknown
    end
 
-   local health = createTextElem(self, playerHealth, opts)
-   health.draw(0, 0)
+   textCatoHUD(self, health, opts).draw(0, 0)
 end
 
-RegisterCato('Cato_HealthNumber', Cato_HealthNumber)
+registerCatoWidget('Cato_HealthNumber')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_ArmorNumber = {}
-defaultProperties['Cato_ArmorNumber'] = {visible = true, offset = '40 30', anchor = '0 1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_ArmorNumber'] = {
-   anchorWidget = '',
-   -- show = 'dead',
-   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(191, 191, 191), size = 160, anchor = {x = -1}},
+defaultSettings['Cato_ArmorNumber'] = {
+   properties = {visible = true, offset = '40 30', anchor = '0 1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
+      text = {
+         [1] = {font = 'TitilliumWeb-Bold', color = Color(0, 255, 0), size = 160, anchor = {x = -1}},
+         [2] = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 0), size = 160, anchor = {x = -1}},
+         [3] = {font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 160, anchor = {x = -1}},
+         unknown = {font = 'TitilliumWeb-Bold', color = Color(191, 191, 191), size = 160, anchor = {x = -1}}
+      },
+   },
 }
 
 function Cato_ArmorNumber:drawWidget(userData)
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+   if bitand(CatoState, state.playercam) == 0 then return end
+   if bitand(CatoState, state.spectator) ~= 0 then return end -- FIXME: Technically not correct state check
 
-   local opts = copyOpts(userData.text)
-
-   local playerArmor = 'N/A'
+   local armor, protection
+   local opts
    if not povPlayer.infoHidden then
-      playerArmor = povPlayer.armor
+      armor, protection = povPlayer.armor, povPlayer.armorProtection
+      opts = copyOpts(userData.text[protection + 1]) -- FIXME: copyOpts
+      armorColorLerp(armor, protection, opts)
 
-      opts.color = CatoHUD.userData['armorColor'][povPlayer.armorProtection + 1]
-      opts.color = armorColorLerp(playerArmor, povPlayer.armorProtection, opts.color)
+      -- opts.color = CatoHUD.userData['armorColor'][povPlayer.armorProtection + 1]
+      -- opts.color = armorColorLerp(armor, povPlayer.armorProtection, opts.color)
 
-      -- local lerpSteps = floor(playerArmor / armorLimit[povPlayer.armorProtection + 1][0])
+      -- local lerpSteps = floor(armor / armorLimit[povPlayer.armorProtection + 1][0])
 
       -- local lerpSteps = -1
       -- for itemArmorProtection = 0, 2 do
-      --    if playerArmor < armorLimit[povPlayer.armorProtection + 1][itemArmorProtection + 1] then
+      --    if armor < armorLimit[povPlayer.armorProtection + 1][itemArmorProtection + 1] then
       --       lerpSteps = lerpSteps + 1
       --    end
       -- end
@@ -1774,15 +1720,15 @@ function Cato_ArmorNumber:drawWidget(userData)
       -- consoleColorPrint(colorToLerp)
 
       -- debug
-      -- playerArmor = povPlayer.armor .. ' ' .. armorQuality(povPlayer) * povPlayer.armor
+      -- armor = povPlayer.armor .. ' ' .. armorQuality(povPlayer) * povPlayer.armor
 
-      -- local playerArmorLimit = playerArmor * armorQuality[povPlayer.armorProtection]
-      -- playerArmorLimit = ceil(playerArmorLimit)
-      -- if playerArmorLimit < armorQuality[0] * armorMax[0] then
+      -- local armorLimit = armor * armorQuality[povPlayer.armorProtection]
+      -- armorLimit = ceil(armorLimit)
+      -- if armorLimit < armorQuality[0] * armorMax[0] then
       --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 2 / 3)
-      -- elseif playerArmorLimit < armorQuality[1] * armorMax[1] then
+      -- elseif armorLimit < armorQuality[1] * armorMax[1] then
       --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 1 / 3)
-      -- elseif playerArmorLimit < armorQuality[2] * armorMax[2] then
+      -- elseif armorLimit < armorQuality[2] * armorMax[2] then
       --    opts.color = lerpColor(opts.color, Color(0, 0, 0), 0)
       -- end
 
@@ -1790,50 +1736,54 @@ function Cato_ArmorNumber:drawWidget(userData)
       -- opts.color = CatoHUD.userData['armorColor' .. povPlayer.armorProtection]
       -- if povPlayer.armorProtection == 2 then
       --     -- RA <  66 -> can pickup GA
-      --    if playerArmor < 66 then
+      --    if armor < 66 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
       --     -- RA < 132 -> can pickup YA
-      --    elseif playerArmor < 132 then
+      --    elseif armor < 132 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.33)
       --     -- RA < 200 -> can pickup RA
-      --    elseif playerArmor < 200 then
+      --    elseif armor < 200 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0)
       --    end
       -- elseif povPlayer.armorProtection == 1 then
       --     -- YA <  75 -> can pickup GA
-      --    if playerArmor < 75 then
+      --    if armor < 75 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
       --     -- YA < 150 -> can pickup YA
-      --    elseif playerArmor < 150 then
+      --    elseif armor < 150 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.33)
       --    end
       -- elseif povPlayer.armorProtection == 0 then
       --     -- GA < 100 -> can pickup GA
-      --    if playerArmor < 100 then
+      --    if armor < 100 then
       --       opts.color = lerpColor(opts.color, Color(0, 0, 0), 0.66)
       --    end
       -- end
+   else
+      armor = 'N/A'
+      opts = userData.text.unknown
    end
 
-   local armor = createTextElem(self, playerArmor, opts)
-   armor.draw(0, 0)
+   textCatoHUD(self, armor, opts).draw(0, 0)
 end
 
-RegisterCato('Cato_ArmorNumber', Cato_ArmorNumber)
+registerCatoWidget('Cato_ArmorNumber')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_ArmorIcon = {}
-defaultProperties['Cato_ArmorIcon'] = {visible = true, offset = '0 -20', anchor = '0 1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_ArmorIcon'] = {
-   anchorWidget = '',
-   -- show = 'dead',
-   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   icon = {color = Color(191, 191, 191), size = 24},
+defaultSettings['Cato_ArmorIcon'] = {
+   properties = {visible = true, offset = '0 -20', anchor = '0 1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
+      icon = {color = Color(191, 191, 191), size = 24},
+   },
 }
 
 function Cato_ArmorIcon:drawWidget(userData)
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+   if bitand(CatoState, state.playercam) == 0 then return end
+   if bitand(CatoState, state.spectator) ~= 0 then return end -- FIXME: Technically not correct state check
 
    local opts = copyOpts(userData.icon)
 
@@ -1841,40 +1791,46 @@ function Cato_ArmorIcon:drawWidget(userData)
       opts.color = CatoHUD.userData['armorColor'][povPlayer.armorProtection + 1]
    end
 
-   local armor = createSvgElem(self, 'internal/ui/icons/armor', opts)
-   armor.draw(0, 0)
+   svgCatoHUD(self, 'internal/ui/icons/armor', opts).draw(0, 0)
 end
 
-RegisterCato('Cato_ArmorIcon', Cato_ArmorIcon)
+registerCatoWidget('Cato_ArmorIcon')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_FPS = {}
-defaultProperties['Cato_FPS'] = {visible = true, offset = '-3 -5', anchor = '1 -1', zIndex = '-999', scale = '1'}
-defaultUserData['Cato_FPS'] = {
-   anchorWidget = '',
-   -- show = 'dead editor freecam gameOver mainMenu menu race',
-   hideWhen = 'hudOff',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
-}
-defaultCvars['Cato_FPS'] = {
-   {'debug', 'int', 0, 0},
-   {'frequency', 'float', 1.0},
-   {'precision', 'int', 1},
-   {'samples', 'int', 1000},
+defaultSettings['Cato_FPS'] = {
+   properties = {visible = true, offset = '-3 -5', anchor = '1 -1', zIndex = '-999', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'hudOff',
+      clampToMaxFPS = true,
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
+   cvars = {
+      {'debug', 'int', 0, 0},
+      {'frequency', 'float', 1.0},
+      {'precision', 'int', 2},
+      {'samples', 'int', 1000},
+   },
 }
 
--- local function preAllocateDeltas(deltas, sampleCount)
+local deltaSamples = {}
+-- local function preAllocateDeltas(deltaSamples, sampleCount)
 local function preAllocateDeltas(sampleCount)
-   local deltas = {}
-   for deltaIndex = 1, sampleCount, 1 do
-      deltas[deltaIndex] = 0.0
+   -- local deltaSamples = {}
+   -- for deltaIndex = 1, sampleCount do
+   --    deltaSamples[deltaIndex] = 0.0
+   -- end
+   -- return deltaSamples
+   for deltaIndex = 1, sampleCount do
+      insert(deltaSamples, deltaIndex, 0.0)
+      -- deltaSamples[deltaIndex] = 0.0
    end
-   return deltas
+   -- return deltaSamples
 end
 
 local lastSampleCount = nil
-local deltas = {}
 local deltaIndex = 1
 local sampleSum = 0.0
 local measurementTimer = 0.0
@@ -1883,15 +1839,22 @@ local sampleAllocationDone = false
 function Cato_FPS:drawWidget(userData)
    local opts = copyOpts(userData.text)
 
-   local sampleCount = widgetGetConsoleVariable('samples')
+   local deltaTimeRaw = deltaTimeRaw
+
+   local sampleCount, updateFrequency = widgetGetConsoleVariable('samples'), widgetGetConsoleVariable('frequency')
    if sampleCount ~= lastSampleCount then
+      local fpsMax = consoleGetVariable('com_maxfps')
+      if userData.clampToMaxFPS and fpsMax > 0 then sampleCount = min(fpsMax, sampleCount) end
+      sampleCount = max(1, sampleCount)
+      widgetSetConsoleVariable('samples', sampleCount)
       consolePrint(strf(
          '%s: Sample size %d -> %d. Discarding old samples.',
          self.name,
          lastSampleCount or 0,
          sampleCount
       ))
-      deltas = preAllocateDeltas(sampleCount)
+      -- deltaSamples = preAllocateDeltas(sampleCount)
+      preAllocateDeltas(sampleCount)
       deltaIndex = 1
       sampleSum = 0.0
       measurementTimer = 0.0
@@ -1901,22 +1864,38 @@ function Cato_FPS:drawWidget(userData)
    end
    lastSampleCount = sampleCount
 
-   local updateFrequency = widgetGetConsoleVariable('frequency')
-
-   -- deltas is a rolling window buffer for deltaTimes
-   -- sampleSum is the sum of last deltas
+   -- deltaSamples is a rolling window buffer for deltaTimes
+   -- sampleSum is the sum of last deltaSamples
    -- When the buffer is full the previous delta has to be subtracted from sampleSum before adding the new one
 
-   -- NOTE: We pre-allocate deltas, because otherwise we have to check deltas[deltaIndex] for nil each frame
-   --       Note however that pre-allocation means that #deltas == sampleCount, so we MUST use deltaIndex as a way to
+   -- NOTE: We pre-allocate deltaSamples, because otherwise we have to check deltaSamples[deltaIndex] for nil each frame
+   --       Note however that pre-allocation means that #deltaSamples == sampleCount, so we MUST use deltaIndex as a way to
    --       count total sample when the buffer is not full.
    --       Using deltaIndex is probably more efficient (since it won't be used when sampleAllocationDone), but
-   --       #deltas would give a clearer intention and be more readable.
-   -- sampleSum = sampleSum - (deltas[deltaIndex] or 0.0)
-   sampleSum = sampleSum - deltas[deltaIndex]
-   deltas[deltaIndex] = deltaTimeRaw
+   --       #deltaSamples would give a clearer intention and be more readable.
+   -- sampleSum = sampleSum - (deltaSamples[deltaIndex] or 0.0)
+   sampleSum = sampleSum - deltaSamples[deltaIndex]
+   deltaSamples[deltaIndex] = deltaTimeRaw
    sampleSum = sampleSum + deltaTimeRaw
    deltaIndex = deltaIndex < sampleCount and deltaIndex + 1 or 1
+
+   if widgetGetConsoleVariable('debug') ~= 0 then
+      consolePrint(strf(
+         '%s: deltaIndex = %d <= %d = sampleCount (%s)',
+         self.name,
+         deltaIndex,
+         sampleCount,
+         sampleAllocationDone
+      ))
+      consolePrint(strf(
+         '%s: avgFPS = %f = %d / %f = %s / sampleSum',
+         self.name,
+         avgFPS,
+         sampleAllocationDone and sampleCount or deltaIndex,
+         sampleSum,
+         sampleAllocationDone and 'sampleCount' or 'deltaIndex'
+      ))
+   end
 
    measurementTimer = measurementTimer + deltaTimeRaw
    if measurementTimer >= updateFrequency then
@@ -1930,109 +1909,82 @@ function Cato_FPS:drawWidget(userData)
             opts.color = Color(255, 255, 255)
          end
       end
-
-      if widgetGetConsoleVariable('debug') ~= 0 then
-         consolePrint(strf(
-            '%s: deltaIndex = %d <= %d = sampleCount (%s)',
-            self.name,
-            deltaIndex,
-            sampleCount,
-            sampleAllocationDone
-         ))
-         consolePrint(strf(
-            '%s: avgFPS = %f = %d / %f = %s / sampleSum',
-            self.name,
-            avgFPS,
-            sampleAllocationDone and sampleCount or deltaIndex,
-            sampleSum,
-            sampleAllocationDone and 'sampleCount' or 'deltaIndex'
-         ))
-      end
    end
 
    local precision = widgetGetConsoleVariable('precision')
-   local fpsFormat = precision < 0 and '' or ('.' .. precision)
-   local fps = createTextElem(
-      self,
-      strf('%' .. fpsFormat .. 'ffps', avgFPS),
-      userData.text
-   )
-   fps.draw(0, 0)
+   local fpsFormat = precision >= 0 and ('.' .. precision) or ''
+   textCatoHUD(self, strf('%' .. fpsFormat .. 'ffps', round(avgFPS, precision)), userData.text).draw(0, 0)
 end
 
-RegisterCato('Cato_FPS', Cato_FPS)
+registerCatoWidget('Cato_FPS')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_DisplayMode = {}
-defaultProperties['Cato_DisplayMode'] = {visible = true, offset = '-100 0', anchor = '1 -1', zIndex = '-999', scale = '1'}
-defaultUserData['Cato_DisplayMode'] = {
-   anchorWidget = 'Cato_FPS',
-   -- show = 'dead freecam gameOver race mainMenu menu',
-   hideWhen = 'hudOff gameActive',
-   text = {
-      fullscreen = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
-      borderless = {font = 'TitilliumWeb-Bold', color = Color(255, 127, 127), size = 32},
-      windowed = {font = 'TitilliumWeb-Bold', color = Color(255, 63, 63), size = 32},
+defaultSettings['Cato_DisplayMode'] = {
+   properties = {visible = true, offset = '-100 0', anchor = '1 -1', zIndex = '-999', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_FPS',
+      hideWhen = 'hudOff gameOver',
+      text = {
+         fullscreen = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+         borderless = {font = 'TitilliumWeb-Bold', color = Color(255, 127, 127), size = 32},
+         windowed = {font = 'TitilliumWeb-Bold', color = Color(255, 63, 63), size = 32},
+      },
    },
 }
 
+-- local debugPrinted = false
 function Cato_DisplayMode:drawWidget(userData)
-   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+   -- if world.gameState == GAME_STATE_ACTIVE and not debugPrinted then
+   --    debugPrinted = true
+   --    consoleVarPrint(CatoState, 'CatoState')
+   --    consoleVarPrint(bitor(CatoState, state.localplayer, state.gameactive), 'bitor(CatoState, state.localplayer, state.gameactive)')
+   --    consoleVarPrint(binrep(CatoState, maxState), 'CatoState')
+   --    consoleVarPrint(binrep(bitor(CatoState, state.localplayer, state.gameactive), maxState), 'bitor(CatoState, state.localplayer, state.gameactive)')
+   --    consoleVarPrint('fullscreen', fullscreen)
+   -- end
+   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) and fullscreen then return end
 
-   if not localPov and not ((replayActive and replayName == 'menu') or (loading.loadScreenVisible or isInMenu())) then
-      return
-   end
+   local refreshRate = consoleGetVariable('r_refreshrate')
+   local monitorIndex = consoleGetVariable('r_monitor')
+   -- FIXME: 1.2.0+backcompat
+   if monitorIndex ~= nil and monitorIndex >= 0 then monitorIndex = ' #' .. monitorIndex else monitorIndex = '' end
 
-   local modeDisplay
-   local modeFormat
-   local opts
-   if fullscreenOn then
-      modeDisplay = 'Fullscreen'
-      modeFormat = '%s%s %dx%d @ %dhz'
+   local mode, opts
+   if fullscreen then
+      mode = strf('Fullscreen%s %dx%d @ %.2fhz', monitorIndex, resolutionWidth, resolutionHeight, refreshRate)
       opts = userData.text.fullscreen
-   elseif borderlessOn then
-      modeDisplay = 'Borderless'
-      modeFormat = '%s%s (Native)'
+   elseif borderless then
+      mode = strf('Borderless%s (Native)', monitorIndex)
       opts = userData.text.borderless
    else
-      modeDisplay = 'Windowed'
-      modeFormat = '%s%s %dx%d @ %dhz'
+      mode = strf('Windowed%s %dx%d @ %.2fhz', monitorIndex, resolutionWidth, resolutionHeight, refreshRate)
       opts = userData.text.windowed
    end
 
-   local monitorIndex = consoleGetVariable('r_monitor') or -1
-   if monitorIndex < 0 then monitorIndex = ''
-   else monitorIndex = ' #' .. monitorIndex end
-
-   local refreshRate = consoleGetVariable('r_refreshrate')
-
-   local mode = createTextElem(
-      self,
-      strf(modeFormat, modeDisplay, monitorIndex, resolutionWidth, resolutionHeight, refreshRate),
-      opts
-   )
-   mode.draw(0, 0)
+   textCatoHUD(self, mode, opts).draw(0, 0)
 end
 
-RegisterCato('Cato_DisplayMode', Cato_DisplayMode)
+registerCatoWidget('Cato_DisplayMode')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_Time = {}
-defaultProperties['Cato_Time'] = {visible = true, offset = '-3 18', anchor = '1 -1', zIndex = '-999', scale = '1'}
-defaultUserData['Cato_Time'] = {
-   anchorWidget = '',
-   -- show = 'dead editor freecam gameOver mainMenu menu race',
-   hideWhen = 'hudOff',
-   text = {
-      delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 32, anchor = {x = 0}},
-      -- year = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
-      -- month = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
-      -- day = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
-      hour = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = 1}},
-      minute = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
-      -- second = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+defaultSettings['Cato_Time'] = {
+   properties = {visible = true, offset = '-3 18', anchor = '1 -1', zIndex = '-999', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'hudOff',
+      text = {
+         delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 32, anchor = {x = 0}},
+         -- year = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+         -- month = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+         -- day = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+         hour = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = 1}},
+         minute = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+         -- second = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32, anchor = {x = -1}},
+      },
    },
 }
 
@@ -2042,7 +1994,7 @@ function Cato_Time:drawWidget(userData)
    --    local time = formatEpochTime(epochTime, CatoHUD.userData.offsetUTC)
    --    local epochSeconds = epochTime + CatoHUD.userData.offsetUTC
    --    opts.second.anchor = self.anchor
-   --    epochSeconds = createTextElem(self, epochSeconds, opts.second)
+   --    epochSeconds = textCatoHUD(self, epochSeconds, opts.second)
    --    epochSeconds.draw(0, 0)
    --    return
    -- end
@@ -2061,27 +2013,27 @@ function Cato_Time:drawWidget(userData)
 
    --    local time = formatEpochTime(epochTime, CatoHUD.userData.offsetUTC)
 
-   --    local day = createTextElem(self, formatDay(time.day), opts.day)
-   --    local delimiterDate1 = createTextElem(self, ' ', opts.delimiter)
-   --    local month = createTextElem(self, formatMonth(time.month), opts.month)
+   --    local day = textCatoHUD(self, formatDay(time.day), opts.day)
+   --    local delimiterDate1 = textCatoHUD(self, ' ', opts.delimiter)
+   --    local month = textCatoHUD(self, formatMonth(time.month), opts.month)
 
-   --    local delimiterDate2 = createTextElem(self, ' ', opts.delimiter)
-   --    local year = createTextElem(self, time.year, opts.year)
+   --    local delimiterDate2 = textCatoHUD(self, ' ', opts.delimiter)
+   --    local year = textCatoHUD(self, time.year, opts.year)
 
-   --    local delimiter = createTextElem(self, ' ', opts.delimiter)
+   --    local delimiter = textCatoHUD(self, ' ', opts.delimiter)
 
-   --    local hour = createTextElem(self, strf('%02d', time.hour), opts.hour)
-   --    local delimiterTime1 = createTextElem(self, ':', opts.delimiter)
-   --    local minute = createTextElem(self, strf('%02d', time.minute), opts.minute)
+   --    local hour = textCatoHUD(self, strf('%02d', time.hour), opts.hour)
+   --    local delimiterTime1 = textCatoHUD(self, ':', opts.delimiter)
+   --    local minute = textCatoHUD(self, strf('%02d', time.minute), opts.minute)
 
-   --    local delimiterTime2 = createTextElem(self, ':', opts.delimiter)
-   --    local second = createTextElem(self, strf('%02d', time.second), opts.second)
+   --    local delimiterTime2 = textCatoHUD(self, ':', opts.delimiter)
+   --    local second = textCatoHUD(self, strf('%02d', time.second), opts.second)
 
    --    local x = 0
    --    if self.anchor.x == -1 then
    --       x = x + 0
    --    elseif self.anchor.x == 0 then
-   --       x = x - self.width / 2
+   --       x = x - self.width * 0.5
    --    elseif self.anchor.x == 1 then
    --       x = x - self.width
    --    end
@@ -2115,12 +2067,14 @@ function Cato_Time:drawWidget(userData)
 
 
    local epochSeconds
+   -- FIXME: 1.2.0+backcompat
    if CatoHUD.userData.useLocalTime and epochTimeLocal ~= nil then epochSeconds = epochTimeLocal
    else epochSeconds = epochTime + CatoHUD.userData.offsetUTC end
 
    -- TODO: Figure out if time should be displayed during replay playback.
    --       It's a bit misleading since it displays current localtime, and replays don't seem to
    --       contain information regarding the actual IRL time they were played during.
+   --       (Other than if the filename counts, but even then the question of timezone remains.)
    -- if inReplay then
    --    consolePrint('---')
    --    consoleTablePrint(replay)
@@ -2128,13 +2082,13 @@ function Cato_Time:drawWidget(userData)
    --    consolePrint(replay.timecodeCurrent)
    -- end
 
-   local hour = createTextElem(self, strf('%02d', floor(epochSeconds / S_IN_H) % H_IN_D), userData.text.hour)
-   local delimiter = createTextElem(self, ':', userData.text.delimiter)
-   local minute = createTextElem(self, strf('%02d', floor(epochSeconds / S_IN_M) % M_IN_H), userData.text.minute)
+   local hour = textCatoHUD(self, strf('%02d', floor(epochSeconds / S_IN_H) % H_IN_D), userData.text.hour)
+   local delimiter = textCatoHUD(self, ':', userData.text.delimiter)
+   local minute = textCatoHUD(self, strf('%02d', floor(epochSeconds / S_IN_M) % M_IN_H), userData.text.minute)
 
-   -- TODO: This alignment bs has to be figured out
+   -- FIXME: This alignment bs has to be figured out
    local x = 0
-   local spacing = delimiter.width / 2
+   local spacing = delimiter.width * 0.5
    if self.anchor.x == -1 then
       x = x + hour.width + spacing
    elseif self.anchor.x == 0 then
@@ -2148,21 +2102,93 @@ function Cato_Time:drawWidget(userData)
    minute.draw(x + spacing, 0)
 end
 
-RegisterCato('Cato_Time', Cato_Time)
+registerCatoWidget('Cato_Time')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_MMStats = {}
-defaultProperties['Cato_MMStats'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '-999', scale = '1'}
-defaultUserData['Cato_MMStats'] = {
-   anchorWidget = 'Cato_MapName',
-   -- show = 'dead freecam gameOver mainMenu menu race',
-   hideWhen = 'hudOff',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_MMStats'] = {
+   properties = {visible = true, offset = '0 46', anchor = '1 -1', zIndex = '-999', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_MapName',
+      hideWhen = 'hudOff',
+      text = {
+         status = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+         rank = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+         bestRank = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 24},
+      },
+      rankMMRs = {900, 1400, 1700, 2000, 2200, 2500},
+      icon = {
+         rank = {
+            ['None'] = {
+               label = 'None', svg = 'internal/ui/icons/searchIcon', color = Color(190, 190, 190), size = 12
+            },
+            ['Bronze'] = {
+               label = 'Bronze', svg = 'internal/ui/icons/rank1Simple', color = Color(172, 107, 46), size = 12
+            },
+            ['Silver'] = {
+               label = 'Silver', svg = 'internal/ui/icons/rank2Simple', color = Color(195, 202, 197), size = 12
+            },
+            ['Gold'] = {
+               label = 'Gold', svg = 'internal/ui/icons/rank3Simple', color = Color(200, 172, 75), size = 12
+            },
+            ['Platinum'] = {
+               label = 'Platinum', svg = 'internal/ui/icons/rank4Simple', color = Color(214, 214, 214), size = 12
+            },
+            ['Diamond'] = {
+               label = 'Diamond', svg = 'internal/ui/icons/rank5Simple', color = Color(130, 154, 219), size = 12
+            },
+            ['Overlord'] = {
+               label = 'Overlord', svg = 'internal/ui/icons/rank6Simple', color = Color(251, 205, 102), size = 12
+            },
+            ['Prime Overlord'] = {
+               label = 'Prime Overlord', svg = 'internal/ui/icons/rank7Simple', color = Color(255, 222, 160), size = 12
+            },
+         },
+         bestRank = {
+            ['None'] = {
+               label = 'None', svg = 'internal/ui/icons/searchIcon', color = Color(190, 190, 190), size = 10
+            },
+            ['Bronze'] = {
+               label = 'Bronze', svg = 'internal/ui/icons/rank1Simple', color = Color(172, 107, 46), size = 10
+            },
+            ['Silver'] = {
+               label = 'Silver', svg = 'internal/ui/icons/rank2Simple', color = Color(195, 202, 197), size = 10
+            },
+            ['Gold'] = {
+               label = 'Gold', svg = 'internal/ui/icons/rank3Simple', color = Color(200, 172, 75), size = 10
+            },
+            ['Platinum'] = {
+               label = 'Platinum', svg = 'internal/ui/icons/rank4Simple', color = Color(214, 214, 214), size = 10
+            },
+            ['Diamond'] = {
+               label = 'Diamond', svg = 'internal/ui/icons/rank5Simple', color = Color(130, 154, 219), size = 10
+            },
+            ['Overlord'] = {
+               label = 'Overlord', svg = 'internal/ui/icons/rank6Simple', color = Color(251, 205, 102), size = 10
+            },
+            ['Prime Overlord'] = {
+               label = 'Prime Overlord', svg = 'internal/ui/icons/rank7Simple', color = Color(255, 222, 160), size = 10
+            },
+         },
+      },
+   },
 }
 
+local function getRankIcon(mmr, icon)
+   if mmr <= 0 then return icon['None']
+   elseif mmr < 900 then return icon['Bronze']
+   elseif mmr < 1400 then return icon['Silver']
+   elseif mmr < 1700 then return icon['Gold']
+   elseif mmr < 2000 then return icon['Platinum']
+   elseif mmr < 2200 then return icon['Diamond']
+   elseif mmr < 2500 then return icon['Overlord']
+   else return icon['Prime Overlord'] end
+end
+
 function Cato_MMStats:drawWidget(userData)
-   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+   -- if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, state.gameactive) ~= 0 then return end
+   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) then return end
 
    local matchmaking = matchmaking
    local matchmakingState = matchmaking.state
@@ -2184,7 +2210,7 @@ function Cato_MMStats:drawWidget(userData)
       mmState = strf('Searching %02d:%02d:%02d', searchTime.hours, searchTime.minutes, searchTime.seconds)
    elseif matchmakingState == MATCHMAKING_FOUNDOPPONENTS then
       local ready = matchmaking.clientSideReady
-      mmState = strf('Match found (%sready)', ready or 'not')
+      mmState = strf('Match found (%s)', (ready and 'ready' or 'not ready'))
    elseif matchmakingState == MATCHMAKING_VOTINGMAP then
       mmState = 'Voting'
    elseif matchmakingState == MATCHMAKING_VOTEFINISHED then
@@ -2204,10 +2230,9 @@ function Cato_MMStats:drawWidget(userData)
    for _, playlist in ipairs(matchmaking.playlists or {}) do
       if playlist.key == mmPlaylistKey then
          mmPlaylist = playlist
-         goto mmPlaylistFound
+         break
       end
    end
-   ::mmPlaylistFound::
    -- consoleVarPrint(mmPlaylistKey, mmPlaylist)
 
    local mmLobby = world.isMatchmakingLobby
@@ -2222,30 +2247,68 @@ function Cato_MMStats:drawWidget(userData)
       mmrDiff = mmrDiff ~= 0 and (mmrDiff > 0 and ' [+' .. mmrDiff .. ']' or ' [' .. mmrDiff .. ']') or ''
    end
 
-   local mmStats = createTextElem(self, strf(
-      '%s [MMR: %s%s Best: %s]',
-      mmState,
-      mmr,
-      mmrDiff,
-      mmrBest
-   ), userData.text)
-   mmStats.draw(0, 0)
+   local mmStatus = textCatoHUD(self, mmState, userData.text.status)
+   local x, y = 0, 0
+   mmStatus.draw(x, y)
+
+   local rankIcon, bestIcon = getRankIcon(mmr, userData.icon.rank), getRankIcon(mmrBest, userData.icon.bestRank)
+
+   y = y + mmStatus.height - 8
+   local spacing = rankIcon.size * 0.25
+   local mmRankIcon = svgCatoHUD(self, rankIcon.svg, rankIcon)
+   local mmRankText = textCatoHUD(self, strf('%s (%s%s)', rankIcon.label, mmr, mmrDiff), userData.text.rank)
+   -- local lineWidth = 0
+   local lineWidth = mmRankIcon.width + spacing + mmRankText.width
+   if self.anchor.x == -1 then
+      x = 0
+   elseif self.anchor.x == 0 then
+      x = -lineWidth * 0.5
+   elseif self.anchor.x == 1 then
+      x = -lineWidth
+   end
+   local iconHeight, textHeight = mmRankIcon.height, mmRankText.height
+   local maxHeight = max(textHeight, iconHeight)
+   x = x + mmRankIcon.width
+   mmRankIcon.draw(x, y + (maxHeight - min(textHeight, iconHeight)) * 0.5)
+   x = x + spacing + mmRankText.width
+   mmRankText.draw(x, y)
+
+   y = y + maxHeight - 4
+   spacing = bestIcon.size * 0.25
+   local mmBestIcon = svgCatoHUD(self, bestIcon.svg, bestIcon)
+   local mmBestText = textCatoHUD(self, strf('%s (%s)', bestIcon.label, mmrBest), userData.text.bestRank)
+   -- lineWidth = 0
+   lineWidth = mmBestIcon.width + spacing + mmBestText.width
+   if self.anchor.x == -1 then
+      x = 0
+   elseif self.anchor.x == 0 then
+      x = -lineWidth * 0.5
+   elseif self.anchor.x == 1 then
+      x = -lineWidth
+   end
+   iconHeight, textHeight = mmBestIcon.height, mmBestText.height
+   maxHeight = max(textHeight, iconHeight)
+   x = x + mmBestIcon.width
+   mmBestIcon.draw(x, y + (maxHeight - min(textHeight, iconHeight)) * 0.5)
+   x = x + spacing + mmBestText.width
+   mmBestText.draw(x, y)
 end
 
-RegisterCato('Cato_MMStats', Cato_MMStats)
+registerCatoWidget('Cato_MMStats')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_Scores = {}
-defaultProperties['Cato_Scores'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_Scores'] = {
-   anchorWidget = 'Cato_Time',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu menu hudOff editor',
-   text = {
-      delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 40, anchor = {x = 0}},
-      team = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40, anchor = {x = 1}},
-      enemy = {font = 'TitilliumWeb-Bold', color = Color(0, 255, 0), size = 40, anchor = {x = -1}},
+defaultSettings['Cato_Scores'] = {
+   properties = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_Time',
+      hideWhen = 'mainMenu menu hudOff editor',
+      text = {
+         delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 40, anchor = {x = 0}},
+         team = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40, anchor = {x = 1}},
+         enemy = {font = 'TitilliumWeb-Bold', color = Color(0, 255, 0), size = 40, anchor = {x = -1}},
+      },
    },
 }
 
@@ -2255,100 +2318,61 @@ function Cato_Scores:drawWidget(userData)
       enemy = copyOpts(userData.text.enemy),
       delimiter = copyOpts(userData.text.delimiter),
    }
-   opts.team.color = colorFriend
-   opts.enemy.color = colorEnemy
+   opts.team.color, opts.enemy.color = colorFriend, colorEnemy
 
-   local scoreTeam
-   local indexTeam
-   local scoreEnemy
-   local indexEnemy
+   local playerIndex = playerIndexCameraAttachedTo
+   local scoreTeam, indexTeam, scoreEnemy, indexEnemy
    local relativeColors = consoleGetVariable('cl_colors_relative') == 1
-   if hasTeams then
+   if gameModeHasTeams then
       if povPlayer and povPlayer.state == PLAYER_STATE_INGAME then
-         indexTeam = povPlayer.team
-         indexEnemy = indexTeam % 2 + 1
+         indexTeam = povPlayer.team; indexEnemy = indexTeam % 2 + 1
          if not relativeColors then
-            opts.team.color = teamColors[indexTeam]
-            opts.enemy.color = teamColors[indexEnemy]
+            opts.team.color, opts.enemy.color = teamColors[indexTeam], teamColors[indexEnemy]
          end
       else
-         indexTeam = TEAM_ALPHA
-         indexEnemy = TEAM_ZETA
-         opts.team.color = teamColors[indexTeam]
-         opts.enemy.color = teamColors[indexEnemy]
+         indexTeam, indexEnemy = TEAM_ALPHA, TEAM_ZETA
+         opts.team.color, opts.enemy.color = teamColors[indexTeam], teamColors[indexEnemy]
       end
-      scoreTeam = world.teams[indexTeam].score
-      scoreEnemy = world.teams[indexEnemy].score
-   elseif gameMode == '1v1' or gameMode == 'ffa' then
-      local scoreWinner = nil
-      local scoreRunnerUp = nil
-      local indexWinner = nil
-      local indexRunnerUp = nil
+      scoreTeam, scoreEnemy = world.teams[indexTeam].score, world.teams[indexEnemy].score
+   elseif gameModeShortName == '1v1' or gameModeShortName == 'ffa' then
+      local scoreWinner, scoreRunnerUp, indexWinner, indexRunnerUp
       for _, p in ipairs(players) do
          if p.state == PLAYER_STATE_INGAME and p.connected then
             if scoreWinner == nil or p.score > scoreWinner then
-               -- this fixes edge case where runner-up score appears first in the players table
-               scoreRunnerUp = scoreWinner
-               indexRunnerUp = indexWinner
-               --
-               scoreWinner = p.score
-               indexWinner = p.index
+               scoreRunnerUp, indexRunnerUp, scoreWinner, indexWinner = scoreWinner, indexWinner, p.score, p.index
             elseif scoreRunnerUp == nil or p.score > scoreRunnerUp then
-               scoreRunnerUp = p.score
-               indexRunnerUp = p.index
+               scoreRunnerUp, indexRunnerUp = p.score, p.index
             end
          end
       end
 
-      scoreTeam = scoreWinner
-      indexTeam = indexWinner
-      scoreEnemy = scoreRunnerUp
-      indexEnemy = indexRunnerUp
+      scoreTeam, indexTeam, scoreEnemy, indexEnemy = scoreWinner, indexWinner, scoreRunnerUp, indexRunnerUp
       if povPlayer and povPlayer.state == PLAYER_STATE_INGAME and povPlayer.connected then
-         if indexWinner == playerIndexCameraAttachedTo then
-            scoreTeam = scoreWinner
-            indexTeam = indexWinner
-            scoreEnemy = scoreRunnerUp
-            indexEnemy = indexRunnerUp
-         elseif indexRunnerUp == playerIndexCameraAttachedTo then
-            scoreTeam = scoreRunnerUp
-            indexTeam = indexRunnerUp
-            scoreEnemy = scoreWinner
-            indexEnemy = indexWinner
+         if indexWinner == playerIndex then
+            scoreTeam, indexTeam, scoreEnemy, indexEnemy = scoreWinner, indexWinner, scoreRunnerUp, indexRunnerUp
+         elseif indexRunnerUp == playerIndex then
+            scoreTeam, indexTeam, scoreEnemy, indexEnemy = scoreRunnerUp, indexRunnerUp, scoreWinner, indexWinner
          else
-            scoreTeam = povPlayer.score
-            indexTeam = playerIndexCameraAttachedTo
-            scoreEnemy = scoreWinner
-            indexEnemy = indexWinner
+            scoreTeam, indexTeam, scoreEnemy, indexEnemy = povPlayer.score, playerIndex, scoreWinner, indexWinner
          end
       end
 
       -- Use player colors in FFA/1v1
       if not relativeColors or not povPlayer or povPlayer.state ~= PLAYER_STATE_INGAME then
-         if indexTeam ~= nil then
-            opts.team.color = extendedColors[players[indexTeam].colorIndices[1] + 1]
-         end
-         if indexEnemy ~= nil then
-            opts.enemy.color = extendedColors[players[indexEnemy].colorIndices[1] + 1]
-         end
+         if indexTeam ~= nil then opts.team.color = extendedColors[players[indexTeam].colorIndices[1] + 1] end
+         if indexEnemy ~= nil then opts.enemy.color = extendedColors[players[indexEnemy].colorIndices[1] + 1] end
       end
-   elseif gameMode == 'race' then
-      -- TODO: Implement
-      return
-   elseif gameMode == 'training' then
-      -- TODO: Implement
-      return
-   else
-      return
-   end
+   elseif gameModeShortName == 'race' then return-- TODO: Implement
+   elseif gameModeShortName == 'training' then return-- TODO: Implement
+   else return end
 
-   scoreTeam = createTextElem(self, scoreTeam or 'N/A', opts.team)
-   local delimiter = createTextElem(self, '    ', opts.delimiter)
-   scoreEnemy = createTextElem(self, scoreEnemy or 'N/A', opts.enemy)
+   scoreTeam = textCatoHUD(self, scoreTeam or 'N/A', opts.team)
+   local delimiter = textCatoHUD(self, '    ', opts.delimiter)
+   scoreEnemy = textCatoHUD(self, scoreEnemy or 'N/A', opts.enemy)
 
-   -- TODO: This alignment bs has to be figured out
+   -- FIXME: This alignment bs has to be figured out
    local x = 0
-   local spacing = delimiter.width / 2
+   local spacing = delimiter.width * 0.5
    if self.anchor.x == -1 then
       x = x + scoreTeam.width + spacing
    elseif self.anchor.x == 0 then
@@ -2362,123 +2386,131 @@ function Cato_Scores:drawWidget(userData)
    scoreEnemy.draw(x + spacing, 0)
 end
 
-RegisterCato('Cato_Scores', Cato_Scores)
+registerCatoWidget('Cato_Scores')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_RulesetName = {}
-defaultProperties['Cato_RulesetName'] = {visible = true, offset = '0 27', anchor = '1 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_RulesetName'] = {
-   anchorWidget = 'Cato_Scores',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu menu hudOff editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_RulesetName'] = {
+   properties = {visible = true, offset = '0 27', anchor = '1 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_Scores',
+      hideWhen = 'mainMenu menu hudOff editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
 }
 
 function Cato_RulesetName:drawWidget(userData)
-   -- if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+   if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, state.gameactive) ~= 0 then return end
+   -- if bitand(the == CatoState, state.localplayer, state.gameactive) == CatoSt return end
 
-   local rulesetName = createTextElem(self, ruleset, userData.text)
-   rulesetName.draw(0, 0)
+   textCatoHUD(self, ruleset, userData.text).draw(0, 0)
 end
 
-RegisterCato('Cato_RulesetName', Cato_RulesetName)
+registerCatoWidget('Cato_RulesetName')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_GameModeName = {}
-defaultProperties['Cato_GameModeName'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_GameModeName'] = {
-   anchorWidget = 'Cato_RulesetName',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu menu hudOff editor gameActive',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_GameModeName'] = {
+   properties = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_RulesetName',
+      hideWhen = 'mainMenu menu hudOff editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
 }
 
 function Cato_GameModeName:drawWidget(userData)
-   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+   -- if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, state.gameactive) ~= 0 then return end
+   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) then return end
 
-   local gameModeName = createTextElem(self, strf('%s', gameMode), userData.text)
-   -- local gameModeName = createTextElem(self, strf('training', gameMode), userData.text)
-   gameModeName.draw(0, 0)
+   textCatoHUD(self, strf('%s', gameModeShortName), userData.text).draw(0, 0)
 end
 
-RegisterCato('Cato_GameModeName', Cato_GameModeName)
+registerCatoWidget('Cato_GameModeName')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_Timelimit = {}
-defaultProperties['Cato_Timelimit'] = {visible = true, offset = '-75 0', anchor = '1 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_Timelimit'] = {
-   anchorWidget = 'Cato_GameModeName',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu menu hudOff editor gameActive',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_Timelimit'] = {
+   properties = {visible = true, offset = '-75 0', anchor = '1 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_GameModeName',
+      hideWhen = 'mainMenu menu hudOff editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
 }
 
 function Cato_Timelimit:drawWidget(userData)
-   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+   -- bitand(CatoState, state.localplayer) == 0 => 00101 ^ 10000 = 10101
+   -- bitand(CatoState, state.localplayer) ~= 0 => 10101 ^ 10000 = 00101
+   -- if bitand(bitxor(CatoState, state.localplayer), bitor(state.warmup, state.replay)) == 0 then return end
+   -- if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, state.gameactive) ~= 0 then return end
+   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) then return end
 
    local tl = formatTimeMs(timeLimit * 1000)
-   local gameModeName = createTextElem(self, strf('%d:%02d', tl.minutes, tl.seconds), userData.text)
-   gameModeName.draw(0, 0)
+   textCatoHUD(self, strf('%d:%02d', tl.minutes, tl.seconds), userData.text).draw(0, 0)
 end
 
-RegisterCato('Cato_Timelimit', Cato_Timelimit)
+registerCatoWidget('Cato_Timelimit')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_MapName = {}
-defaultProperties['Cato_MapName'] = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_MapName'] = {
-   anchorWidget = 'Cato_GameModeName',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu menu hudOff editor gameActive',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_MapName'] = {
+   properties = {visible = true, offset = '0 23', anchor = '1 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_GameModeName',
+      hideWhen = 'mainMenu menu hudOff editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
 }
 
 function Cato_MapName:drawWidget(userData)
-   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+   -- if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, state.gameactive) ~= 0 then return end
+   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) then return end
 
-   local mapName = createTextElem(self, mapTitle, userData.text)
-   mapName.draw(0, 0)
+   textCatoHUD(self, mapTitle, userData.text).draw(0, 0)
 end
 
-RegisterCato('Cato_MapName', Cato_MapName)
+registerCatoWidget('Cato_MapName')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_Mutators = {}
-defaultProperties['Cato_Mutators'] = {visible = true, offset = '0 33', anchor = '1 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_Mutators'] = {
-   anchorWidget = 'Cato_MapName',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu menu hudOff editor',
-   icon = {size = 12},
+defaultSettings['Cato_Mutators'] = {
+   properties = {visible = true, offset = '0 33', anchor = '1 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_MapName',
+      hideWhen = 'mainMenu menu hudOff editor',
+      icon = {size = 12},
+   },
 }
 
 function Cato_Mutators:drawWidget(userData)
-   if not inReplay and localPov and gameState ~= GAME_STATE_WARMUP then return end
+   -- if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, state.gameactive) ~= 0 then return end
+   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) then return end
 
    local x = -userData.icon.size * 2
-   local spacing = userData.icon.size / 2
+   local spacing = userData.icon.size * 0.5
 
    local gameMutators = {}
-   -- TODO: Should this be ipairs and then use "gameMutators[i]" over "tbli(gameMutators, mutator)"?
+   -- TODO: Should this be ipairs and then use "gameMutators[i]" over "insert(gameMutators, mutator)"?
    for mutator in gmatch(mutators, '%S+') do
       mutator = mutatorDefinitions[toupper(mutator)]
 
-      mutator = createSvgElem(self, mutator.icon, {color = mutator.col, size = userData.icon.size})
+      mutator = svgCatoHUD(self, mutator.icon, {color = mutator.col, size = userData.icon.size})
       x = x + mutator.width + spacing
 
-      tbli(gameMutators, mutator)
+      insert(gameMutators, mutator)
    end
    x = x - spacing -- spacing is only between the icons, adjust
 
    if self.anchor.x == -1 then
       x = 0
    elseif self.anchor.x == 0 then
-      x = -x / 2
+      x = -x * 0.5
    elseif self.anchor.x == 1 then
       x = -x
    end
@@ -2488,30 +2520,32 @@ function Cato_Mutators:drawWidget(userData)
       x = x + mutator.width + spacing
    end
 
+   -- FIXME: What's this? P.S. Don't copyOpts
    -- local opts = copyOpts(userData.text)
 
-   -- local gameMutators = createTextElem(self, mutators, opts)
+   -- local gameMutators = textCatoHUD(self, mutators, opts)
    -- gameMutators.draw(0, 0)
 end
 
-RegisterCato('Cato_Mutators', Cato_Mutators)
+registerCatoWidget('Cato_Mutators')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_LowAmmo = {}
-defaultProperties['Cato_LowAmmo'] = {visible = true, offset = '0 160', anchor = '0 0', zIndex = '0', scale = '1'}
-defaultUserData['Cato_LowAmmo'] = {
-   anchorWidget = '',
-   -- show = 'race',
-   hideWhen = 'mainMenu menu dead hudOff gameWarmup gameOver freecam editor',
-   text = {
-      click = {label = '*CLICK*', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 72},
-      empty = {label = 'NO AMMO', font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 64},
-      halfLow = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 72},
-      low = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 64},
-      halfMed = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 127, 0), size = 40},
-      med = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 255, 0), size = 40},
-      full = {label = 'FULL AMMO', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_LowAmmo'] = {
+   properties = {visible = true, offset = '0 160', anchor = '0 0', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu dead hudOff warmup gameOver freecam editor',
+      text = {
+         click = {label = '*CLICK*', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 72},
+         empty = {label = 'NO AMMO', font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 64},
+         halfLow = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 72},
+         low = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 64},
+         halfMid = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 127, 0), size = 40},
+         mid = {label = nil, font = 'TitilliumWeb-Bold', color = Color(255, 255, 0), size = 40},
+         full = {label = 'FULL AMMO', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+      },
    },
 }
 
@@ -2519,8 +2553,8 @@ local clickDelay = 0.0
 function Cato_LowAmmo:drawWidget(userData)
    if clickDelay > 0.0 then clickDelay = clickDelay - deltaTime end
 
-   if previewMode then
-      local textPreview = createTextElem(self, '(Low Ammo)', userData.text.low)
+   if bitand(CatoState, state.preview) ~= 0 then
+      local textPreview = textCatoHUD(self, '(Low Ammo)', userData.text.low)
       textPreview.draw(0, 0)
       return
    end
@@ -2534,123 +2568,127 @@ function Cato_LowAmmo:drawWidget(userData)
    local weaponDefinition = weaponDefinitions[weaponIndex]
    if weaponIndex == 1 or weaponDefinition == nil then return end
 
-   local ammoLow = weaponDefinition.lowAmmoWarning
-   local ammoMed = ammoLow + ceil(1000 / weaponDefinition.reloadTime)
-   local ammoMax = weaponDefinition.maxAmmo
-   local ammo = povPlayer.weapons[weaponIndex].ammo
-
-   local buttonAttack = povPlayer.buttons.attack
+   local lowAmmo, reloadTime = weaponDefinition.lowAmmoWarning, weaponDefinition.reloadTime
+   local midAmmo = lowAmmo + ceil(1000 / reloadTime)
+   local ammo, buttonAttack = povPlayer.weapons[weaponIndex].ammo, povPlayer.buttons.attack
 
    local opts
    if ammo <= 0 then
       if clickDelay > 0.0 then
+         opts = userData.text.empty
+      elseif buttonAttack then
+         clickDelay = reloadTime
          opts = userData.text.click
       else
-         if buttonAttack then
-            clickDelay = 0.150
-            opts = userData.text.click
-         else
-            opts = userData.text.empty
-         end
+         opts = userData.text.empty
       end
-   elseif ammo <= ammoLow / 2 then
+   elseif ammo == 1 then
+      if buttonAttack then
+         clickDelay = reloadTime
+      end
       opts = userData.text.halfLow
-   elseif ammo <= ammoLow then
+   elseif ammo <= lowAmmo * 0.5 then
+      opts = userData.text.halfLow
+   elseif ammo <= lowAmmo then
       opts = userData.text.low
-   elseif ammo <= ammoLow + (ammoMed - ammoLow) / 2 then
-      opts = userData.text.halfMed
-   elseif ammo <= ammoMed then
-      opts = userData.text.med
-   elseif ammo >= ammoMax then
+   elseif ammo <= lowAmmo + (midAmmo - lowAmmo) * 0.5 then
+      opts = userData.text.halfMid
+   elseif ammo <= midAmmo then
+      opts = userData.text.mid
+   elseif ammo >= weaponDefinition.maxAmmo then
       opts = userData.text.full
    else
       return
    end
 
-   local ammoWarning = createTextElem(self, opts.label or ammo, opts)
-   ammoWarning.draw(0, 0)
+   textCatoHUD(self, opts.label or ammo, opts).draw(0, 0)
 end
 
-RegisterCato('Cato_LowAmmo', Cato_LowAmmo)
+registerCatoWidget('Cato_LowAmmo')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_Ping = {}
-defaultProperties['Cato_Ping'] = {visible = true, offset = '-3 4', anchor = '1 1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_Ping'] = {
-   anchorWidget = '',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu hudOff editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_Ping'] = {
+   properties = {visible = true, offset = '-3 4', anchor = '1 1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu hudOff editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
 }
 
 function Cato_Ping:drawWidget(userData)
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+   if bitand(CatoState, state.playercam) == 0 then return end
+   if bitand(CatoState, state.spectator) ~= 0 then return end -- FIXME: Technically not correct state check
 
    local opts = copyOpts(userData.text)
 
-   if povPlayer.latency == 0 then
+   local latency = povPlayer.latency
+   if latency == 0 then
       return
-   elseif povPlayer.latency <= 50 then
+   elseif latency <= 50 then
       opts.color = Color(0, 255, 0)
-   elseif povPlayer.latency < 100 then
+   elseif latency < 100 then
       opts.color = Color(255, 255, 0)
    else
       opts.color = Color(255, 0, 0)
    end
 
-   local ping = createTextElem(self, povPlayer.latency .. 'ms', opts)
-   ping.draw(0, 0)
+   textCatoHUD(self, latency .. 'ms', opts).draw(0, 0)
 end
 
-RegisterCato('Cato_Ping', Cato_Ping)
+registerCatoWidget('Cato_Ping')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_PacketLoss = {}
-defaultProperties['Cato_PacketLoss'] = {visible = true, offset = '-3 -16', anchor = '1 1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_PacketLoss'] = {
-   anchorWidget = '',
-   -- show = 'dead freecam gameOver race',
-   hideWhen = 'mainMenu hudOff editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 32},
+defaultSettings['Cato_PacketLoss'] = {
+   properties = {visible = true, offset = '-3 -16', anchor = '1 1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu hudOff editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 0, 0), size = 32},
+   },
 }
 
 function Cato_PacketLoss:drawWidget(userData)
-   if not povPlayer or povPlayer.state == PLAYER_STATE_SPECTATOR then return end
+   if bitand(CatoState, state.playercam) == 0 then return end
+   if bitand(CatoState, state.spectator) ~= 0 then return end -- FIXME: Technically not correct state check
 
    local opts = copyOpts(userData.text)
 
-   if povPlayer.packetLoss == 0 then
+   local packetLoss = povPlayer.packetLoss
+   if packetLoss == 0 then
       return
-   elseif povPlayer.packetLoss <= 5 then
-      opts.color = Color(255, 255, 255)
-   elseif povPlayer.packetLoss < 10 then
-      opts.color = Color(255, 255, 0)
+   elseif packetLoss <= 5 then
+      opts.color = Color(95, 255, 0)
+   elseif packetLoss < 10 then
+      opts.color = Color(191, 255, 0)
    else
       opts.color = Color(255, 0, 0)
    end
 
-   local packetloss = createTextElem(self, povPlayer.packetLoss .. ' PL', opts)
-   packetloss.draw(0, 0)
+   textCatoHUD(self, packetLoss .. ' PL', opts).draw(0, 0)
 end
 
-RegisterCato('Cato_PacketLoss', Cato_PacketLoss)
+registerCatoWidget('Cato_PacketLoss')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_GameTime = {}
-defaultProperties['Cato_GameTime'] = {visible = true, offset = '0 -135', anchor = '0 1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_GameTime'] = {
-   anchorWidget = '',
-   -- show = 'dead',
-   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   countDown = false,
-   hideSeconds = false,
-   text = {
-      delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 120, anchor = {x = 0}},
-      minutes = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 120, anchor = {x = 1}},
-      seconds = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 120, anchor = {x = -1}},
+defaultSettings['Cato_GameTime'] = {
+   properties = {visible = true, offset = '0 -135', anchor = '0 1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
+      countDown = false,
+      hideSeconds = false,
+      text = {
+         delimiter = {font = 'TitilliumWeb-Bold', color = Color(127, 127, 127), size = 120, anchor = {x = 0}},
+         minutes = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 120, anchor = {x = 1}},
+         seconds = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 120, anchor = {x = -1}},
+      },
    },
 }
 
@@ -2658,22 +2696,23 @@ function Cato_GameTime:drawWidget(userData)
    local hideSeconds = userData.hideSeconds
 
    local timeElapsed = 0
-   if gameState == GAME_STATE_WARMUP then
+   -- if bitand(CatoState, state.warmup) ~= 0 then
+   if world.gameState == GAME_STATE_WARMUP then
       timeElapsed = warmupTimeElapsed
-   elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
+   -- elseif bitand(CatoState, state.gameStateActive, state.gameStateRoundActive) ~= 0 then -- FIXME: Implement
+   elseif world.gameState == GAME_STATE_ACTIVE or world.gameState == GAME_STATE_ROUNDACTIVE then
       timeElapsed = gameTimeElapsed
       hideSeconds = (hideSeconds and gameTimeLimit - gameTimeElapsed > 30000)
    end
 
    local timer = formatTimeMs(timeElapsed, gameTimeLimit, userData.countDown)
 
-   local minutes = createTextElem(self, timer.minutes, userData.text.minutes)
-   local delimiter = createTextElem(self, ':', userData.text.delimiter)
-   local seconds = hideSeconds and 'xx' or strf('%02d', timer.seconds)
-   seconds = createTextElem(self, seconds, userData.text.seconds)
+   local minutes = textCatoHUD(self, timer.minutes, userData.text.minutes)
+   local delimiter = textCatoHUD(self, ':', userData.text.delimiter)
+   local seconds = textCatoHUD(self, hideSeconds and 'xx' or strf('%02d', timer.seconds), userData.text.seconds)
 
    local x = 0
-   local spacing = delimiter.width / 2
+   local spacing = delimiter.width * 0.5
    if self.anchor.x == -1 then
       x = x + minutes.width + spacing
    elseif self.anchor.x == 0 then
@@ -2687,7 +2726,7 @@ function Cato_GameTime:drawWidget(userData)
    seconds.draw(x + spacing, 0)
 end
 
-RegisterCato('Cato_GameTime', Cato_GameTime)
+registerCatoWidget('Cato_GameTime')
 
 ------------------------------------------------------------------------------------------------------------------------
 
@@ -2696,12 +2735,13 @@ local delayRespawnMin = 1.0
 local delayRespawnMax = 4.0
 
 Cato_RespawnDelay = {}
-defaultProperties['Cato_RespawnDelay'] = {visible = true, offset = '80 -90', anchor = '0 1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_RespawnDelay'] = {
-   anchorWidget = 'Cato_GameTime',
-   -- show = 'dead race',
-   hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40},
+defaultSettings['Cato_RespawnDelay'] = {
+   properties = {visible = true, offset = '80 -90', anchor = '0 1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = 'Cato_GameTime',
+      hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40},
+   },
 }
 
 local deadTime = nil
@@ -2740,39 +2780,39 @@ function Cato_RespawnDelay:drawWidget(userData)
    -- FIXME: Figure out the timer and don't clamp, noob
    -- local delay = strf('%f', delayCountDown and delayRespawnMax - deadTime or deadTime)
    local delay = strf('%.01f', clamp(delayCountDown and delayRespawnMax - deadTime or deadTime, 0.0, delayRespawnMax))
-   delay = createTextElem(self, delay, opts)
-   delay.draw(0, 0)
+   textCatoHUD(self, delay, opts).draw(0, 0)
 end
 
-RegisterCato('Cato_RespawnDelay', Cato_RespawnDelay)
+registerCatoWidget('Cato_RespawnDelay')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_FollowingPlayer = {}
-defaultProperties['Cato_FollowingPlayer'] = {visible = true, offset = '0 0', anchor = '0 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_FollowingPlayer'] = {
-   anchorWidget = '',
-   -- show = 'dead race',
-   hideWhen = 'mainMenu menu hudOff freecam editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 64, anchor = {x = 0}},
+defaultSettings['Cato_FollowingPlayer'] = {
+   properties = {visible = true, offset = '0 0', anchor = '0 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu hudOff gameOver freecam editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 64, anchor = {x = 0}},
+   },
 }
 
 function Cato_FollowingPlayer:drawWidget(userData)
    if not povPlayer then return end
 
    -- TODO: option for display on self
-   if not previewMode and not inReplay and localPov then return end
+   if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, bitor(state.replay, state.preview)) == 0 then return end
 
-   local label = createTextElem(self, 'FOLLOWING', userData.text)
-   local name = createTextElem(self, povPlayer.name, userData.text)
+   local label = textCatoHUD(self, 'FOLLOWING', userData.text)
+   local name = textCatoHUD(self, povPlayer.name, userData.text)
 
    local x = 0
    if self.anchor.x == -1 then
-      x = x + max(label.width, name.width) / 2
+      x = x + max(label.width, name.width) * 0.5
    elseif self.anchor.x == 0 then
       x = x + 0
    elseif self.anchor.x == 1 then
-      x = x - (max(label.width, name.width) / 2)
+      x = x - (max(label.width, name.width) * 0.5)
    end
 
    local y = 0
@@ -2780,7 +2820,7 @@ function Cato_FollowingPlayer:drawWidget(userData)
    if self.anchor.y == -1 then
       y = y + 0
    elseif self.anchor.y == 0 then
-      y = y - (label.height - offset) / 2
+      y = y - (label.height - offset) * 0.5
    elseif self.anchor.y == 1 then
       y = y - (name.height - offset)
    end
@@ -2789,89 +2829,93 @@ function Cato_FollowingPlayer:drawWidget(userData)
    name.draw(x, y + label.height - offset)
 end
 
-RegisterCato('Cato_FollowingPlayer', Cato_FollowingPlayer)
+registerCatoWidget('Cato_FollowingPlayer')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_ReadyStatus = {}
-defaultProperties['Cato_ReadyStatus'] = {visible = true, offset = '0 145', anchor = '0 -1', zIndex = '0', scale = '1'}
-defaultUserData['Cato_ReadyStatus'] = {
-   anchorWidget = '',
-   -- show = 'dead freecam race',
-   hideWhen = 'mainMenu hudOff gameOver editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_ReadyStatus'] = {
+   properties = {visible = true, offset = '0 145', anchor = '0 -1', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu hudOff gameActive gameOver editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
 }
 
 function Cato_ReadyStatus:drawWidget(userData)
-   if gameState ~= GAME_STATE_WARMUP and not previewMode then return end
+   if bitand(CatoState, bitor(state.warmup, state.preview)) == 0 then return end
 
-   local playersReady = 0
-   local playersGame = 0
+   local playersReady, playersGame = 0, 0
    for _, p in ipairs(players) do
       if p.state == PLAYER_STATE_INGAME and p.connected then
          playersGame = playersGame + 1
-         if p.ready then
-            playersReady = playersReady + 1
-         end
+         if p.ready then playersReady = playersReady + 1 end
       end
    end
 
    local opts = copyOpts(userData.text)
-   if povPlayer and not povPlayer.ready then
-      opts.color = Color(191, 191, 191)
+   if playersReady == 0 then
+      opts.color = Color(255, 255, 255, 191)
+   elseif povPlayer and not povPlayer.ready then
+      opts.color = Color(255, 191, 191)
    end
 
-   local ready = createTextElem(self, playersReady .. '/' .. playersGame .. ' ready', opts)
-   ready.draw(0, 0)
+   textCatoHUD(self, playersReady .. '/' .. playersGame .. ' ready', opts).draw(0, 0)
 end
 
-RegisterCato('Cato_ReadyStatus', Cato_ReadyStatus)
+registerCatoWidget('Cato_ReadyStatus')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_GameMessage = {}
-defaultProperties['Cato_GameMessage'] = {visible = true, offset = '0 -80', anchor = '0 0', zIndex = '0', scale = '1'}
-defaultUserData['Cato_GameMessage'] = {
-   anchorWidget = '',
-   -- show = 'dead freecam menu race',
-   hideWhen = 'mainMenu hudOff gameOver editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40},
+defaultSettings['Cato_GameMessage'] = {
+   properties = {visible = true, offset = '0 -80', anchor = '0 0', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu hudOff gameOver editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 40},
+   },
 }
 
 local lastTickSeconds = -1
 function Cato_GameMessage:drawWidget(userData)
    local gameMessage = nil
    if timerActive then
-      if gameState == GAME_STATE_WARMUP or gameState == GAME_STATE_ROUNDPREPARE then
+      -- elseif bitand(CatoState, state.gameStateWarmup, state.gameStateRoundPrepare) ~= 0 then -- FIXME: Implement
+      if world.gameState == GAME_STATE_WARMUP or world.gameState == GAME_STATE_ROUNDPREPARE then
          local timer = formatTimeMs(gameTimeElapsed, gameTimeLimit, true)
          if lastTickSeconds ~= timer.seconds then
             lastTickSeconds = timer.seconds
             playSound('internal/ui/match/match_countdown_tick')
          end
          gameMessage = timer.seconds
-      elseif gameState == GAME_STATE_ACTIVE or gameState == GAME_STATE_ROUNDACTIVE then
+      -- elseif bitand(CatoState, state.gameStateActive, state.gameStateRoundActive) ~= 0 then -- FIXME: Implement
+      elseif world.gameState == GAME_STATE_ACTIVE or world.gameState == GAME_STATE_ROUNDACTIVE then
          if gameTimeElapsed < 2500 then
             local overTimeCount = world.overTimeCount
             if overTimeCount <= 0 then
-               gameMessage = (gameMode == 'race' or gameMode == 'training') and 'GO' or 'FIGHT'
+               gameMessage = (gameModeShortName == 'race' or gameModeShortName == 'training') and 'GO' or 'FIGHT'
             else
                gameMessage = 'OVERTIME #' .. overTimeCount
             end
          end
-      elseif gameState == GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON then
+      -- elseif bitand(CatoState, state.gameStateRoundCooldownSomeoneWon) ~= 0 then -- FIXME: Implement
+      elseif world.gameState == GAME_STATE_ROUNDCOOLDOWN_SOMEONEWON then
          -- FIXME: This shit just straight up showing the wrong name
          if povPlayer ~= nil then
-            local name = hasTeams and world.teams[povPlayer.team].name or povPlayer.name
+            local name = gameModeHasTeams and world.teams[povPlayer.team].name or povPlayer.name
             gameMessage = name .. ' WINS'
          else
             gameMessage = 'Round Over'
          end
-      elseif gameState == GAME_STATE_ROUNDCOOLDOWN_DRAW then
+      -- elseif bitand(CatoState, state.gameStateRoundCooldownDraw) ~= 0 then -- FIXME: Implement
+      elseif world.gameState == GAME_STATE_ROUNDCOOLDOWN_DRAW then
          gameMessage = 'DRAW'
       end
    end
 
-   if previewMode then
+   if bitand(CatoState, state.preview) ~= 0 then
       if gameMessage == nil then
          gameMessage = '(Game Message)'
       end
@@ -2879,72 +2923,64 @@ function Cato_GameMessage:drawWidget(userData)
       return
    end
 
-   gameMessage = createTextElem(self, gameMessage, userData.text)
-   gameMessage.draw(0, 0)
+   textCatoHUD(self, gameMessage, userData.text).draw(0, 0)
 end
 
-RegisterCato('Cato_GameMessage', Cato_GameMessage)
+registerCatoWidget('Cato_GameMessage')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_Speed = {}
-defaultProperties['Cato_Speed'] = {visible = false, offset = '0 60', anchor = '0 0', zIndex = '0', scale = '1'}
-defaultUserData['Cato_Speed'] = {
-   anchorWidget = '',
-   -- show = 'race',
-   hideWhen = 'mainMenu menu dead hudOff gameOver freecam editor',
-   text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+defaultSettings['Cato_Speed'] = {
+   properties = {visible = false, offset = '0 60', anchor = '0 0', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu dead hudOff gameOver freecam editor',
+      text = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
+   },
 }
 
 function Cato_Speed:drawWidget(userData)
    if not povPlayer then return end
 
-   local ups = createTextElem(self, ceil(povPlayer.speed) .. 'ups', userData.text)
-   ups.draw(0, 0)
+   textCatoHUD(self, ceil(povPlayer.speed) .. 'ups', userData.text).draw(0, 0)
 end
 
-RegisterCato('Cato_Speed', Cato_Speed)
+registerCatoWidget('Cato_Speed')
 
 ------------------------------------------------------------------------------------------------------------------------
 
 Cato_Crosshair = {}
-defaultProperties['Cato_Crosshair'] = {visible = true, offset = '0 0', anchor = '0 0', zIndex = '0', scale = '1'}
-defaultUserData['Cato_Crosshair'] = {
-   anchorWidget = '',
-   -- show = 'race',
-   hideWhen = 'mainMenu menu dead hudOff gameOver freecam',
-   crosshairWidth = 2,
-   crosshairHeight = 2,
-   crosshairStroke = 1,
-   crosshairThickness = 2,
-   crosshairGapWidth = 0,
-   crosshairGapHeight = 0,
-   crosshairDotWidth = 0,
-   crosshairDotHeight = 0,
-   crosshairDotStroke = 0,
-   crosshairColor = Color(255, 255, 255, 255),
-   crosshairStrokeColor = Color(0, 0, 0, 255),
-   crosshairDotColor = Color(255, 255, 255, 255),
-   crosshairDotStrokeColor = Color(0, 0, 0, 255),
+defaultSettings['Cato_Crosshair'] = {
+   properties = {visible = true, offset = '0 0', anchor = '0 0', zIndex = '0', scale = '1'},
+   userData = {
+      anchorWidget = '',
+      hideWhen = 'mainMenu menu dead hudOff gameOver freecam',
+      crosshairWidth = 2,
+      crosshairHeight = 2,
+      crosshairStroke = 1,
+      crosshairThickness = 2,
+      crosshairGapWidth = 0,
+      crosshairGapHeight = 0,
+      crosshairDotWidth = 0,
+      crosshairDotHeight = 0,
+      crosshairDotStroke = 0,
+      crosshairColor = Color(255, 255, 255, 255),
+      crosshairStrokeColor = Color(0, 0, 0, 255),
+      crosshairDotColor = Color(255, 255, 255, 255),
+      crosshairDotStrokeColor = Color(0, 0, 0, 255),
+   },
 }
 
 function Cato_Crosshair:drawWidget(userData)
-   local x = 0
-   local y = 0
+   local x, y = 0, 0
 
-   local pixelWidth = viewportWidth / resolutionWidth
-   local pixelHeight = viewportHeight / resolutionHeight
+   local pixelWidth, pixelHeight = viewportWidth / resolutionWidth, viewportHeight / resolutionHeight
 
-   local width = userData.crosshairWidth
-   local height = userData.crosshairHeight
-   local stroke = userData.crosshairStroke
-   local thickness = userData.crosshairThickness
-
-   local gapWidth = userData.crosshairGapWidth
-   local gapHeight = userData.crosshairGapHeight
-
-   local dotWidth = userData.crosshairDotWidth
-   local dotHeight = userData.crosshairDotHeight
+   local width, height = userData.crosshairWidth, userData.crosshairHeight
+   local stroke, thickness = userData.crosshairStroke, userData.crosshairThickness
+   local gapWidth, gapHeight = userData.crosshairGapWidth, userData.crosshairGapHeight
+   local dotWidth, dotHeight = userData.crosshairDotWidth, userData.crosshairDotHeight
    local dotStroke = userData.crosshairDotStroke
 
    -- TODO: Optimize: we probably don't need a copy every frame + the color can be fetched in the nvgFillColor call
@@ -2955,10 +2991,7 @@ function Cato_Crosshair:drawWidget(userData)
    local crosshairDotStrokeColor = copyColor(userData.crosshairDotStrokeColor)
 
    -- fix for odd values of thickness
-   if thickness % 2 ~= 0 then
-      x = x - 0.5
-      y = y - 0.5
-   end
+   if thickness % 2 ~= 0 then x, y = x - 0.5, y - 0.5 end
 
    -- draw dot
    if dotWidth > 0 or dotHeight > 0 then
@@ -2966,8 +2999,8 @@ function Cato_Crosshair:drawWidget(userData)
       if dotStroke > 0 then
          nvgBeginPath()
          nvgRect(
-            x + pixelWidth * (-dotWidth / 2 - dotStroke),
-            y + pixelHeight * (-dotHeight / 2 - dotStroke),
+            x + pixelWidth * (-dotWidth * 0.5 - dotStroke),
+            y + pixelHeight * (-dotHeight * 0.5 - dotStroke),
             pixelWidth * (dotWidth + dotStroke * 2),
             pixelHeight * (dotHeight + dotStroke * 2)
          )
@@ -2978,8 +3011,8 @@ function Cato_Crosshair:drawWidget(userData)
       -- dot
       nvgBeginPath()
       nvgRect(
-         x + pixelWidth * -dotWidth / 2,
-         y + pixelHeight * -dotHeight / 2,
+         x + pixelWidth * -dotWidth * 0.5,
+         y + pixelHeight * -dotHeight * 0.5,
          pixelWidth * dotWidth,
          pixelHeight * dotHeight
       )
@@ -2994,27 +3027,27 @@ function Cato_Crosshair:drawWidget(userData)
       if stroke > 0 then
          nvgBeginPath()
          nvgRect(
-            x + pixelWidth * (-thickness / 2 - stroke),
-            y + pixelHeight * (-height / 2 - gapHeight / 2 - stroke),
+            x + pixelWidth * (-thickness * 0.5 - stroke),
+            y + pixelHeight * (-height * 0.5 - gapHeight * 0.5 - stroke),
             pixelWidth * (thickness + stroke * 2),
-            pixelHeight * (height / 2 + stroke * 2)
+            pixelHeight * (height * 0.5 + stroke * 2)
          )
          nvgRect(
-            x + pixelWidth * (-thickness / 2 - stroke),
-            y + pixelHeight * (gapHeight / 2 - stroke),
+            x + pixelWidth * (-thickness * 0.5 - stroke),
+            y + pixelHeight * (gapHeight * 0.5 - stroke),
             pixelWidth * (thickness + stroke * 2),
-            pixelHeight * (height / 2 + stroke * 2)
+            pixelHeight * (height * 0.5 + stroke * 2)
          )
          nvgRect(
-            x + pixelWidth * (-width / 2 - gapWidth / 2 - stroke),
-            y + pixelHeight * (-thickness / 2 - stroke),
-            pixelWidth * (width / 2 + stroke * 2),
+            x + pixelWidth * (-width * 0.5 - gapWidth * 0.5 - stroke),
+            y + pixelHeight * (-thickness * 0.5 - stroke),
+            pixelWidth * (width * 0.5 + stroke * 2),
             pixelHeight * (thickness + stroke * 2)
          )
          nvgRect(
-            x + pixelWidth * (gapWidth / 2 - stroke),
-            y + pixelHeight * (-thickness / 2 - stroke),
-            pixelWidth * (width / 2 + stroke * 2),
+            x + pixelWidth * (gapWidth * 0.5 - stroke),
+            y + pixelHeight * (-thickness * 0.5 - stroke),
+            pixelWidth * (width * 0.5 + stroke * 2),
             pixelHeight * (thickness + stroke * 2)
          )
          nvgFillColor(crosshairStrokeColor)
@@ -3024,27 +3057,27 @@ function Cato_Crosshair:drawWidget(userData)
       -- cross
       nvgBeginPath()
       nvgRect(
-         x + pixelWidth * -thickness / 2,
-         y + pixelHeight * (-height / 2 - gapHeight / 2),
+         x + pixelWidth * -thickness * 0.5,
+         y + pixelHeight * (-height * 0.5 - gapHeight * 0.5),
          pixelWidth * thickness,
-         pixelHeight * height / 2
+         pixelHeight * height * 0.5
       )
       nvgRect(
-         x + pixelWidth * -thickness / 2,
-         y + pixelHeight * gapHeight / 2,
+         x + pixelWidth * -thickness * 0.5,
+         y + pixelHeight * gapHeight * 0.5,
          pixelWidth * thickness,
-         pixelHeight * height / 2
+         pixelHeight * height * 0.5
       )
       nvgRect(
-         x + pixelWidth * (-width / 2 - gapWidth / 2),
-         y + pixelHeight * -thickness / 2,
-         pixelWidth * width / 2,
+         x + pixelWidth * (-width * 0.5 - gapWidth * 0.5),
+         y + pixelHeight * -thickness * 0.5,
+         pixelWidth * width * 0.5,
          pixelHeight * thickness
       )
       nvgRect(
-         x + pixelWidth * gapWidth / 2,
-         y + pixelHeight * -thickness / 2,
-         pixelWidth * width / 2,
+         x + pixelWidth * gapWidth * 0.5,
+         y + pixelHeight * -thickness * 0.5,
+         pixelWidth * width * 0.5,
          pixelHeight * thickness
       )
       nvgFillColor(crosshairColor)
@@ -3055,14 +3088,14 @@ function Cato_Crosshair:drawWidget(userData)
       if stroke > 0 then
          nvgBeginPath()
          nvgRect(
-            x + pixelWidth * (-thickness / 2 - stroke),
-            y + pixelHeight * (-height / 2 - stroke),
+            x + pixelWidth * (-thickness * 0.5 - stroke),
+            y + pixelHeight * (-height * 0.5 - stroke),
             pixelWidth * (thickness + stroke * 2),
             pixelHeight * (height + stroke * 2)
          )
          nvgRect(
-            x + pixelWidth * (-width / 2 - stroke),
-            y + pixelHeight * (-thickness / 2 - stroke),
+            x + pixelWidth * (-width * 0.5 - stroke),
+            y + pixelHeight * (-thickness * 0.5 - stroke),
             pixelWidth * (width + stroke * 2),
             pixelHeight * (thickness + stroke * 2)
          )
@@ -3073,14 +3106,14 @@ function Cato_Crosshair:drawWidget(userData)
       -- cross
       nvgBeginPath()
       nvgRect(
-         x + pixelWidth * -thickness / 2,
-         y + pixelHeight * -height / 2,
+         x + pixelWidth * -thickness * 0.5,
+         y + pixelHeight * -height * 0.5,
          pixelWidth * thickness,
          pixelHeight * height
       )
       nvgRect(
-         x + pixelWidth * -width / 2,
-         y + pixelHeight * -thickness / 2,
+         x + pixelWidth * -width * 0.5,
+         y + pixelHeight * -thickness * 0.5,
          pixelWidth * width,
          pixelHeight * thickness
       )
@@ -3089,6 +3122,118 @@ function Cato_Crosshair:drawWidget(userData)
    end
 end
 
-RegisterCato('Cato_Crosshair', Cato_Crosshair)
+registerCatoWidget('Cato_Crosshair')
 
 ------------------------------------------------------------------------------------------------------------------------
+
+--[[
+-- NOTE: this was kinda cool...
+
+local state = {
+   mainMenu   = 1,
+   menu       = 2,
+   dead       = 3,
+   race       = 4,
+   replay     = 5,
+   hudOff     = 6,
+   gameActive = 7,
+   gameWarmup = 8,
+   gameOver   = 9,
+   freecam    = 10,
+   editor     = 11,
+}
+
+local stateLabel = {}
+for k, v in pairs(state) do
+   stateLabel[v] = k
+end
+
+local stateVars = ''
+for i = 1, #stateLabel do
+   -- consolePrint(stateName)
+   stateVars = strf('%s, %s', stateVars, stateLabel[i])
+end
+stateVars = substr(stateVars, 3)
+
+local states = {}
+for stateIndex, _ in ipairs(states) do states[stateIndex] = false end
+
+local function hideStates(hideWhen)
+   if hideWhen == nil then return nil end
+   local hideWhenVals = gsub(hideWhen, '%s+', ' or ')
+   -- local hideWhenVars = gsub(hideWhen, '%s+', ', ')
+   -- local shouldHide = 'local ' .. hideWhenVars .. ' = unpack(...); return ' .. hideWhenVals
+   local shouldHide = 'local ' .. stateVars .. ' = unpack(...); return ' .. hideWhenVals
+   -- consolePrint(shouldHide)
+   -- return function () return false end
+   return assert(load(shouldHide))
+
+   -- if hideWhen == nil then return nil end
+   -- local hideList = {}
+   -- for _, stateIndex in pairs(state) do hideList[stateIndex] = false end
+   -- for stateStr in gmatch(hideWhen, '%S+') do
+   --    local stateIndex = state[stateStr]
+   --    if stateIndex ~= nil then
+   --       hideList[stateIndex] = true
+   --    end
+   -- end
+   -- return hideList
+end
+
+function CatoHUD:draw()
+
+   -- ...
+
+   local replayActive, menuReplay = replayActive, replayName == 'menu'
+   inReplay = replayActive and not menuReplay
+   local gameWarmup, gameOver = gameState == GAME_STATE_WARMUP, gameState == GAME_STATE_GAMEOVER
+   states[state.hudOff] = consoleGetVariable('cl_show_hud') == 0
+   states[state.mainMenu] = replayActive and menuReplay
+   states[state.menu] = loading.loadScreenVisible or isInMenu()
+   states[state.race] = gameModeShortName == 'race' or gameModeShortName == 'training'
+   states[state.replay] = inReplay
+   states[state.gameWarmup] = gameWarmup
+   states[state.gameOver] = gameOver
+   states[state.gameActive] = not gameWarmup and not gameOver
+   if povPlayer then
+      states[state.dead] = povPlayer.isDead
+      states[state.freecam] = localPov and povPlayer.state ~= PLAYER_STATE_INGAME
+      states[state.editor] = povPlayer.state == PLAYER_STATE_EDITOR
+   else
+      states[state.dead] = true
+      states[state.freecam] = false
+      states[state.editor] = false
+      -- povPlayer = fakePlayerInfo()
+   end
+
+   -- ...
+
+   for _, widget in ipairs(CatoWidgets) do
+      local userData = widget.userData
+      if userData == nil then goto drawNext end
+
+      -- update anchor, offset, anchor widget, x, y
+
+      -- consoleVarPrint(strf('%s.hideWhen', widget.name), userData.hideWhen)
+      -- consoleVarPrint(strf('%s.shouldHide(...)', widget.name), widget.shouldHide(states))
+      -- consolePrint()
+      if not previewMode and widget.shouldHide(states) then
+         if not widget.hidden then
+            widget.hidden = true
+            widget.draw = function() end
+         end
+         -- goto drawNext
+      else
+         if widget.hidden then
+            widget.hidden = false
+            widget.draw = function() widget:drawWidget(userData, previewMode) end
+         end
+      end
+
+      ::drawNext::
+   end
+
+   -- ...
+
+end
+]]

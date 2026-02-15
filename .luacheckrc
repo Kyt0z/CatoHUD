@@ -25,13 +25,18 @@ read_globals = {
    'MATCHMAKING_VOTINGMAP',
    'PLAYER_STATE_EDITOR',
    'PLAYER_STATE_INGAME',
+   'PLAYER_STATE_QUEUED',
    'PLAYER_STATE_SPECTATOR',
+   'STATE_DISCONNECTED',
+   'STATE_CONNECTING',
+   'STATE_CONNECTED',
    'WIDGET_PROPERTIES_COL_WIDTH',
 
    -- gamestrings.lua
    'mutatorDefinitions',
 
    -- LuaVariables.txt
+   'clientGameState',
    'connectedToSteam',
    'deltaTime',
    'deltaTimeRaw',
