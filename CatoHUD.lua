@@ -108,15 +108,15 @@ end
 --
 -- local format = string.format
 local gmatch = string.gmatch -- NOTE: For performance prefer whatever gets the index
--- local gsub = string.gsub
+local gsub = string.gsub
 -- local len = string.len
 -- local rep = string.rep
 -- local sub = string.sub
 -- local upper = string.upper
 -- -- better names
--- local gsubstr = string.gsub
 -- local len = string.len
 -- local strrep = string.rep
+local find = string.find
 local strf = string.format -- NOTE: For performance prefer concatenation (..) over string.format
 local strlen = string.len
 local tolower = string.lower
@@ -650,13 +650,92 @@ local function getOffset(anchor, width, height)
    return {x = -(anchor.x + 1) * width * 0.5, y = -(anchor.y + 1) * height * 0.5}
 end
 
+
+
+
+
+--[[
+
+require 'CatoHUD_Emojis'
+local colorCodes, emojiCodes = {
+   ['^0'] = '  0,  0,  0', ['^1'] = '255,  0,  0', ['^2'] = '  0,255,  0', ['^3'] = '255,255,  0',
+   ['^4'] = ' 51, 51,255', ['^5'] = '  0,255,255', ['^6'] = '255,  0,255', ['^7'] = '255,255,255',
+   ['^8'] = '255,128,  0', ['^9'] = '153,153,255', ['^a'] = '255,  0,  0', ['^b'] = '255, 68,  0',
+   ['^c'] = '255,128,  0', ['^d'] = '255,187,  0', ['^e'] = '255,255,  0', ['^f'] = '187,255,  0',
+   ['^g'] = '128,255,  0', ['^h'] = ' 68,255,  0', ['^i'] = '  0,255,  0', ['^j'] = '  0,255, 68',
+   ['^k'] = '  0,255,128', ['^l'] = '  0,255,187', ['^m'] = '  0,255,255', ['^n'] = '  0,187,255',
+   ['^o'] = '  0,128,255', ['^p'] = '  0, 68,255', ['^q'] = '  0,  0,255', ['^r'] = ' 68,  0,255',
+   ['^s'] = '128,  0,255', ['^t'] = '187,  0,255', ['^u'] = '255,  0,255', ['^v'] = '255,  0,187',
+   ['^w'] = '255,  0,128', ['^x'] = '255,  0, 68', ['^y'] = '255,255,255', ['^z'] = '128,128,128',
+}, {} -- }, CatoHUD_Emojis
+local colorPattern, emojiPattern, elementPattern = '(.?)(%^[a-zA-Z0-9])', '(:.*?:)', '(%$%(.-%))'
+
+local function elementCatoHUD(x, y, dirX, dirY, text)
+   consolePrint()
+
+   -- color codes
+   -- text = gsub(text, '[^%%]%^([a-zA-Z0-9])', function(code) return colorCodes[tolower(code)] or code end)
+   consolePrint(strf('text = "%s"', text))
+   text = gsub(text, colorPattern, function(pre, code)
+      local color = gsub(colorCodes[tolower(code)] or '', '%s', '')
+      consolePrint(strf(' pre = "%s", code = "%s, color = %s', pre, code, color and ('"' .. color .. '"') or 'nil'))
+      return (color ~= '' and pre ~= '^') and ('$(color=' .. color .. ')') or (pre .. code)
+   end)
+   text = gsub(text, '^^', '^')
+
+   -- emojis
+   consolePrint(strf('text = "%s"', text))
+   text = gsub(text, emojiPattern, function(code)
+      local emoji = emojiCodes[tolower(code)]
+      consolePrint(strf(' code = "%s", emoji = %s', code, emoji and ('"' .. emoji .. '"') or 'nil'))
+      return emoji ~= nil and ('$(icon = ' .. emoji .. ')') or (':' .. code .. ':')
+   end)
+
+   consolePrint(strf('text = "%s"', text))
+   local textStart, textEnd = 0, 0
+   local elementStart, elementEnd
+   repeat
+      elementStart, elementEnd = find(text, elementPattern, textStart)
+      textEnd = (elementStart or 0) - 1
+      consolePrint(strf(' text[%s:%s] = "%s"', textStart, textEnd, substr(text, textStart, textEnd)))
+      if elementStart ~= nil then
+         consolePrint(strf(' elem[%s:%s] = "%s"', elementStart, elementEnd, substr(text, elementStart, elementEnd)))
+      end
+      textStart = (elementEnd or 0) + 1
+   until elementStart == nil or elementEnd == nil -- or elementEnd < 0
+
+   -- consolePrint(strf('text = "%s"', text))
+
+   -- for matchStr in gmatch(text, elementPattern) do
+   --    consolePrint(strf('substr(text,%%d,%%d) = %s', matchStr))
+   -- end
+
+   consolePrint()
+
+   -- color or new line => new nvgText
+   -- icon => new nvgSvg
+   -- return {minX = minX, maxX = maxX, minY = minY, maxY = maxY, draw = function(x, y) end}
+end
+
+elementCatoHUD(0, 0, 0, 0, 'fghj gdjlkgfdkj fdkljg gfdjklgdfklj')
+elementCatoHUD(0, 0, 0, 0, '$(color=255,0,0,127)')
+elementCatoHUD(0, 0, 0, 0, 'defaultasd $(color=255,0,0,127)red')
+elementCatoHUD(0, 0, 0, 0, '^7white asd $(color=0,255,0,127)green ^^xescaped this tho ^Wfuschia')
+elementCatoHUD(0, 0, 0, 0, '^7white asd $(color=0,0,255,127)blue ^^Xescaped this tho ^Wfuschia$(color=6,6,6)')
+
+]]
+
+
+
+
+
 --    ANCHOR_LEFT = -1,    ANCHOR_CENTER = 0,    ANCHOR_RIGHT = 1
 -- NVG_ALIGN_LEFT =  0, NVG_ALIGN_CENTER = 1, NVG_ALIGN_RIGHT = 2
-local function hAlignToAnchor(x) return x + 1 end
+-- local function hAlignToAnchor(x) return x + 1 end
 
 --    ANCHOR_TOP = -1,    ANCHOR_MIDDLE = 0,    ANCHOR_BOTTOM = 1
 -- NVG_ALIGN_TOP =  1, NVG_ALIGN_MIDDLE = 2, NVG_ALIGN_BOTTOM = 3 (NVG_ALIGN_BASELINE = 0)
-local function vAlignToAnchor(y) return y + 2 end
+-- local function vAlignToAnchor(y) return y + 2 end
 
 local function textCatoHUD(widget, text, opts)
    -- FIXME: Is this a good idea?
@@ -677,8 +756,8 @@ local function textCatoHUD(widget, text, opts)
    local draw = function(x, y)
       x, y = widget.x + x, widget.y + y
 
-      nvgFontBlur(0); nvgFontFace(font); nvgFontSize(height)
-      nvgTextAlign(hAlignToAnchor(anchorX), vAlignToAnchor(anchorY))
+      nvgFontBlur(0); nvgFontFace(font); nvgFontSize(height); nvgTextAlign(anchorX + 1, anchorY + 2)
+      -- nvgTextAlign(hAlignToAnchor(anchorX), vAlignToAnchor(anchorY))
 
       nvgFillColor(shadow); nvgFontBlur(2); nvgText(x, y, text)
       nvgFillColor(color); nvgFontBlur(0); nvgText(x, y, text)
@@ -709,13 +788,15 @@ local function svgCatoHUD(widget, svg, opts)
    -- local height = 2 * opts.size * viewportScale
 
    local color, size, widgetAnchor = opts.color, opts.size, widget.anchor
-   local height, width, shadow = size + size, size + size, Color(0, 0, 0, color.a)
+   -- local height, width, shadow = size + size, size + size, Color(0, 0, 0, color.a)
+   local height, width, shadow = size + size, size + size, Color(0, 0, 0, color.a * 3)
 
    local draw = function(x, y)
       x, y = widget.x + x, widget.y + y
 
       local nvgX, nvgY = x - widgetAnchor.x * size, y - widgetAnchor.y * size
-      nvgFillColor(shadow); nvgSvg(svg, nvgX, nvgY, size + 1.25)
+      -- nvgFillColor(shadow); nvgSvg(svg, nvgX, nvgY, size + 1.25)
+      nvgFillColor(shadow); nvgSvg(svg, nvgX, nvgY, size, 2)
       -- nvgSvg(svg, x - 1.5, y - 1.5, size); nvgSvg(svg, x + 1.5, y - 1.5, size)
       -- nvgSvg(svg, x + 1.5, y + 1.5, size); nvgSvg(svg, x - 1.5, y + 1.5, size)
       nvgFillColor(color); nvgSvg(svg, nvgX, nvgY, size)
@@ -1090,6 +1171,7 @@ defaultSettings['CatoHUD'] = {
    },
    cvars = {
       {'backup_config', 'int', 1},
+      {'backup_format', 'string', 'configs/game-$(name)-$(year)$(month)$(day)_$(hour)$(minute)$(second)'},
       {'box_debug', 'int', 0, 0},
       {'debug', 'int', 0},
       {'preview', 'int', 0, 0},
@@ -1176,9 +1258,10 @@ state.menu        = bitlshift(1, 11)
 state.mainmenu    = bitlshift(1, 12)
 state.hudoff      = bitlshift(1, 13)
 state.preview     = bitlshift(1, 30)
-local maxState = 0
-for _, _ in pairs(state) do maxState = maxState + 1 end
-consolePrint(maxState)
+-- FIXME: More like number of states: bits n -> m unused but m+1 used => might problem
+-- local maxState = 0
+-- for _, _ in pairs(state) do maxState = maxState + 1 end
+-- consolePrint(maxState)
 
 local function hideFlags(widget)
    if widget.userData == nil or widget.userData.hideWhen == nil then return 0 end
@@ -1372,15 +1455,26 @@ function CatoHUD:init(userData)
    --    ))
    -- end
 
-   if widgetGetConsoleVariable('backup_config') ~= 0 then
+   -- TODO: Add backup frequency cvar (a timespan to have elapsed since last backup)
+   local backupConfig = widgetGetConsoleVariable('backup_config')
+   if backupConfig ~= 0 then
       consolePrint('')
-      local configBackup = widgetGetConsoleVariable('backup_config') < 0 and '_%02d%02d%02d' or ''
-      configBackup = strf('configs/%s-%d%02d%02d' .. configBackup,
-         'game', time.year, time.month, time.day, time.hour, time.minute, time.second
-         -- consoleGetVariable('name'), time.year, time.month, time.day, time.hour, time.minute, time.second
-      )
+      -- local configBackup = widgetGetConsoleVariable('backup_config') < 0 and '_%02d%02d%02d' or ''
+      -- configBackup = strf('configs/%s-%d%02d%02d' .. configBackup,
+      --    'game', time.year, time.month, time.day, time.hour, time.minute, time.second
+      --    -- consoleGetVariable('name'), time.year, time.month, time.day, time.hour, time.minute, time.second
+      -- )
+      local configBackup = gsub(widgetGetConsoleVariable('backup_format'), '(%$%(.-%))', {
+         ['$(name)'] = consoleGetVariable('name'),
+         ['$(year)'] = time.year,
+         ['$(month)'] = strf('%02d', time.month),
+         ['$(day)'] = strf('%02d', time.day),
+         ['$(hour)'] = strf('%02d', time.hour),
+         ['$(minute)'] = strf('%02d', time.minute),
+         ['$(second)'] = strf('%02d', time.second),
+      })
 
-      if userData.configBackup ~= configBackup then
+      if userData.configBackup ~= configBackup or backupConfig < 0 then
          userData.configBackup = configBackup
          -- saveUserData(userData) -- FIXME: Need? (Probably not.)
          consolePrint('Creating backup config \'' .. configBackup .. '.cfg\'')
@@ -1922,7 +2016,7 @@ registerCatoWidget('Cato_FPS')
 
 Cato_DisplayMode = {}
 defaultSettings['Cato_DisplayMode'] = {
-   properties = {visible = true, offset = '-100 0', anchor = '1 -1', zIndex = '-999', scale = '1'},
+   properties = {visible = true, offset = '-110 0', anchor = '1 -1', zIndex = '-999', scale = '1'},
    userData = {
       anchorWidget = 'Cato_FPS',
       hideWhen = 'hudOff gameOver',
@@ -2108,9 +2202,9 @@ registerCatoWidget('Cato_Time')
 
 Cato_MMStats = {}
 defaultSettings['Cato_MMStats'] = {
-   properties = {visible = true, offset = '0 46', anchor = '1 -1', zIndex = '-999', scale = '1'},
+   properties = {visible = true, offset = '333 -413', anchor = '0 0', zIndex = '-999', scale = '1'},
    userData = {
-      anchorWidget = 'Cato_MapName',
+      anchorWidget = '',
       hideWhen = 'hudOff',
       text = {
          status = {font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
@@ -2186,9 +2280,15 @@ local function getRankIcon(mmr, icon)
    else return icon['Prime Overlord'] end
 end
 
+-- local printed = false
+local printed = true
+local mmSearchTime = 0
 function Cato_MMStats:drawWidget(userData)
+   local mmLobby = world.isMatchmakingLobby
+
    -- if bitand(CatoState, state.localplayer) ~= 0 and bitand(CatoState, state.gameactive) ~= 0 then return end
-   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) then return end
+   -- if CatoState == bitor(CatoState, state.localplayer, state.gameactive) then return end
+   if CatoState == bitor(CatoState, state.localplayer, state.gameactive) and mmLobby then return end
 
    local matchmaking = matchmaking
    local matchmakingState = matchmaking.state
@@ -2196,21 +2296,24 @@ function Cato_MMStats:drawWidget(userData)
 
    local mmState = ''
    if matchmakingState == MATCHMAKING_DISABLED then
-      return
+      mmState = 'Matchmaking'
    elseif not connectedToSteam then
       mmState = 'No Steam connection'
    elseif matchmakingState == MATCHMAKING_PINGINGREGIONS then
-      mmState = 'Pinging'
+      mmState = 'Pinging regions'
    elseif matchmakingState == MATCHMAKING_REQUESTINGLOBBYSERVER then
-      mmState = 'Requesting lobby'
+      mmState = 'Requesting lobby server'
    elseif matchmakingState == MATCHMAKING_ENABLED_BUT_IDLE then
-      mmState = 'Idle'
+      local searchTime = formatTimeMs(mmSearchTime * 1000)
+      mmState = strf('Idle %02d:%02d:%02d', searchTime.hours, searchTime.minutes, searchTime.seconds)
    elseif matchmakingState == MATCHMAKING_SEARCHINGFOROPPONENTS then
-      local searchTime = formatTimeMs((matchmakingTimeSearching or 0) * 1000)
+      mmSearchTime = matchmakingTimeSearching or mmSearchTime
+      local searchTime = formatTimeMs(mmSearchTime * 1000)
       mmState = strf('Searching %02d:%02d:%02d', searchTime.hours, searchTime.minutes, searchTime.seconds)
    elseif matchmakingState == MATCHMAKING_FOUNDOPPONENTS then
-      local ready = matchmaking.clientSideReady
-      mmState = strf('Match found (%s)', (ready and 'ready' or 'not ready'))
+      local searchTime = formatTimeMs(mmSearchTime * 1000)
+      local ready = matchmaking.clientSideReady and 'ready' or 'not ready'
+      mmState = strf('Match found (%s) %02d:%02d:%02d', ready, searchTime.hours, searchTime.minutes, searchTime.seconds)
    elseif matchmakingState == MATCHMAKING_VOTINGMAP then
       mmState = 'Voting'
    elseif matchmakingState == MATCHMAKING_VOTEFINISHED then
@@ -2235,8 +2338,6 @@ function Cato_MMStats:drawWidget(userData)
    end
    -- consoleVarPrint(mmPlaylistKey, mmPlaylist)
 
-   local mmLobby = world.isMatchmakingLobby
-
    local mmr = mmPlaylist.mmr or 0
    local mmrBest = mmPlaylist.mmrBest or 0
    local mmrDiff = ''
@@ -2244,19 +2345,24 @@ function Cato_MMStats:drawWidget(userData)
       mmr = povPlayer.mmr
       mmrBest = povPlayer.mmrBest
       mmrDiff = povPlayer.mmrNew - mmr
-      mmrDiff = mmrDiff ~= 0 and (mmrDiff > 0 and ' [+' .. mmrDiff .. ']' or ' [' .. mmrDiff .. ']') or ''
+      mmrDiff = mmrDiff ~= 0 and (mmrDiff > 0 and ' +' .. mmrDiff or ' ' .. mmrDiff) or ''
    end
 
-   local mmStatus = textCatoHUD(self, mmState, userData.text.status)
+   local mmrRangeMin, mmrRangeMax = max(0, mmr - 380), mmr + 380
+   -- local mmrRange = ' [' .. mmrRangeMin .. ',' .. mmrRangeMax .. ']'
+   local mmrRange = ' [≥' .. mmrRangeMin .. ']'
+
+   local mmStatus = textCatoHUD(self, mmState .. mmrRange, userData.text.status)
+   -- local mmStatus = textCatoHUD(self, mmState, userData.text.status)
    local x, y = 0, 0
    mmStatus.draw(x, y)
 
    local rankIcon, bestIcon = getRankIcon(mmr, userData.icon.rank), getRankIcon(mmrBest, userData.icon.bestRank)
 
-   y = y + mmStatus.height - 8
-   local spacing = rankIcon.size * 0.25
+   local spacing = rankIcon.size * 0.5
    local mmRankIcon = svgCatoHUD(self, rankIcon.svg, rankIcon)
    local mmRankText = textCatoHUD(self, strf('%s (%s%s)', rankIcon.label, mmr, mmrDiff), userData.text.rank)
+   -- local mmRankText = textCatoHUD(self, strf('%s (%s%s)%s', rankIcon.label, mmr, mmrDiff, mmrRange), userData.text.rank)
    -- local lineWidth = 0
    local lineWidth = mmRankIcon.width + spacing + mmRankText.width
    if self.anchor.x == -1 then
@@ -2266,15 +2372,19 @@ function Cato_MMStats:drawWidget(userData)
    elseif self.anchor.x == 1 then
       x = -lineWidth
    end
+   y = y + mmStatus.height - 10
    local iconHeight, textHeight = mmRankIcon.height, mmRankText.height
    local maxHeight = max(textHeight, iconHeight)
-   x = x + mmRankIcon.width
-   mmRankIcon.draw(x, y + (maxHeight - min(textHeight, iconHeight)) * 0.5)
-   x = x + spacing + mmRankText.width
-   mmRankText.draw(x, y)
+   x = x + mmRankIcon.width * 0.5
 
-   y = y + maxHeight - 4
-   spacing = bestIcon.size * 0.25
+   if not printed then consoleVarPrint('', {x, y, self.anchor}) end
+   mmRankIcon.draw(x, y + (maxHeight - min(textHeight, iconHeight)) * 0.5)
+   x = x + mmRankIcon.width * 0.5 + spacing + mmRankText.width * 0.5
+
+   if not printed then consoleVarPrint('', {x, y, self.anchor}) end
+   mmRankText.draw(x, y + 4)
+
+   spacing = bestIcon.size * 0.5
    local mmBestIcon = svgCatoHUD(self, bestIcon.svg, bestIcon)
    local mmBestText = textCatoHUD(self, strf('%s (%s)', bestIcon.label, mmrBest), userData.text.bestRank)
    -- lineWidth = 0
@@ -2286,12 +2396,20 @@ function Cato_MMStats:drawWidget(userData)
    elseif self.anchor.x == 1 then
       x = -lineWidth
    end
+   y = y + maxHeight - 8
    iconHeight, textHeight = mmBestIcon.height, mmBestText.height
    maxHeight = max(textHeight, iconHeight)
-   x = x + mmBestIcon.width
+   x = x + mmBestIcon.width * 0.5
+
+   if not printed then consoleVarPrint('', {x, y, self.anchor}) end
    mmBestIcon.draw(x, y + (maxHeight - min(textHeight, iconHeight)) * 0.5)
-   x = x + spacing + mmBestText.width
-   mmBestText.draw(x, y)
+   -- x = x + spacing + mmBestText.width
+   x = x + mmBestIcon.width * 0.5 + spacing + mmBestText.width * 0.5
+
+   if not printed then consoleVarPrint('', {x, y, self.anchor}) end
+   mmBestText.draw(x, y + 2)
+
+   printed = true
 end
 
 registerCatoWidget('Cato_MMStats')
@@ -2547,10 +2665,33 @@ defaultSettings['Cato_LowAmmo'] = {
          full = {label = 'FULL AMMO', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255), size = 32},
       },
    },
+   cvars = {
+      {'debug', 'int', 0},
+      {'switch_intensity', 'float', 0.0},
+   },
 }
 
+-- FIXME: Delay first *CLICK* for reloadTime then display *CLICK* for penaltySwitchTimeDelay (switchTime/reloadTime?)
+-- FIXME: Figure out: (1) Delay from [0 AMMO] to [*CLICK*] and (2) delay from [*CLICK*] to [SWITCH START]
+-- FIXME: 0 ammo and buttons.attack -> 0 selection intensity (what is delay?)
 local clickDelay = 0.0
+local testTimer = 0.0
+   -- FIXME: Handle mutators: if unlimitedammo then return end, if arena then no FULL AMMO
 function Cato_LowAmmo:drawWidget(userData)
+   if widgetGetConsoleVariable('debug') ~= 0 then
+      local debugOpt = {label = 'DEBUG', font = 'TitilliumWeb-Bold', color = Color(255, 255, 255, 191), size = 28}
+      textCatoHUD(
+         self,
+         strf(
+            '(%.02f) %s -> %s',
+            povPlayer.weaponSelectionIntensity,
+            gsub(weaponDefinitions[povPlayer.weaponIndexSelected].name, '[^A-Z]', ''),
+            gsub(weaponDefinitions[povPlayer.weaponIndexweaponChangingTo].name, '[^A-Z]', '')
+         ),
+         debugOpt
+      ).draw(0, debugOpt.size + 4)
+   end
+
    if clickDelay > 0.0 then clickDelay = clickDelay - deltaTime end
 
    if bitand(CatoState, state.preview) ~= 0 then
@@ -2564,7 +2705,12 @@ function Cato_LowAmmo:drawWidget(userData)
       return
    end
 
-   local weaponIndex = povPlayer.weaponIndexweaponChangingTo -- povPlayer.weaponIndexSelected
+   local weaponIndex
+   if povPlayer.weaponSelectionIntensity >= widgetGetConsoleVariable('switch_intensity') then
+      weaponIndex = povPlayer.weaponIndexweaponChangingTo
+   else
+      weaponIndex = povPlayer.weaponIndexSelected
+   end
    local weaponDefinition = weaponDefinitions[weaponIndex]
    if weaponIndex == 1 or weaponDefinition == nil then return end
 
